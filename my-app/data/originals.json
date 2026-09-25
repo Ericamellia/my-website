@@ -1,0 +1,44 @@
+[
+  {
+    "id": "001",
+    "title": "博麗神社境内",
+    "game": "东方灵异传",
+    "track_no": 1,
+    "description": "东方Project全系列最标志性的旋律——博丽神社的主题"
+  },
+  {
+    "id": "002",
+    "title": "ほおづき ～ Flower Land",
+    "game": "红魔乡",
+    "track_no": 3,
+    "description": "红魔乡第三关BOSS蕾米莉亚·斯卡雷特主题曲"
+  },
+  {
+    "id": "003",
+    "title": "魔法少女達の儀仗舞",
+    "game": "红魔乡",
+    "track_no": 4,
+    "description": "红魔乡第四关——雾雨魔理沙的进攻主题"
+  },
+  {
+    "id": "004",
+    "title": "ラクトガール ～ 少女密室",
+    "game": "妖妖梦",
+    "track_no": 2,
+    "description": "妖妖梦第二关——橙的主题"
+  },
+  {
+    "id": "005",
+    "title": "桜花之恋塚",
+    "game": "妖妖梦",
+    "track_no": 8,
+    "description": "妖妖梦第八关——西行寺幽幽子主题曲"
+  },
+  {
+    "id": "006",
+    "title": "妖魔夜行",
+    "game": "永夜抄",
+    "track_no": 3,
+    "description": "永夜抄第三关——莉莉卡·普莉兹姆利巴主题曲"
+  }
+]

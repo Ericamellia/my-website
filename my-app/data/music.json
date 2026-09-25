@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "name": "东方红魔乡REMIX精选 Vol.1",
+    "circle": "COOL&CREATE",
+    "year": 2010,
+    "original": "002",
+    "characters": ["博丽灵梦", "雾雨魔理沙"],
+    "tags": ["红魔乡", "妖妖梦"],
+    "popularity": 12450,
+    "source_url": "https://thwiki.cc/%E4%B8%9C%E6%96%B9%E7%BA%A2%E9%AD%94%E4%B9%A1REMIX%E7%B2%BE%E9%80%89Vol.1",
+    "description": "以红魔乡BGM为主的同人REMIX专辑，包含8首重新编排的曲目"
+  },
+  {
+    "id": 2,
+    "name": "东方萃梦抄",
+    "circle": "Silver Forest",
+    "year": 2009,
+    "original": "004",
+    "characters": ["博丽灵梦", "雾雨魔理沙", "八云紫"],
+    "tags": ["妖妖梦"],
+    "popularity": 8932,
+    "source_url": "https://thwiki.cc/%E4%B8%9C%E6%96%B9%E8%90%83%E6%A2%A6%E6%8A%84",
+    "description": "Silver Forest制作的东方妖妖梦Arrange专辑，主打曲目「萃梦抄」广为人知"
+  },
+  {
+    "id": 3,
+    "name": "东方文花帖",
+    "circle": "IOSYS",
+    "year": 2011,
+    "original": "005",
+    "characters": ["射命丸文", "博丽灵梦"],
+    "tags": ["文花帖"],
+    "popularity": 15678,
+    "source_url": "https://thwiki.cc/%E4%B8%9C%E6%96%B9%E6%96%87%E8%8A%B1%E5%B8%96",
+    "description": "IOSYS以文花帖BGM为基础制作的鬼畜Arrange专辑"
+  },
+  {
+    "id": 4,
+    "name": "东方风神录REMIX",
+    "circle": "Alstroemeria Records",
+    "year": 2008,
+    "original": "006",
+    "characters": ["博丽灵梦"],
+    "tags": ["风神录"],
+    "popularity": 9234,
+    "source_url": "https://thwiki.cc/%E4%B8%9C%E6%96%B9%E9%A3%8E%E7%A5%9E%E5%BD%95REMIX",
+    "description": "Alstroemeria Records的经典风神录Arrange合辑"
+  },
+  {
+    "id": 5,
+    "name": "东方永夜抄同人精选",
+    "circle": "Melodic Taste",
+    "year": 2012,
+    "original": "006",
+    "characters": ["八云紫", "博丽灵梦"],
+    "tags": ["永夜抄"],
+    "popularity": 11234,
+    "source_url": "https://thwiki.cc/%E4%B8%9C%E6%96%B9%E6%A0%B8%E5%A4%9C%E6%8A%84%E5%90%8C%E4%BA%BA%E7%B2%BE%E9%80%89",
+    "description": "Melodic Taste以永夜抄主题创作的精选专辑"
+  },
+  {
+    "id": 6,
+    "name": "Lost Dream Remix合集",
+    "circle": "幽閉サティスフィクション",
+    "year": 2013,
+    "original": "002",
+    "characters": ["琪露诺"],
+    "tags": ["红魔乡"],
+    "popularity": 7891,
+    "source_url": "https://thwiki.cc/Lost_Dream_Remix",
+    "description": "幽閉サティスフィクション以「梦消失」为主题的REMIX合集"
+  }
+]

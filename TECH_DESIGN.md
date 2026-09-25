@@ -166,26 +166,33 @@ URL（#/music/{id}） → 根据模块与 id 在 JSON 中查找 → 渲染详情
 
 ---
 
-## 5. 仓库文件结构（Day 7 落代码时遵循）
+## 5. 仓库文件结构（Day 7｜v2：升级到 `my-app/` 子目录）
+
+> **v2 变更**（2026-09-21 Day 7）：依据 AGENTS.md 末尾个人规则「代码放 my-app 文件夹里」→ 把 v1 全部代码文件（index.html / CSS / JS / JSON）从仓库根目录迁到 `my-app/` 子目录。
+> v1 旧结构在 git 历史 Day 5 commit `8c3a33d` 可查；v2 起一切新增走新位置。
 
 ```
 my-website/
-├── index.html              首页（分类入口；Day 2 已有的占位页会被替换）
-├── style.css               样式（含暗色模式变量，Day 21 前补）
-├── app.js                  主脚本（路由 + 数据加载 + 渲染）
-├── data/
-│   ├── music.json          同人音乐 20–30 条
-│   ├── doujin.json         同人志 15–20 条
-│   └── game.json           同人游戏 10–15 条
-├── PRD.md                  （Day 4 已存在）
-├── research.md             （Day 3 已存在）
-├── TECH_DESIGN.md          ← 本文件
-└── .gitignore              （Day 2 已存在）
+├── my-app/                  ← Day 7 新增：代码工作区（遵守 AGENTS.md 个人规则）
+│   ├── index.html           首页（分类入口，含搜索框 + 三模块卡片 + 角色/社团入口）
+│   ├── style.css            样式（含暗色模式变量，Day 21 前补）
+│   ├── app.js               主脚本（URL hash 路由 + 数据加载 + 渲染）
+│   └── data/
+│       ├── music.json       同人音乐 20–30 条（Day 7 MVP 用 5–10 条 mock）
+│       ├── doujin.json      同人漫画 15–20 本（PRD F3；Day 7 MVP 用 5–8 条 mock）
+│       └── game.json        同人游戏 10–15 条（Day 7 MVP 用 3–5 条 mock）
+├── PRD.md                   （Day 4 课程版）
+├── research.md              （Day 3）
+├── TECH_DESIGN.md           ← 本文件
+├── AGENTS.md                （Day 6）
+├── index.html               （Day 2 占位页 —— 保留便于看旧里程碑，Day 7 以后更新看 my-app/index.html）
+└── .gitignore               （Day 2）
 ```
 
-- HTML / CSS / JS 拆分清楚，便于排错
-- JSON 数据与代码分离：改数据不动代码，改代码不动数据
-- 暂不分模块文件（app.js 单文件足够；Day 21 后若继续做大再拆）
+- **v1 → v2 改了什么**：v1 把 index.html / CSS / JS 放根目录，v2 全部进 `my-app/`
+- **为什么改**：跟 AGENTS.md 个人规则一致；将来加 npm / Vite / 构建步骤时，`my-app/` 作根目录比仓库根目录清爽
+- **数据规模**：PRD 满编（音乐 20-30 / 漫画 15-20 / 游戏 10-15）要几十条人工数据录入（详见 research.md 第二节），Day 7 MVP 先用 5-10 条 mock 跑通骨架；二期按 PRD 数据字段扩展
+- **GitHub Pages 部署**：默认从仓库根目录服务，要从 `my-app/` 部署需配置 Pages source = `my-app/ on branch main`（Settings → Pages）；Day 21 前不动这块，本地开发走 `python -m http.server 8000` 后访问 `http://localhost:8000/my-app/` 即可
 
 ---
 
