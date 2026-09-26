@@ -5,7 +5,11 @@ let data = { music: [], doujin: [], game: [], video: [], originals: [] };
 async function loadData() {
   const [m, d, g, v, o] = await Promise.all(
     ['music','doujin','game','video','originals'].map(k =>
-      fetch(`data/${k}.json`, { cache: 'no-cache' }).then(r => r.json()))
+      fetch(`data/${k}.json`, { cache: 'no-cache' })
+        .then(r => {
+          if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
+          return r.json();
+        }))
   );
   data = { music: m, doujin: d, game: g, video: v, originals: o };
 }
@@ -21,6 +25,27 @@ const lnkOriginal = id => {
   return o ? `<a href="#/original/${id}">${esc(o.title)}</a>` : esc(id);
 };
 const stars = p => '★'.repeat(Math.min(5, Math.round(p / 2500)));
+
+// ===== 可复用组件：作品卡片（Day 8 余力加练） =====
+// 模块列表页与反查页共用同一张卡片，两处展示天然一致。
+// opts.search 传搜索串时附带 data-search / data-original 属性（列表页的搜索/原曲筛选依赖它们）；
+// 反查页不传 opts，卡片不带筛选属性。
+const workCard = (w, module, opts = {}) => {
+  const attrs = 'search' in opts
+    ? ` data-search="${esc(opts.search)}" data-original="${esc(w.original || '')}"`
+    : '';
+  const origLink = w.original ? `<br>原曲: ${lnkOriginal(w.original)}` : '';
+  return `<div class="work-item"${attrs}>
+      <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
+      <div class="work-meta">
+        <span>社团: ${lnkCircle(w.circle)}</span>
+        <span>${w.year}</span>
+        <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
+      </div>
+      <div class="work-meta">角色: ${(w.characters || []).map(lnkChar).join(', ')}</div>
+      <div class="work-meta">原作: ${(w.tags || []).map(lnkTag).join(' ')}${origLink}</div>
+    </div>`;
+};
 
 // ===== 首页 =====
 function renderHome() {
@@ -45,17 +70,7 @@ function renderList(module) {
   const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏' };
   const items = data[module].map(w => {
     const search = [w.name, w.circle, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase();
-    const origLink = w.original ? `<br>原曲: ${lnkOriginal(w.original)}` : '';
-    return `<div class="work-item" data-search="${esc(search)}" data-original="${esc(w.original||'')}">
-      <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
-      <div class="work-meta">
-        <span>社团: ${lnkCircle(w.circle)}</span>
-        <span>${w.year}</span>
-        <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
-      </div>
-      <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
-      <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}${origLink}</div>
-    </div>`;
+    return workCard(w, module, { search });
   }).join('') || '<p class="empty-state">暂无数据</p>';
 
   const origFilter = module === 'music' ? `
@@ -72,22 +87,30 @@ function renderList(module) {
     <h2>${labels[module]}</h2>
     <input id="search" placeholder="搜索作品名/社团/角色/标签…" style="width:100%;padding:8px;margin-top:12px;border:1px solid #ccc;border-radius:4px;">
     ${origFilter}
+    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" style="padding:4px 16px;margin-top:8px;cursor:pointer;">清空搜索与筛选</button></p>
     <div class="work-list">${items}</div>`;
 
-  document.getElementById('search').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
+  // 统一过滤：搜索词 AND 原曲筛选同时生效（PRD 通用规则），无结果时显示空状态
+  const applyFilter = () => {
+    const q = document.getElementById('search').value.toLowerCase();
+    const oid = module === 'music' ? document.getElementById('origFilter').value : '';
+    let visible = 0;
     document.querySelectorAll('.work-item').forEach(it => {
-      it.style.display = it.dataset.search.includes(q) ? '' : 'none';
+      const ok = it.dataset.search.includes(q) && (!oid || it.dataset.original === oid);
+      it.style.display = ok ? '' : 'none';
+      if (ok) visible++;
     });
-  });
+    document.getElementById('no-result').hidden = visible !== 0;
+  };
+  document.getElementById('search').addEventListener('input', applyFilter);
   if (module === 'music') {
-    document.getElementById('origFilter').addEventListener('change', e => {
-      const oid = e.target.value;
-      document.querySelectorAll('.work-item').forEach(it => {
-        it.style.display = !oid || it.dataset.original === oid ? '' : 'none';
-      });
-    });
+    document.getElementById('origFilter').addEventListener('change', applyFilter);
   }
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('search').value = '';
+    if (module === 'music') document.getElementById('origFilter').value = '';
+    applyFilter();
+  });
 }
 
 // ===== 同人视频列表（封面卡片） =====
@@ -116,13 +139,23 @@ function renderVideoList() {
   $app.innerHTML = `
     <h2>同人视频</h2>
     <input id="search" placeholder="搜索视频名/社团/创作者/角色/标签…" style="width:100%;padding:8px;margin-top:12px;border:1px solid #ccc;border-radius:4px;">
+    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" style="padding:4px 16px;margin-top:8px;cursor:pointer;">清空搜索</button></p>
     <div class="video-grid">${items}</div>`;
 
-  document.getElementById('search').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
+  const applyFilter = () => {
+    const q = document.getElementById('search').value.toLowerCase();
+    let visible = 0;
     document.querySelectorAll('.video-card').forEach(it => {
-      it.style.display = it.dataset.search.includes(q) ? '' : 'none';
+      const ok = it.dataset.search.includes(q);
+      it.style.display = ok ? '' : 'none';
+      if (ok) visible++;
     });
+    document.getElementById('no-result').hidden = visible !== 0;
+  };
+  document.getElementById('search').addEventListener('input', applyFilter);
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('search').value = '';
+    applyFilter();
   });
 }
 
@@ -169,12 +202,7 @@ function renderReverse(kind, val) {
   const blocks = groups.filter(g => g.items.length).map(g => `
     <div class="group-block">
       <h2>${esc(g.m)} (${g.items.length})</h2>
-      ${g.items.map(w => `
-        <div class="work-item">
-          <h3><a href="#/${g.m}/${w.id}">${esc(w.name)}</a></h3>
-          <div class="work-meta">社团: ${lnkCircle(w.circle)} · ${w.year}</div>
-          <div class="work-meta">${(w.tags||[]).map(lnkTag).join(' ')}</div>
-        </div>`).join('')}
+      ${g.items.map(w => workCard(w, g.m)).join('')}
     </div>`).join('');
   $app.innerHTML = `<h2>${esc(kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><p><a href="#/">← 返回首页</a></p>`;
 }
@@ -219,7 +247,19 @@ function renderVideoDetail(w) {
 
 // ===== 路由 =====
 async function route() {
-  await loadData();
+  try {
+    await loadData();
+  } catch (e) {
+    // 错误态：数据加载失败时给出原因和出路，而不是停在「加载中」
+    $app.innerHTML = `
+      <div class="empty-state" style="text-align:center;margin-top:48px;">
+        <p>数据加载失败：${esc(e.message)}</p>
+        <p style="color:#999;font-size:13px;">常见原因：本地服务没启动 / 端口不对 / 数据文件缺失。<br>请按 RUN.md 启动服务后再试。</p>
+        <button id="retryBtn" style="padding:8px 24px;margin-top:8px;cursor:pointer;">重试</button>
+      </div>`;
+    document.getElementById('retryBtn').addEventListener('click', route);
+    return;
+  }
   const h = location.hash.slice(1) || '/';
   const p = h.split('/').filter(Boolean);
   if (!p.length) return renderHome();
