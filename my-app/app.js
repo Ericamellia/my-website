@@ -58,7 +58,7 @@ function renderHome() {
       <a class="module-card" href="#/game"><h2>同人游戏</h2><p>${game.length} 个游戏</p></a>
       <a class="module-card" href="#/video"><h2>同人视频</h2><p>${video.length} 个视频</p></a>
     </div>
-    <h2 style="margin-top:32px;">反查入口</h2>
+    <h2 class="section-title">反查入口</h2>
     <div class="module-grid">
       <a class="module-card" href="#/original"><h2>ZUN 原曲</h2><p>${originals.length} 首原曲</p></a>
     </div>`;
@@ -76,7 +76,7 @@ function renderList(module) {
   const origFilter = module === 'music' ? `
     <div style="margin-top:12px;">
       <label>原曲筛选:
-        <select id="origFilter" style="padding:4px 8px;">
+        <select id="origFilter" class="field">
           <option value="">全部</option>
           ${data.originals.map(o => `<option value="${o.id}">${esc(o.title)}</option>`).join('')}
         </select>
@@ -85,9 +85,9 @@ function renderList(module) {
 
   $app.innerHTML = `
     <h2>${labels[module]}</h2>
-    <input id="search" placeholder="搜索作品名/社团/角色/标签…" style="width:100%;padding:8px;margin-top:12px;border:1px solid #ccc;border-radius:4px;">
+    <input id="search" class="field" placeholder="搜索作品名/社团/角色/标签…">
     ${origFilter}
-    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" style="padding:4px 16px;margin-top:8px;cursor:pointer;">清空搜索与筛选</button></p>
+    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" class="btn">清空搜索与筛选</button></p>
     <div class="work-list">${items}</div>`;
 
   // 统一过滤：搜索词 AND 原曲筛选同时生效（PRD 通用规则），无结果时显示空状态
@@ -138,8 +138,8 @@ function renderVideoList() {
 
   $app.innerHTML = `
     <h2>同人视频</h2>
-    <input id="search" placeholder="搜索视频名/社团/创作者/角色/标签…" style="width:100%;padding:8px;margin-top:12px;border:1px solid #ccc;border-radius:4px;">
-    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" style="padding:4px 16px;margin-top:8px;cursor:pointer;">清空搜索</button></p>
+    <input id="search" class="field" placeholder="搜索视频名/社团/创作者/角色/标签…">
+    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" class="btn">清空搜索</button></p>
     <div class="video-grid">${items}</div>`;
 
   const applyFilter = () => {
@@ -252,10 +252,10 @@ async function route() {
   } catch (e) {
     // 错误态：数据加载失败时给出原因和出路，而不是停在「加载中」
     $app.innerHTML = `
-      <div class="empty-state" style="text-align:center;margin-top:48px;">
+      <div class="empty-state">
         <p>数据加载失败：${esc(e.message)}</p>
-        <p style="color:#999;font-size:13px;">常见原因：本地服务没启动 / 端口不对 / 数据文件缺失。<br>请按 RUN.md 启动服务后再试。</p>
-        <button id="retryBtn" style="padding:8px 24px;margin-top:8px;cursor:pointer;">重试</button>
+        <p class="hint">常见原因：本地服务没启动 / 端口不对 / 数据文件缺失。<br>请按 RUN.md 启动服务后再试。</p>
+        <button id="retryBtn" class="btn">重试</button>
       </div>`;
     document.getElementById('retryBtn').addEventListener('click', route);
     return;

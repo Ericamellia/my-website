@@ -5,6 +5,39 @@ a { color: #1a73e8; text-decoration: none; }
 a:hover { color: #d93025; text-decoration: underline; }
 .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
 
+/* ===== 组件约束：表单控件 .field（Day 9 提炼） =====
+   约束对象：全站所有输入框 / 下拉框。
+   规格：内边距 8px 12px、边框 #e8e8e8（全站边框色）、圆角 6px（与卡片同规格）、聚焦变蓝。
+   用法：控件加 class="field"，禁止再写内联样式。
+   破例：无。规格改动只改这一处，新控件一律套用。 */
+.field {
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  font: inherit;
+  background: #fff;
+}
+.field:focus { outline: none; border-color: #1a73e8; }
+
+/* ===== 组件约束：按钮 .btn（Day 9 提炼） =====
+   约束对象：全站所有非链接按钮（清空 / 重试 / 未来新增）。
+   规格：内边距 8px 24px、边框 #e8e8e8、圆角 6px、白底黑字，hover 边框与文字变蓝。
+   用法：加 class="btn" 即可，禁止内联样式。
+   破例：将来出现主行动按钮时新增 .btn-primary，不在此类上打补丁。 */
+.btn {
+  padding: 8px 24px;
+  margin-top: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover { border-color: #1a73e8; color: #1a73e8; }
+
 /* ===== 头部 ===== */
 header { background: #fff; border-bottom: 1px solid #e8e8e8; padding: 16px 0; }
 header .container { display: flex; justify-content: space-between; align-items: center; }
@@ -21,14 +54,20 @@ nav a { margin-left: 16px; }
 /* ===== 列表项 ===== */
 .work-list { display: grid; gap: 12px; margin-top: 16px; }
 .work-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; padding: 16px; }
-.work-item h3 { font-size: 16px; margin-bottom: 6px; }
-.work-meta { color: #666; font-size: 13px; margin-top: 4px; }
+/* Day 9 修：标题下间距 6px→8px 归入 8px 体系；加溢出防护（规则 5：超长专辑名不撑破卡片） */
+.work-item h3 { font-size: 16px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.work-meta { color: #666; font-size: 13px; margin-top: 4px; overflow-wrap: anywhere; }
 .work-meta span { margin-right: 8px; }
 .work-meta .tag { display: inline-block; padding: 2px 8px; background: #f0f7ff; border-radius: 12px; font-size: 12px; }
 .popularity { color: #f9ab00; }
+.module-card h2 { overflow-wrap: anywhere; }
 
-/* ===== 空状态 ===== */
-.empty-state { text-align: center; padding: 48px 16px; color: #999; }
+/* ===== 空状态（Day 9 修：#999 对比度 2.85:1 不达标，换 #5f6368 实测 6.05:1） ===== */
+.empty-state { text-align: center; padding: 48px 16px; color: #5f6368; }
+.empty-state .hint { color: #5f6368; font-size: 13px; }
+
+/* ===== 区块标题（原「反查入口」内联样式收编，规则 4） ===== */
+.section-title { margin-top: 32px; }
 
 /* ===== 移动端 ===== */
 @media (max-width: 720px) {
@@ -48,8 +87,9 @@ nav a { margin-left: 16px; }
 .video-thumb { position: relative; aspect-ratio: 16 / 9; background: linear-gradient(135deg, #e3ebf7, #f0e6f6); display: flex; align-items: center; justify-content: center; }
 .video-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .video-thumb .video-type { position: relative; z-index: 1; font-size: 12px; color: #5f6368; background: rgba(255, 255, 255, 0.88); padding: 3px 10px; border-radius: 12px; }
-.video-body { padding: 12px 14px 14px; }
-.video-body h3 { font-size: 15px; margin-bottom: 6px; }
+/* Day 9 修：padding 14px 归入 8px 体系 → 16px；标题下间距 6px→8px；溢出防护 */
+.video-body { padding: 12px 16px 16px; }
+.video-body h3 { font-size: 15px; margin-bottom: 8px; overflow-wrap: anywhere; }
 
 @media (max-width: 720px) {
   .video-grid { grid-template-columns: 1fr; }
