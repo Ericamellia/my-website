@@ -41,7 +41,7 @@ const tagCover = t => {
   return g ? g.cover : '';
 };
 const workCover = (w, module) => {
-  if (module === 'video' && w.cover) return w.cover;
+  if (w.cover) return w.cover;
   const hit = (w.tags || []).map(tagCover).filter(Boolean)[0];
   return hit || moduleFallback[module] || moduleFallback.video;
 };
