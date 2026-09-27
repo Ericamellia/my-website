@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>东方Project同人作品查询｜Day 7 MVP</title>
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=52">
   <script>
     // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
     function showLoadError(msg) {
@@ -23,13 +23,19 @@
   <header>
     <div class="container">
       <div class="brand">
+        <button id="backBtn" class="home-link back-btn" type="button" aria-label="返回上一页" title="返回上一页">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+          <span class="nav-label">返回上一页</span>
+        </button>
         <a class="home-link" href="#/" aria-label="返回首页" title="返回首页">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
           </svg>
           <span class="nav-label">返回首页</span>
         </a>
-        <h1><a href="#/">东方小站</a></h1>
+        <h1>歡迎來到人與妖怪的世界！</h1>
       </div>
       <div class="header-search-wrap">
         <svg class="search-icon" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -63,6 +69,10 @@
           <span class="nav-face" aria-hidden="true">⩌ˬ⩌</span>
           <span class="nav-label">原作</span>
         </a>
+        <a class="nav-item nav-fav" href="#/fav" aria-label="我的收藏" title="我的收藏">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <span class="nav-label">我的收藏</span>
+        </a>
       </nav>
     </div>
   </header>
@@ -72,6 +82,20 @@
   <footer class="site-footer">
     Day 7 MVP · 数据为模拟（mock）· 部署: GitHub Pages
   </footer>
-  <script src="app.js?v=17" defer></script>
+  <!-- 大图预览遮罩：点击详情页配图时全屏显示（app.js 控制开关） -->
+  <div id="lightbox" class="lightbox" hidden>
+    <img id="lightbox-img" src="" alt="" referrerpolicy="no-referrer">
+  </div>
+  <!-- 修改作品信息弹窗：详情页「修改介绍」按钮唤起（app.js 填充表单内容） -->
+  <div id="editModal" class="edit-modal" hidden>
+    <div class="edit-panel">
+      <div class="edit-head">
+        <h3>修改作品信息</h3>
+        <button id="editClose" class="edit-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="editForm" class="edit-form"></form>
+    </div>
+  </div>
+  <script src="app.js?v=28" defer></script>
 </body>
 </html>

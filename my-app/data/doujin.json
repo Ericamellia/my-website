@@ -2,73 +2,79 @@
   {
     "id": 1,
     "name": "- Bibliotheca - 劇毒少女 publication number V",
-    "circle": "东方幻乐洞",
+    "circle": "劇毒少女",
+    "creator": "劇毒少女",
     "year": 2010,
-    "characters": ["帕秋莉", "小恶魔"],
+    "characters": ["雾雨魔理沙", "帕秋莉", "琪露诺"],
     "tags": ["红魔乡"],
     "popularity": 6880,
     "cover": "assets/works/doujin01.jpg",
     "source_url": "https://thwiki.cc/-_Bibliotheca_-_%E5%8A%87%E6%AF%92%E5%B0%91%E5%A5%B3_publication_number_V",
-    "description": "以红魔馆大图书馆与帕秋莉为主角的东方同人漫画。"
+    "description": "以红魔馆大图书馆为舞台的东方同人漫画，帕秋莉、魔理沙与琪露诺登场。"
   },
   {
     "id": 2,
     "name": "'R' exception - キオクトキロク -",
-    "circle": "Comic ZETAI",
-    "year": 2011,
-    "characters": ["博丽灵梦", "雾雨魔理沙"],
-    "tags": ["红魔乡", "妖妖梦"],
+    "circle": "桜花月間",
+    "creator": "桜花月間",
+    "year": 2009,
+    "characters": ["上白泽慧音", "稗田阿求"],
+    "tags": ["永夜抄"],
     "popularity": 6540,
     "cover": "assets/works/doujin02.jpg",
     "source_url": "https://thwiki.cc/%27R%27_exception_-_%E3%82%AD%E3%82%AA%E3%82%AF%E3%83%88%E3%82%AD%E3%83%AD%E3%82%AF_-",
-    "description": "记录异变之外日常片段的东方同人漫画。"
+    "description": "桜花月間的东方同人小说，以上白泽慧音与稗田阿求为主角，在东方幻乐祭2 发布。"
   },
   {
     "id": 3,
     "name": "+alpha",
-    "circle": "东方求闻史",
-    "year": 2013,
-    "characters": ["琪露诺", "大妖精"],
-    "tags": ["红魔乡", "妖妖梦"],
+    "circle": "幻想夜桜",
+    "creator": "幻想夜桜",
+    "year": 2011,
+    "characters": ["博丽灵梦"],
+    "tags": ["红魔乡"],
     "popularity": 6120,
     "cover": "assets/works/doujin03.jpg",
     "source_url": "https://thwiki.cc/%2Balpha",
-    "description": "妖精组为主角的轻松向东方同人漫画。"
+    "description": "幻想夜桜在红楼梦7 发布的东方合同画集，以博丽灵梦为主题。"
   },
   {
     "id": 4,
     "name": "- 春 -",
-    "circle": "河童工坊",
-    "year": 2014,
-    "characters": ["西行寺幽幽子", "魂魄妖梦"],
+    "circle": "Tiny Feather",
+    "creator": "Tiny Feather",
+    "year": 2007,
+    "characters": ["博丽灵梦"],
     "tags": ["妖妖梦"],
     "popularity": 7340,
     "cover": "assets/works/doujin04.jpg",
     "source_url": "https://thwiki.cc/-_%E6%98%A5_-",
-    "description": "以春景与冥界少女为主题的东方同人漫画。"
+    "description": "Tiny Feather 在例大祭4 发布的春主题东方同人漫画，博丽灵梦登场。"
   },
   {
     "id": 5,
     "name": "- All of the Fantasies -",
-    "circle": "蓬莱山绘羽",
-    "year": 2010,
-    "characters": ["博丽灵梦", "雾雨魔理沙", "十六夜咲夜"],
-    "tags": ["红魔乡", "永夜抄"],
+    "circle": "BlackEditionFX",
+    "creator": "BlackEditionFX",
+    "year": 2016,
+    "characters": ["灵乌路空"],
+    "tags": ["地灵殿"],
     "popularity": 6980,
     "cover": "assets/works/doujin05.jpg",
     "source_url": "https://thwiki.cc/-_All_of_the_Fantasies_-",
-    "description": "跨越多部原作的东方同人漫画选集。"
+    "description": "BlackEditionFX 在 C91 发布的灵乌路空主题东方画集总集篇。"
   },
   {
     "id": 6,
     "name": "- Dress -",
-    "circle": "弹幕画坊",
-    "year": 2012,
-    "characters": ["十六夜咲夜", "蕾米莉亚"],
-    "tags": ["红魔乡"],
+    "circle": "BlackEditionFX",
+    "creator": "BlackEditionFX",
+    "year": 2014,
+    "characters": ["博丽灵梦", "灵乌路空", "射命丸文", "圣白莲"],
+    "tags": ["地灵殿", "文花帖", "星莲船"],
     "popularity": 6420,
     "cover": "assets/works/doujin06.jpg",
     "source_url": "https://thwiki.cc/-_Dress_-",
-    "description": "红魔馆女仆与大小姐的服饰主题同人漫画。"
+    "description": "BlackEditionFX 的东方画集，描绘灵梦、空、文、白莲等角色的服饰装束。"
   }
 ]

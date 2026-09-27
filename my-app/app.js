@@ -17,6 +17,188 @@ async function loadData() {
 // ===== 通用 =====
 const $app = document.getElementById('app');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ===== 大图预览（点击详情页配图放大；Day 10 新增） =====
+const $lightbox = document.getElementById('lightbox');
+const $lightboxImg = document.getElementById('lightbox-img');
+function openLightbox(src, alt) {
+  if (!$lightbox || !$lightboxImg || !src) return;
+  $lightboxImg.src = src;
+  $lightboxImg.alt = alt || '';
+  $lightbox.hidden = false;
+  document.body.classList.add('no-scroll');
+}
+function closeLightbox() {
+  if (!$lightbox) return;
+  $lightbox.hidden = true;
+  document.body.classList.remove('no-scroll');
+}
+// 事件委托：详情页内任何带 .zoomable 的配图都可点开放大
+$app.addEventListener('click', e => {
+  const t = e.target && e.target.closest ? e.target.closest('.zoomable') : null;
+  if (t) openLightbox(t.currentSrc || t.src, t.alt);
+});
+if ($lightbox) $lightbox.addEventListener('click', closeLightbox);
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// ===== 顶栏返回按钮：回到上一个所处页面（Day 10 新增） =====
+const $backBtn = document.getElementById('backBtn');
+if ($backBtn) $backBtn.addEventListener('click', () => {
+  // 无历史记录时（新标签直接打开）退回首页
+  if (window.history && window.history.length > 1) window.history.back();
+  else location.hash = '#/';
+});
+
+// ===== 我的收藏（Day 10 新增） =====
+// 存储结构：[{ module, id }]。优先 localStorage 持久化；
+// 无 localStorage 环境（如无头验证脚本）读取会抛 ReferenceError，被 catch 后退化为内存数组。
+let favs = [];
+try { favs = JSON.parse(localStorage.getItem('touhou_favs') || '[]'); } catch (e) {}
+const saveFavs = () => { try { localStorage.setItem('touhou_favs', JSON.stringify(favs)); } catch (e) {} };
+const isFav = (module, id) => favs.some(f => f.module === module && f.id === id);
+const toggleFav = (module, id) => {
+  const i = favs.findIndex(f => f.module === module && f.id === id);
+  if (i >= 0) favs.splice(i, 1); else favs.push({ module, id });
+  saveFavs();
+};
+// 详情页收藏按钮：三态文案由 CSS 控制（收藏 / 已收藏 / hover 取消收藏）
+const favBtn = (module, id) => {
+  const on = isFav(module, Number(id)) ? ' is-faved' : '';
+  return `<button class="detail-cta detail-cta-fav${on}" type="button"
+            data-module="${esc(module)}" data-id="${esc(id)}" aria-label="收藏该作品">
+          <span class="lbl-off">收藏</span><span class="lbl-on">已收藏</span><span class="lbl-un">取消收藏</span>
+        </button>`;
+};
+// 事件委托：详情页内任意收藏按钮，点击即切换收藏状态并同步按钮样式
+$app.addEventListener('click', e => {
+  const b = e.target && e.target.closest ? e.target.closest('.detail-cta-fav') : null;
+  if (!b) return;
+  e.preventDefault();
+  const { module, id } = b.dataset;
+  toggleFav(module, Number(id));
+  b.classList.toggle('is-faved', isFav(module, Number(id)));
+});
+
+// ===== 修改作品信息：详情页右栏「修改介绍」按钮 + 编辑弹窗（Day 10 新增） =====
+// 弹窗容器在 index.html 预置（与 lightbox 同套路），表单字段按模块动态填充。
+// 保存直接改内存中的 work 对象并重渲染详情页（不重新 fetch，避免丢失修改）。
+const $editModal = document.getElementById('editModal');
+const $editForm = document.getElementById('editForm');
+const $editClose = document.getElementById('editClose');
+function closeEditModal() {
+  if ($editModal) $editModal.hidden = true;
+  document.body.classList.remove('no-scroll');
+}
+if ($editClose) $editClose.addEventListener('click', closeEditModal);
+if ($editModal) $editModal.addEventListener('click', e => { if (e.target === $editModal) closeEditModal(); });
+
+const editField = (id, label, val, ph) =>
+  `<label>${label}<input id="${id}" class="field" value="${esc(val == null ? '' : val)}" placeholder="${esc(ph || '')}"></label>`;
+const editArea = (id, label, val) =>
+  `<label>${label}<textarea id="${id}" class="field" rows="4">${esc(val || '')}</textarea></label>`;
+const editSelect = (id, label, val, opts) =>
+  `<label>${label}<select id="${id}" class="field">${opts}</select></label>`;
+
+// 表单字段：覆盖详情页右栏全部信息（视频模块有类型/平台/链接/原曲，其余模块有原作原曲/原作游戏下拉）
+function buildEditFields(module, w) {
+  const fields = [
+    editField('edName', '作品名 *', w.name, '必填'),
+    editField('edCircle', '作者（社团）', w.circle, '如：IOSYS'),
+    editField('edCreator', '创作者', w.creator || '', '如：ARM'),
+    editField('edYear', '年份', w.year, '如：2024'),
+    editField('edPop', '热度（数字）', w.popularity, '如：5000'),
+    editField('edChars', '登场角色（逗号分隔）', (w.characters || []).join(', '), '如：博丽灵梦, 雾雨魔理沙'),
+    editField('edTags', '原作标签（逗号分隔）', (w.tags || []).join(', '), '如：红魔乡, 妖妖梦'),
+  ];
+  if (module === 'video') {
+    fields.push(
+      editField('edType', '视频类型', w.type, '如：PV / 手书 / MMD'),
+      editField('edPlatform', '平台', w.platform, '如：Bilibili'),
+      editField('edUrl', '视频链接', w.url, 'https://…'),
+      editField('edOrigTitle', '原曲', w.original_title || '', '如：U.N.オーエンは彼女なのか？'),
+    );
+  } else {
+    const origOpts = ['<option value="">（无）</option>', ...data.originals.map(o =>
+      `<option value="${esc(o.id)}"${o.id === w.original ? ' selected' : ''}>${esc(o.title)}</option>`)].join('');
+    const ogOpts = ['<option value="">（无）</option>', ...(data.original_games.games || []).map(g =>
+      `<option value="${esc(g.tag)}"${g.tag === w.original_game ? ' selected' : ''}>${esc(g.title)}</option>`)].join('');
+    fields.push(
+      editSelect('edOriginal', '原作原曲', w.original, origOpts),
+      editSelect('edOrigGame', '原作游戏', w.original_game, ogOpts),
+    );
+  }
+  fields.push(
+    editField('edSource', '资料来源地址', w.source_url, 'https://…'),
+    editArea('edDesc', '作品简介', w.description),
+  );
+  return fields.join('');
+}
+
+// 保存：读取表单值写回 work 对象（供提交回调与无头验证共用）
+function applyEdit(module, w) {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const split = s => s ? s.split(/[,，、\s]+/).filter(Boolean) : [];
+  w.name = val('edName') || w.name;
+  w.circle = val('edCircle') || w.circle;
+  w.creator = val('edCreator');
+  w.year = Number(val('edYear')) || w.year;
+  w.popularity = Number(val('edPop')) || 0;
+  w.characters = split(val('edChars'));
+  w.tags = split(val('edTags'));
+  w.source_url = val('edSource');
+  w.description = val('edDesc') || '（暂无简介）';
+  if (module === 'video') {
+    w.type = val('edType') || w.type;
+    w.platform = val('edPlatform') || w.platform;
+    w.url = val('edUrl') || w.url;
+    w.original_title = val('edOrigTitle');
+  } else {
+    w.original = val('edOriginal') || '';
+    w.original_game = val('edOrigGame') || '';
+  }
+}
+
+function openEditModal(module, w) {
+  if (!$editForm) return;
+  $editForm.innerHTML = buildEditFields(module, w) + `
+      <div class="add-actions">
+        <button type="button" class="btn" id="editCancel">取消</button>
+        <button class="detail-cta add-submit" type="submit">保存</button>
+      </div>`;
+  $editForm.onsubmit = e => {
+    e.preventDefault();
+    applyEdit(module, w);
+    closeEditModal();
+    renderDetail(module, String(w.id)); // 重渲染详情页展示新信息（不重新加载数据）
+  };
+  const cancel = document.getElementById('editCancel');
+  if (cancel) cancel.addEventListener('click', closeEditModal);
+  if ($editModal) $editModal.hidden = false;
+  document.body.classList.add('no-scroll');
+}
+
+// 详情页「修改介绍」按钮（事件委托）：找到对应作品后唤起编辑弹窗
+$app.addEventListener('click', e => {
+  const b = e.target && e.target.closest ? e.target.closest('.edit-btn') : null;
+  if (!b) return;
+  e.preventDefault();
+  const w = (data[b.dataset.module] || []).find(x => x.id === Number(b.dataset.id));
+  if (w) openEditModal(b.dataset.module, w);
+});
+
+// Esc 同时关弹窗（原有关 lightbox 的监听扩展）
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
+
+// 下载原图按钮的文件名：取配图 URL 的文件名部分（如 assets/works/music01.jpg → music01.jpg）
+const dlName = src => String(src || '').split('/').pop() || 'cover.jpg';
+// 按钮组：左「点击查看」（跳原网站）+ 中「收藏」+ 右「下载原图」（download 属性保存本地配图）
+const detailActions = (module, id, srcUrl, cover) => `
+        <div class="detail-actions">
+          <a class="detail-cta" href="${esc(srcUrl)}" target="_blank" rel="noopener">点击查看</a>
+          ${favBtn(module, id)}
+          <a class="detail-cta detail-cta-ghost" href="${esc(cover)}" download="${esc(dlName(cover))}">下载原图</a>
+        </div>`;
+
 const lnkCircle = c => `<a href="#/circle/${encodeURIComponent(c)}">${esc(c)}</a>`;
 const lnkChar = n => `<a href="#/character/${encodeURIComponent(n)}">${esc(n)}</a>`;
 const lnkTag = t => `<a href="#/tag/${encodeURIComponent(t)}" class="tag">${esc(t)}</a>`;
@@ -25,6 +207,12 @@ const lnkOriginal = id => {
   return o ? `<a href="#/original/${id}">${esc(o.title)}</a>` : esc(id);
 };
 const stars = p => '★'.repeat(Math.min(5, Math.round(p / 2500)));
+const lnkSource = u => {
+  if (!u) return '';
+  let host = u;
+  try { host = new URL(u).hostname; } catch (e) {}
+  return `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(host)} ↗</a>`;
+};
 
 // ===== 封面解析（Day 10：全板块统一视频卡片式配图） =====
 // 优先级：视频用自身 cover 外链；其他模块按「原作标签 → 官方原作封面」映射；
@@ -59,11 +247,13 @@ const workCard = (w, module, opts = {}) => {
   const extraRow = module === 'video'
     ? `<div class="work-meta">创作者: ${esc(w.creator)} · 平台: ${esc(w.platform)}</div>`
     : (w.creator ? `<div class="work-meta">创作者: ${esc(w.creator)}</div>` : '');
+  const cover = workCover(w, module);
   return `<div class="work-item"${attrs}>
-      <div class="card-thumb">
-        <img src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy"${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.remove()">
+      <a class="card-thumb" href="#/${module}/${w.id}" aria-label="查看 ${esc(w.name)} 详情">
+        <img src="${esc(cover)}" alt="${esc(w.name)} 封面" loading="lazy"${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.remove()">
         ${badge}
-      </div>
+        <span class="hover-pop" aria-hidden="true"><img src="${esc(cover)}" alt=""${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.parentElement.remove()"></span>
+      </a>
       <div class="card-body">
         <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
         <div class="work-meta">
@@ -121,7 +311,8 @@ function renderList(module) {
     <input id="search" class="field" placeholder="搜索作品名/作者/角色/标签…">
     ${origFilter}
     <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" class="btn">清空搜索与筛选</button></p>
-    <div class="work-list">${items}</div>`;
+    <div class="work-list${module === 'music' ? ' work-list-music' : ''}">${items}</div>
+    ${fabBtn(module)}`;
 
   // 统一过滤：搜索词 AND 原曲筛选同时生效（PRD 通用规则），无结果时显示空状态
   const applyFilter = () => {
@@ -151,10 +342,11 @@ function renderVideoList() {
   const items = data.video.map(w => {
     const search = [w.name, w.circle, w.creator, w.type, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase();
     return `<div class="video-card" data-search="${esc(search)}">
-      <div class="video-thumb">
+      <a class="video-thumb" href="#/video/${w.id}" aria-label="查看 ${esc(w.name)} 详情">
         <img src="${esc(w.cover)}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
         <span class="video-type">${esc(w.type)}</span>
-      </div>
+        <span class="hover-pop" aria-hidden="true"><img src="${esc(w.cover)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></span>
+      </a>
       <div class="video-body">
         <h3><a href="#/video/${w.id}">${esc(w.name)}</a></h3>
         <div class="work-meta">
@@ -173,7 +365,8 @@ function renderVideoList() {
     <h2>同人视频</h2>
     <input id="search" class="field" placeholder="搜索视频名/作者/创作者/角色/标签…">
     <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" class="btn">清空搜索</button></p>
-    <div class="video-grid">${items}</div>`;
+    <div class="video-grid">${items}</div>
+    ${fabBtn('video')}`;
 
   const applyFilter = () => {
     const q = document.getElementById('search').value.toLowerCase();
@@ -189,6 +382,67 @@ function renderVideoList() {
   document.getElementById('clearBtn').addEventListener('click', () => {
     document.getElementById('search').value = '';
     applyFilter();
+  });
+}
+
+// ===== 添加作品：右下角浮动按钮（FAB）+ 上传表单（Day 10 新增） =====
+const fabBtn = module => `
+  <a class="fab-add" href="#/${module}/add" aria-label="添加作品" title="添加作品">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    <span class="fab-tip">点击上传作品</span>
+  </a>`;
+
+function renderAddForm(module) {
+  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const videoFields = module === 'video' ? `
+      <label>视频类型<input id="addType" class="field" placeholder="如：PV / 手书 / MMD"></label>
+      <label>平台<input id="addPlatform" class="field" placeholder="如：Bilibili"></label>
+      <label>视频链接<input id="addUrl" class="field" placeholder="https://…"></label>` : '';
+  $app.innerHTML = `
+    <h2>添加作品 · ${labels[module]}</h2>
+    <p class="work-meta">填写完成后点击右下方「上传」按钮，作品将以同列表一致的卡片形式加入${labels[module]}板块。</p>
+    <form id="addForm" class="add-form">
+      <label>作品名 *<input id="addName" class="field" required placeholder="必填"></label>
+      <label>作者（社团）<input id="addCircle" class="field" placeholder="如：IOSYS"></label>
+      <label>创作者<input id="addCreator" class="field" placeholder="如：ARM"></label>
+      <label>年份<input id="addYear" class="field" type="number" placeholder="如：2024"></label>
+      <label>登场角色（逗号分隔）<input id="addChars" class="field" placeholder="如：博丽灵梦, 雾雨魔理沙"></label>
+      <label>原作标签（逗号分隔）<input id="addTags" class="field" placeholder="如：红魔乡, 妖妖梦"></label>
+      <label>热度（数字）<input id="addPop" class="field" type="number" placeholder="如：5000"></label>
+      <label>封面图地址<input id="addCover" class="field" placeholder="https://… 留空则按原作标签匹配封面"></label>
+      <label>资料来源地址<input id="addSource" class="field" placeholder="https://…"></label>
+      ${videoFields}
+      <label>作品简介<textarea id="addDesc" class="field" rows="4" placeholder="一两句话介绍这部作品"></textarea></label>
+      <div class="add-actions">
+        <a class="btn" href="#/${module}">取消</a>
+        <button class="detail-cta add-submit" type="submit">上传</button>
+      </div>
+    </form>`;
+  document.getElementById('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const val = id => (document.getElementById(id).value || '').trim();
+    if (!val('addName')) return;
+    const split = s => s ? s.split(/[,，、\s]+/).filter(Boolean) : [];
+    const w = {
+      id: Math.max(0, ...data[module].map(x => x.id)) + 1,
+      name: val('addName'),
+      circle: val('addCircle') || '未知作者',
+      creator: val('addCreator'),
+      year: Number(val('addYear')) || new Date().getFullYear(),
+      characters: split(val('addChars')),
+      tags: split(val('addTags')),
+      popularity: Number(val('addPop')) || 0,
+      cover: val('addCover'),
+      source_url: val('addSource'),
+      description: val('addDesc') || '（暂无简介）',
+    };
+    if (module === 'video') {
+      w.type = val('addType') || '视频';
+      w.platform = val('addPlatform') || 'Bilibili';
+      w.url = val('addUrl') || w.source_url || '#';
+    }
+    data[module].push(w);
+    location.hash = `#/${module}`;
   });
 }
 
@@ -365,16 +619,25 @@ function renderDetail(module, id) {
   const creatorRow = w.creator ? `<div class="work-meta">创作者: ${esc(w.creator)}</div>` : '';
   $app.innerHTML = `
     <h2>${esc(w.name)}</h2>
-    <div class="video-thumb" style="max-width:520px;margin:16px 0;">
-      <img src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+    <div class="detail-layout">
+      <div class="detail-media">
+        <div class="video-thumb" style="margin:0;max-width:100%;">
+          <img class="zoomable" src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+        </div>
+        <p class="zoom-hint">点击配图查看大图</p>
+        ${detailActions(module, w.id, w.source_url, workCover(w, module))}
+      </div>
+      <div class="detail-info">
+        <div class="work-meta">作者: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
+        ${creatorRow}
+        ${origRow}${gameRow}
+        <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
+        <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}</div>
+        <p style="margin-top:0;">${esc(w.description)}</p>
+        <p>资料来源: ${lnkSource(w.source_url)}</p>
+        <button class="btn edit-btn" type="button" data-module="${esc(module)}" data-id="${esc(w.id)}">✎ 修改介绍</button>
+      </div>
     </div>
-    <div class="work-meta">作者: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
-    ${creatorRow}
-    ${origRow}${gameRow}
-    <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
-    <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}</div>
-    <p style="margin-top:16px;">${esc(w.description)}</p>
-    <p><a href="${w.source_url}" target="_blank">资料来源 ↗</a></p>
     <p><a href="#/${module}">← 返回${esc(module)}</a> · <a href="#/">首页</a></p>`;
 }
 
@@ -383,19 +646,43 @@ function renderVideoDetail(w) {
   const origRow = w.original_title ? `<div class="work-meta">原曲: ${esc(w.original_title)}</div>` : '';
   $app.innerHTML = `
     <h2>${esc(w.name)}</h2>
-    <div class="video-thumb" style="max-width:520px;margin:16px 0;">
-      <img src="${esc(w.cover)}" alt="${esc(w.name)} 封面" referrerpolicy="no-referrer" onerror="this.remove()">
-      <span class="video-type">${esc(w.type)}</span>
+    <div class="detail-layout">
+      <div class="detail-media">
+        <div class="video-thumb" style="margin:0;max-width:100%;">
+          <img class="zoomable" src="${esc(w.cover)}" alt="${esc(w.name)} 封面" referrerpolicy="no-referrer" onerror="this.remove()">
+          <span class="video-type">${esc(w.type)}</span>
+        </div>
+        <p class="zoom-hint">点击配图查看大图</p>
+        ${detailActions('video', w.id, w.source_url, w.cover)}
+      </div>
+      <div class="detail-info">
+        <div class="work-meta">作者: ${lnkCircle(w.circle)} · 创作者: ${esc(w.creator)} · ${w.year}</div>
+        <div class="work-meta">平台: ${esc(w.platform)}${w.bvid ? ` · <a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(w.bvid)}</a>` : ''} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
+        ${origRow}
+        <div class="work-meta">角色: ${(w.characters||[]).map(lnkChar).join(', ')}</div>
+        ${(w.tags||[]).length ? `<div class="work-meta">原作: ${w.tags.map(lnkTag).join(' ')}</div>` : ''}
+        <p style="margin-top:0;">${esc(w.description)}</p>
+        <p><a href="${esc(w.url)}" target="_blank" rel="noopener">▶ 前往 ${esc(w.platform)} 观看 ↗</a></p>
+        <p>资料来源: ${lnkSource(w.source_url)}</p>
+        <button class="btn edit-btn" type="button" data-module="video" data-id="${esc(w.id)}">✎ 修改介绍</button>
+      </div>
     </div>
-    <div class="work-meta">作者: ${lnkCircle(w.circle)} · 创作者: ${esc(w.creator)} · ${w.year}</div>
-    <div class="work-meta">平台: ${esc(w.platform)}${w.bvid ? ` · <a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(w.bvid)}</a>` : ''} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
-    ${origRow}
-    <div class="work-meta">角色: ${(w.characters||[]).map(lnkChar).join(', ')}</div>
-    ${(w.tags||[]).length ? `<div class="work-meta">原作: ${w.tags.map(lnkTag).join(' ')}</div>` : ''}
-    <p style="margin-top:16px;">${esc(w.description)}</p>
-    <p><a href="${esc(w.url)}" target="_blank" rel="noopener">▶ 前往 ${esc(w.platform)} 观看 ↗</a></p>
-    <p><a href="${esc(w.source_url)}" target="_blank" rel="noopener">资料来源 ↗</a></p>
     <p><a href="#/video">← 返回同人视频</a> · <a href="#/">首页</a></p>`;
+}
+
+// ===== 我的收藏页：跨模块聚合所有收藏作品（Day 10 新增） =====
+// 数据被移除/刷新丢失的作品自动跳过，不会出现死卡片。
+function renderFavs() {
+  const cards = favs.map(f => {
+    const w = (data[f.module] || []).find(x => x.id === f.id);
+    return w ? workCard(w, f.module) : '';
+  }).filter(Boolean).join('');
+  $app.innerHTML = `
+    <h2>我的收藏 (${favs.length})</h2>
+    ${cards
+      ? `<div class="work-list">${cards}</div>`
+      : '<p class="empty-state">还没有收藏任何作品<br>打开任意作品详情页，点击「收藏」按钮即可加入这里</p>'}
+    <p><a href="#/">← 返回首页</a></p>`;
 }
 
 // ===== 路由 =====
@@ -424,7 +711,9 @@ async function route() {
   if (p[0] === 'original') {
     return p[1] ? renderOriginalGame(decodeURIComponent(p[1])) : renderOriginals();
   }
+  if (p[0] === 'fav') return renderFavs();
   if (['music','doujin','game','video','art'].includes(p[0])) {
+    if (p[1] === 'add') return renderAddForm(p[0]);
     return p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
   }
   if (['character','circle','tag'].includes(p[0])) {
