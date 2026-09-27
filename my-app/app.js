@@ -67,7 +67,7 @@ const workCard = (w, module, opts = {}) => {
       <div class="card-body">
         <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
         <div class="work-meta">
-          <span>社团: ${lnkCircle(w.circle)}</span>
+          <span>作者: ${lnkCircle(w.circle)}</span>
           <span>${w.year}</span>
           <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
         </div>
@@ -118,7 +118,7 @@ function renderList(module) {
 
   $app.innerHTML = `
     <h2>${labels[module]}</h2>
-    <input id="search" class="field" placeholder="搜索作品名/社团/角色/标签…">
+    <input id="search" class="field" placeholder="搜索作品名/作者/角色/标签…">
     ${origFilter}
     <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" class="btn">清空搜索与筛选</button></p>
     <div class="work-list">${items}</div>`;
@@ -158,7 +158,7 @@ function renderVideoList() {
       <div class="video-body">
         <h3><a href="#/video/${w.id}">${esc(w.name)}</a></h3>
         <div class="work-meta">
-          <span>社团: ${lnkCircle(w.circle)}</span>
+          <span>作者: ${lnkCircle(w.circle)}</span>
           <span>${w.year}</span>
           <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
         </div>
@@ -171,7 +171,7 @@ function renderVideoList() {
 
   $app.innerHTML = `
     <h2>同人视频</h2>
-    <input id="search" class="field" placeholder="搜索视频名/社团/创作者/角色/标签…">
+    <input id="search" class="field" placeholder="搜索视频名/作者/创作者/角色/标签…">
     <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" class="btn">清空搜索</button></p>
     <div class="video-grid">${items}</div>`;
 
@@ -333,9 +333,10 @@ function renderSearch(q) {
   $app.innerHTML = `<h2>全站搜索：${esc(q)}（${total} 条）</h2>${blocks}<p><a href="#/">← 返回首页</a></p>`;
 }
 
-// ===== 反查（角色 / 社团 / 标签） =====
+// ===== 反查（角色 / 作者 / 标签） =====
 function renderReverse(kind, val) {
   const fieldMap = { character: 'characters', circle: 'circle', tag: 'tags' };
+  const labelMap = { character: '角色', circle: '作者', tag: '原作' };
   const field = fieldMap[kind];
   const groups = ['music','doujin','game','video','art'].map(m => {
     const items = (data[m]||[]).filter(w => {
@@ -351,7 +352,7 @@ function renderReverse(kind, val) {
       <h2>${esc(g.m)} (${g.items.length})</h2>
       ${g.items.map(w => workCard(w, g.m)).join('')}
     </div>`).join('');
-  $app.innerHTML = `<h2>${esc(kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><p><a href="#/">← 返回首页</a></p>`;
+  $app.innerHTML = `<h2>${esc(labelMap[kind] || kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><p><a href="#/">← 返回首页</a></p>`;
 }
 
 // ===== 详情页 =====
@@ -367,7 +368,7 @@ function renderDetail(module, id) {
     <div class="video-thumb" style="max-width:520px;margin:16px 0;">
       <img src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
     </div>
-    <div class="work-meta">社团: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
+    <div class="work-meta">作者: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
     ${creatorRow}
     ${origRow}${gameRow}
     <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
@@ -386,7 +387,7 @@ function renderVideoDetail(w) {
       <img src="${esc(w.cover)}" alt="${esc(w.name)} 封面" referrerpolicy="no-referrer" onerror="this.remove()">
       <span class="video-type">${esc(w.type)}</span>
     </div>
-    <div class="work-meta">社团: ${lnkCircle(w.circle)} · 创作者: ${esc(w.creator)} · ${w.year}</div>
+    <div class="work-meta">作者: ${lnkCircle(w.circle)} · 创作者: ${esc(w.creator)} · ${w.year}</div>
     <div class="work-meta">平台: ${esc(w.platform)}${w.bvid ? ` · <a href="${esc(w.url)}" target="_blank" rel="noopener">${esc(w.bvid)}</a>` : ''} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
     ${origRow}
     <div class="work-meta">角色: ${(w.characters||[]).map(lnkChar).join(', ')}</div>
