@@ -1,17 +1,17 @@
 // ===== 数据加载（一次 fetch + Promise.all） =====
 // cache: 'no-cache' —— python http.server 不发 Cache-Control，浏览器会启发式缓存 JSON，
 // 导致改了数据却看不到更新。强制回源校验，始终拿最新数据。
-let data = { music: [], doujin: [], game: [], video: [], originals: [] };
+let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] } };
 async function loadData() {
-  const [m, d, g, v, o] = await Promise.all(
-    ['music','doujin','game','video','originals'].map(k =>
+  const [m, d, g, v, a, o, og] = await Promise.all(
+    ['music','doujin','game','video','art','originals','original_games'].map(k =>
       fetch(`data/${k}.json`, { cache: 'no-cache' })
         .then(r => {
           if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
           return r.json();
         }))
   );
-  data = { music: m, doujin: d, game: g, video: v, originals: o };
+  data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og };
 }
 
 // ===== 通用 =====
@@ -26,6 +26,26 @@ const lnkOriginal = id => {
 };
 const stars = p => '★'.repeat(Math.min(5, Math.round(p / 2500)));
 
+// ===== 封面解析（Day 10：全板块统一视频卡片式配图） =====
+// 优先级：视频用自身 cover 外链；其他模块按「原作标签 → 官方原作封面」映射；
+// 都没有时回退到各板块占位图，保证卡片永远有图。
+const moduleFallback = {
+  music: 'assets/modules/module-music.webp',
+  doujin: 'assets/modules/module-doujin.jpg',
+  game: 'assets/modules/module-game2.jpg',
+  video: 'assets/modules/module-video2.jpg',
+  art: 'assets/modules/module-art.jpg',
+};
+const tagCover = t => {
+  const g = (data.original_games.games || []).find(x => x.tag === t);
+  return g ? g.cover : '';
+};
+const workCover = (w, module) => {
+  if (module === 'video' && w.cover) return w.cover;
+  const hit = (w.tags || []).map(tagCover).filter(Boolean)[0];
+  return hit || moduleFallback[module] || moduleFallback.video;
+};
+
 // ===== 可复用组件：作品卡片（Day 8 余力加练） =====
 // 模块列表页与反查页共用同一张卡片，两处展示天然一致。
 // opts.search 传搜索串时附带 data-search / data-original 属性（列表页的搜索/原曲筛选依赖它们）；
@@ -35,39 +55,52 @@ const workCard = (w, module, opts = {}) => {
     ? ` data-search="${esc(opts.search)}" data-original="${esc(w.original || '')}"`
     : '';
   const origLink = w.original ? `<br>原曲: ${lnkOriginal(w.original)}` : '';
+  const badge = module === 'video' && w.type ? `<span class="card-badge">${esc(w.type)}</span>` : '';
+  const extraRow = module === 'video'
+    ? `<div class="work-meta">创作者: ${esc(w.creator)} · 平台: ${esc(w.platform)}</div>`
+    : (w.creator ? `<div class="work-meta">创作者: ${esc(w.creator)}</div>` : '');
   return `<div class="work-item"${attrs}>
-      <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
-      <div class="work-meta">
-        <span>社团: ${lnkCircle(w.circle)}</span>
-        <span>${w.year}</span>
-        <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
+      <div class="card-thumb">
+        <img src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy"${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.remove()">
+        ${badge}
       </div>
-      <div class="work-meta">角色: ${(w.characters || []).map(lnkChar).join(', ')}</div>
-      <div class="work-meta">原作: ${(w.tags || []).map(lnkTag).join(' ')}${origLink}</div>
+      <div class="card-body">
+        <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
+        <div class="work-meta">
+          <span>社团: ${lnkCircle(w.circle)}</span>
+          <span>${w.year}</span>
+          <span class="popularity" title="${w.popularity}">${stars(w.popularity)}</span>
+        </div>
+        ${extraRow}
+        <div class="work-meta">角色: ${(w.characters || []).map(lnkChar).join(', ')}</div>
+        ${(w.tags || []).length || origLink ? `<div class="work-meta">原作: ${(w.tags || []).map(lnkTag).join(' ')}${origLink}</div>` : ''}
+      </div>
     </div>`;
 };
 
 // ===== 首页 =====
 function renderHome() {
-  const { music, doujin, game, video, originals } = data;
+  const { music, doujin, game, video, art } = data;
+  const origWorks = [...new Set([...music, ...doujin, ...game, ...video, ...art].flatMap(w => w.tags || []))];
   $app.innerHTML = `
     <h2>按分类查询</h2>
     <div class="module-grid">
-      <a class="module-card" href="#/music"><h2>同人音乐</h2><p>${music.length} 张精选专辑</p></a>
-      <a class="module-card" href="#/doujin"><h2>同人漫画</h2><p>${doujin.length} 本漫画</p></a>
-      <a class="module-card" href="#/game"><h2>同人游戏</h2><p>${game.length} 个游戏</p></a>
-      <a class="module-card" href="#/video"><h2>同人视频</h2><p>${video.length} 个视频</p></a>
+      <a class="module-card" href="#/music"><div class="module-thumb"><img src="assets/modules/module-music.webp" alt="同人音乐" loading="lazy" onerror="this.parentElement.remove()"></div><h2>同人音乐</h2><p>${music.length} 张精选专辑</p></a>
+      <a class="module-card" href="#/doujin"><div class="module-thumb"><img src="assets/modules/module-doujin.jpg" alt="同人漫画" loading="lazy" onerror="this.parentElement.remove()"></div><h2>同人漫画</h2><p>${doujin.length} 本漫画</p></a>
+      <a class="module-card" href="#/game"><div class="module-thumb"><img src="assets/modules/module-game2.jpg" alt="同人游戏" loading="lazy" onerror="this.parentElement.remove()"></div><h2>同人游戏</h2><p>${game.length} 个游戏</p></a>
+      <a class="module-card" href="#/video"><div class="module-thumb"><img src="assets/modules/module-video2.jpg" alt="同人视频" loading="lazy" onerror="this.parentElement.remove()"></div><h2>同人视频</h2><p>${video.length} 个视频</p></a>
+      <a class="module-card" href="#/art"><div class="module-thumb"><img src="assets/modules/module-art.jpg" alt="同人图" loading="lazy" onerror="this.parentElement.remove()"></div><h2>同人图</h2><p>${art.length} 张精选同人图</p></a>
     </div>
-    <h2 class="section-title">反查入口</h2>
+    <h2 class="section-title">按原作查询</h2>
     <div class="module-grid">
-      <a class="module-card" href="#/original"><h2>ZUN 原曲</h2><p>${originals.length} 首原曲</p></a>
+      <a class="module-card" href="#/original"><div class="module-thumb"><img src="assets/modules/module-original.jpg" alt="原作" loading="lazy" onerror="this.parentElement.remove()"></div><h2>原作</h2><p>${data.original_games.games.length} 部官方原作</p></a>
     </div>`;
 }
 
 // ===== 模块列表（共用渲染，支持搜索 + 原曲筛选） =====
 function renderList(module) {
   if (module === 'video') return renderVideoList();
-  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏' };
+  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', art: '同人图' };
   const items = data[module].map(w => {
     const search = [w.name, w.circle, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase();
     return workCard(w, module, { search });
@@ -159,38 +192,152 @@ function renderVideoList() {
   });
 }
 
-// ===== ZUN 原曲列表（含反向引用数） =====
+// ===== 原作板块：全部官方原作按「旧作/新作/格斗作/外传」分组 =====
+function ogCard(g) {
+  return `<a class="og-card" href="#/original/${g.id}">
+    <div class="og-cover-wrap">
+      <img src="${esc(g.cover)}" alt="${esc(g.title)} 封面" loading="lazy" onerror="this.parentElement.style.display='none'">
+      <span class="og-th">${esc(g.th)}</span>
+    </div>
+    <div class="og-info">
+      <h4>${esc(g.title)}</h4>
+      <p class="og-sub">${esc(g.subtitle)}</p>
+      <p class="og-year">${g.year}</p>
+    </div>
+  </a>`;
+}
+
 function renderOriginals() {
-  const items = data.originals.map(o => {
-    const refs = [];
-    ['music','doujin','game','video'].forEach(m => {
-      (data[m]||[]).forEach(w => {
-        if (w.original === o.id || (w.tags||[]).includes(o.game)) {
-          refs.push({ module: m, work: w });
-        }
-      });
-    });
-    const refBlocks = refs.length ? refs.map(r => `
-      <div class="work-item">
-        <h3><a href="#/${r.module}/${r.work.id}">${esc(r.work.name)}</a></h3>
-        <div class="work-meta">社团: ${lnkCircle(r.work.circle)} · ${r.module}</div>
-      </div>`).join('') : '<p class="empty-state">暂无引用此曲的同人作品</p>';
-    return `<div class="work-item">
-      <h3>${esc(o.title)}</h3>
-      <div class="work-meta">游戏: ${lnkTag(o.game)} · 第 ${o.track_no} 轨 · ID: ${esc(o.id)}</div>
-      <div class="work-meta">${esc(o.description)}</div>
-      <div class="work-meta">被引用: ${refs.length} 次</div>
-      ${refBlocks}
-    </div>`;
+  const cats = data.original_games.categories;
+  const groups = cats.map(c => {
+    const list = data.original_games.games.filter(g => g.category === c.id);
+    return `<section class="og-group" data-cat="${c.id}">
+      <h3>${esc(c.label)} (${list.length} 部)</h3>
+      <div class="og-grid">${list.map(ogCard).join('')}</div>
+    </section>`;
   }).join('');
-  $app.innerHTML = `<h2>ZUN 原曲库</h2><div class="work-list">${items}</div>`;
+
+  $app.innerHTML = `
+    <h2>官方原作</h2>
+    <div class="og-tabs">
+      ${cats.map(c => `<button class="og-tab" data-tab="${c.id}">${esc(c.label)}</button>`).join('')}
+    </div>
+    <div class="og-panels">${groups}</div>`;
+
+  const tabs = document.querySelectorAll('.og-tab');
+  const panels = document.querySelectorAll('.og-group');
+  const switchTab = id => {
+    tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    panels.forEach(p => p.classList.toggle('hidden', p.dataset.cat !== id));
+  };
+  tabs.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  switchTab(cats[0]?.id || 'old');
+}
+
+// ===== 单个原作详情页：封面 + Th 标注 + 人物/原曲标签页 + 同人作品 =====
+function renderOriginalGame(id) {
+  const g = data.original_games.games.find(x => x.id === id);
+  if (!g) {
+    $app.innerHTML = `<p class="empty-state">未找到该原作</p><p><a href="#/original">← 返回原作列表</a></p>`;
+    return;
+  }
+
+  // 按 tag 匹配该原作下的同人作品
+  const worksByModule = {};
+  ['music','doujin','game','video','art'].forEach(m => {
+    (data[m] || []).forEach(w => {
+      if ((w.tags || []).includes(g.tag) || w.original_game === g.tag) {
+        (worksByModule[m] ||= []).push(w);
+      }
+    });
+  });
+  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const workBlocks = Object.keys(worksByModule).map(m => `
+    <div class="group-block">
+      <h3>${labels[m]} (${worksByModule[m].length})</h3>
+      ${worksByModule[m].map(w => workCard(w, m)).join('')}
+    </div>`).join('');
+
+  $app.innerHTML = `
+    <div class="og-detail-header">
+      <div class="og-detail-cover-wrap">
+        <img class="og-detail-cover" src="${esc(g.cover)}" alt="${esc(g.title)} 封面" onerror="this.remove()">
+        <span class="og-th">${esc(g.th)}</span>
+      </div>
+      <div class="og-detail-meta">
+        <h2>${esc(g.title)}</h2>
+        <p class="og-sub">${esc(g.subtitle)}</p>
+        <p class="og-year">${g.year} · ${esc(data.original_games.categories.find(c => c.id === g.category)?.label || '')}</p>
+      </div>
+    </div>
+    <div class="og-tabs">
+      <button class="og-tab active" data-tab="chars">人物标签</button>
+      <button class="og-tab" data-tab="music">原曲标签</button>
+    </div>
+    <div class="og-panel" data-panel="chars"><p class="empty-state">人物标签内容待补充…</p></div>
+    <div class="og-panel hidden" data-panel="music"><p class="empty-state">原曲标签内容待补充…</p></div>
+    <h3 class="og-section-title">该原作下的同人作品</h3>
+    ${workBlocks || '<p class="empty-state">暂无同人作品数据</p>'}
+    <p><a href="#/original">← 返回原作列表</a></p>`;
+
+  const tabs = document.querySelectorAll('.og-tab');
+  const panels = document.querySelectorAll('.og-panel');
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    tabs.forEach(b => b.classList.remove('active'));
+    tab.classList.add('active');
+    panels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== t));
+  }));
+}
+
+// ===== 全站搜索（Day 10：顶栏搜索框 → #/search/<词> 分组结果页） =====
+function renderSearch(q) {
+  const gs = document.getElementById('globalSearch');
+  if (gs && (gs.value || '') !== q) gs.value = q;
+  if (!q) { $app.innerHTML = '<p class="empty-state">输入关键词开始全站搜索</p>'; return; }
+  const ql = q.toLowerCase();
+  const matchWork = w => [w.name, w.circle, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase().includes(ql);
+  const matchVideo = w => [w.name, w.circle, w.creator, w.type, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase().includes(ql);
+  const groups = [
+    { m: 'music',    label: '同人音乐', items: data.music.filter(matchWork) },
+    { m: 'doujin',   label: '同人漫画', items: data.doujin.filter(matchWork) },
+    { m: 'game',     label: '同人游戏', items: data.game.filter(matchWork) },
+    { m: 'video',    label: '同人视频', items: data.video.filter(matchVideo) },
+    { m: 'art',      label: '同人图',   items: data.art.filter(matchWork) },
+    { m: 'original', label: '原作', items: [...new Set([...data.music, ...data.doujin, ...data.game, ...data.video, ...data.art].flatMap(w => w.tags || []))].filter(t => t.toLowerCase().includes(ql)) },
+  ];
+  const total = groups.reduce((s, g) => s + g.items.length, 0);
+  if (!total) {
+    $app.innerHTML = `<p class="empty-state">全站搜索「${esc(q)}」无匹配结果 —— 换个关键词试试<br><button id="clearBtn" class="btn">清空搜索</button></p>`;
+    const b = document.getElementById('clearBtn');
+    b.addEventListener('click', () => { location.hash = '#/'; });
+    return;
+  }
+  const blocks = groups.filter(g => g.items.length).map(g => `
+    <div class="group-block">
+      <h2>${esc(g.label)} (${g.items.length})</h2>
+      <div class="work-list">${g.items.map(w => {
+        if (g.m === 'original') {
+          const cov = tagCover(w) || moduleFallback.video;
+          return `<div class="work-item">
+          <div class="card-thumb"><img src="${esc(cov)}" alt="${esc(w)} 封面" loading="lazy" onerror="this.remove()"></div>
+          <div class="card-body">
+            <h3><a href="#/original">${esc(w)}</a></h3>
+            <div class="work-meta">原作游戏 · 点击查看该原作下的同人作品</div>
+          </div>
+        </div>`;
+        }
+        return workCard(w, g.m);
+      }).join('')}</div>
+    </div>`).join('');
+  $app.innerHTML = `<h2>全站搜索：${esc(q)}（${total} 条）</h2>${blocks}<p><a href="#/">← 返回首页</a></p>`;
 }
 
 // ===== 反查（角色 / 社团 / 标签） =====
 function renderReverse(kind, val) {
   const fieldMap = { character: 'characters', circle: 'circle', tag: 'tags' };
   const field = fieldMap[kind];
-  const groups = ['music','doujin','game','video'].map(m => {
+  const groups = ['music','doujin','game','video','art'].map(m => {
     const items = (data[m]||[]).filter(w => {
       if (Array.isArray(w[field])) return w[field].includes(val);
       return w[field] === val;
@@ -214,9 +361,14 @@ function renderDetail(module, id) {
   if (module === 'video') return renderVideoDetail(w);
   const origRow = w.original ? `<div class="work-meta">原作原曲: ${lnkOriginal(w.original)}</div>` : '';
   const gameRow = w.original_game ? `<div class="work-meta">原作游戏: ${lnkTag(w.original_game)}</div>` : '';
+  const creatorRow = w.creator ? `<div class="work-meta">创作者: ${esc(w.creator)}</div>` : '';
   $app.innerHTML = `
     <h2>${esc(w.name)}</h2>
+    <div class="video-thumb" style="max-width:520px;margin:16px 0;">
+      <img src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+    </div>
     <div class="work-meta">社团: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
+    ${creatorRow}
     ${origRow}${gameRow}
     <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
     <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}</div>
@@ -262,17 +414,39 @@ async function route() {
   }
   const h = location.hash.slice(1) || '/';
   const p = h.split('/').filter(Boolean);
+  // 首页才显示背景图，子页面保持干净白底
+  if (document.body && document.body.classList) document.body.classList.toggle('home-bg', !p.length);
+  // 离开搜索页时清空顶栏搜索框（renderSearch 内部负责同步成搜索词）
+  const gs = document.getElementById('globalSearch');
+  if (gs && p[0] !== 'search') gs.value = '';
   if (!p.length) return renderHome();
-  if (p[0] === 'original') return renderOriginals();
-  if (['music','doujin','game','video'].includes(p[0])) {
+  if (p[0] === 'original') {
+    return p[1] ? renderOriginalGame(decodeURIComponent(p[1])) : renderOriginals();
+  }
+  if (['music','doujin','game','video','art'].includes(p[0])) {
     return p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
   }
   if (['character','circle','tag'].includes(p[0])) {
     const val = decodeURIComponent(p.slice(1).join('/'));
     return renderReverse(p[0], val);
   }
+  if (p[0] === 'search') {
+    const val = decodeURIComponent(p.slice(1).join('/')).trim();
+    return renderSearch(val);
+  }
   $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>';
 }
+
+// 顶栏全站搜索：输入防抖 300ms 跳转结果页；清空回首页
+let searchTimer;
+document.getElementById('globalSearch').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const q = e.target.value.trim();
+    const target = q ? `#/search/${encodeURIComponent(q)}` : '#/';
+    if (location.hash !== target) location.hash = target;
+  }, 300);
+});
 
 window.addEventListener('hashchange', route);
 route();

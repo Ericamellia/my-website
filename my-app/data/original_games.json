@@ -1,0 +1,332 @@
+{
+  "categories": [
+    {
+      "id": "old",
+      "label": "旧作"
+    },
+    {
+      "id": "new",
+      "label": "新作"
+    },
+    {
+      "id": "fight",
+      "label": "格斗作"
+    },
+    {
+      "id": "spin",
+      "label": "外传"
+    }
+  ],
+  "games": [
+    {
+      "id": "th01",
+      "th": "Th01",
+      "title": "东方灵异传",
+      "subtitle": "Highly Responsive to Prayers",
+      "category": "old",
+      "year": 1996,
+      "cover": "assets/covers/th01.jpg",
+      "tag": "灵异传"
+    },
+    {
+      "id": "th02",
+      "th": "Th02",
+      "title": "东方封魔录",
+      "subtitle": "the Story of Eastern Wonderland",
+      "category": "old",
+      "year": 1997,
+      "cover": "assets/covers/th02.jpg",
+      "tag": "封魔录"
+    },
+    {
+      "id": "th03",
+      "th": "Th03",
+      "title": "东方梦时空",
+      "subtitle": "Phantasmagoria of Dim. Dream",
+      "category": "old",
+      "year": 1997,
+      "cover": "assets/covers/th03.jpg",
+      "tag": "梦时空"
+    },
+    {
+      "id": "th04",
+      "th": "Th04",
+      "title": "东方幻想乡",
+      "subtitle": "Lotus Land Story",
+      "category": "old",
+      "year": 1998,
+      "cover": "assets/covers/th04.jpg",
+      "tag": "幻想乡"
+    },
+    {
+      "id": "th05",
+      "th": "Th05",
+      "title": "东方怪绮谈",
+      "subtitle": "Mystic Square",
+      "category": "old",
+      "year": 1998,
+      "cover": "assets/covers/th05.jpg",
+      "tag": "怪绮谈"
+    },
+    {
+      "id": "th06",
+      "th": "Th06",
+      "title": "东方红魔乡",
+      "subtitle": "the Embodiment of Scarlet Devil",
+      "category": "new",
+      "year": 2002,
+      "cover": "assets/covers/th06.jpg",
+      "tag": "红魔乡"
+    },
+    {
+      "id": "th07",
+      "th": "Th07",
+      "title": "东方妖妖梦",
+      "subtitle": "Perfect Cherry Blossom",
+      "category": "new",
+      "year": 2003,
+      "cover": "assets/covers/th07.jpg",
+      "tag": "妖妖梦"
+    },
+    {
+      "id": "th08",
+      "th": "Th08",
+      "title": "东方永夜抄",
+      "subtitle": "Imperishable Night",
+      "category": "new",
+      "year": 2004,
+      "cover": "assets/covers/th08.jpg",
+      "tag": "永夜抄"
+    },
+    {
+      "id": "th09",
+      "th": "Th09",
+      "title": "东方花映塚",
+      "subtitle": "Phantasmagoria of Flower View",
+      "category": "new",
+      "year": 2005,
+      "cover": "assets/covers/th09.jpg",
+      "tag": "花映塚"
+    },
+    {
+      "id": "th10",
+      "th": "Th10",
+      "title": "东方风神录",
+      "subtitle": "Mountain of Faith",
+      "category": "new",
+      "year": 2007,
+      "cover": "assets/covers/th10.jpg",
+      "tag": "风神录"
+    },
+    {
+      "id": "th11",
+      "th": "Th11",
+      "title": "东方地灵殿",
+      "subtitle": "Subterranean Animism",
+      "category": "new",
+      "year": 2008,
+      "cover": "assets/covers/th11.jpg",
+      "tag": "地灵殿"
+    },
+    {
+      "id": "th12",
+      "th": "Th12",
+      "title": "东方星莲船",
+      "subtitle": "Undefined Fantastic Object",
+      "category": "new",
+      "year": 2009,
+      "cover": "assets/covers/th12.jpg",
+      "tag": "星莲船"
+    },
+    {
+      "id": "th13",
+      "th": "Th13",
+      "title": "东方神灵庙",
+      "subtitle": "Ten Desires",
+      "category": "new",
+      "year": 2011,
+      "cover": "assets/covers/th13.jpg",
+      "tag": "神灵庙"
+    },
+    {
+      "id": "th14",
+      "th": "Th14",
+      "title": "东方辉针城",
+      "subtitle": "Double Dealing Character",
+      "category": "new",
+      "year": 2013,
+      "cover": "assets/covers/th14.jpg",
+      "tag": "辉针城"
+    },
+    {
+      "id": "th15",
+      "th": "Th15",
+      "title": "东方绀珠传",
+      "subtitle": "Legacy of Lunatic Kingdom",
+      "category": "new",
+      "year": 2015,
+      "cover": "assets/covers/th15.jpg",
+      "tag": "绀珠传"
+    },
+    {
+      "id": "th16",
+      "th": "Th16",
+      "title": "东方天空璋",
+      "subtitle": "Hidden Star in Four Seasons",
+      "category": "new",
+      "year": 2017,
+      "cover": "assets/covers/th16.jpg",
+      "tag": "天空璋"
+    },
+    {
+      "id": "th17",
+      "th": "Th17",
+      "title": "东方鬼形兽",
+      "subtitle": "Wily Beast and Weakest Creature",
+      "category": "new",
+      "year": 2019,
+      "cover": "assets/covers/th17.jpg",
+      "tag": "鬼形兽"
+    },
+    {
+      "id": "th18",
+      "th": "Th18",
+      "title": "东方虹龙洞",
+      "subtitle": "Unconnected Marketeers",
+      "category": "new",
+      "year": 2021,
+      "cover": "assets/covers/th18.jpg",
+      "tag": "虹龙洞"
+    },
+    {
+      "id": "th19",
+      "th": "Th19",
+      "title": "东方兽王园",
+      "subtitle": "Unfinished Dream of All Living Ghosts",
+      "category": "new",
+      "year": 2023,
+      "cover": "assets/covers/th19.jpg",
+      "tag": "兽王园"
+    },
+    {
+      "id": "th20",
+      "th": "Th20",
+      "title": "东方锦上京",
+      "subtitle": "Fossilized Wonders",
+      "category": "new",
+      "year": 2025,
+      "cover": "assets/covers/th20.jpg",
+      "tag": "锦上京"
+    },
+    {
+      "id": "th075",
+      "th": "Th7.5",
+      "title": "东方萃梦想",
+      "subtitle": "Immaterial and Missing Power",
+      "category": "fight",
+      "year": 2004,
+      "cover": "assets/covers/th075.jpg",
+      "tag": "萃梦想"
+    },
+    {
+      "id": "th105",
+      "th": "Th10.5",
+      "title": "东方绯想天",
+      "subtitle": "Scarlet Weather Rhapsody",
+      "category": "fight",
+      "year": 2008,
+      "cover": "assets/covers/th105.jpg",
+      "tag": "绯想天"
+    },
+    {
+      "id": "th123",
+      "th": "Th12.3",
+      "title": "东方非想天则",
+      "subtitle": "Hisoutensoku",
+      "category": "fight",
+      "year": 2009,
+      "cover": "assets/covers/th123.jpg",
+      "tag": "非想天则"
+    },
+    {
+      "id": "th135",
+      "th": "Th13.5",
+      "title": "东方心绮楼",
+      "subtitle": "Hopeless Masquerade",
+      "category": "fight",
+      "year": 2013,
+      "cover": "assets/covers/th135.jpg",
+      "tag": "心绮楼"
+    },
+    {
+      "id": "th145",
+      "th": "Th14.5",
+      "title": "东方深秘录",
+      "subtitle": "Urban Legend in Limbo",
+      "category": "fight",
+      "year": 2015,
+      "cover": "assets/covers/th145.jpg",
+      "tag": "深秘录"
+    },
+    {
+      "id": "th155",
+      "th": "Th15.5",
+      "title": "东方凭依华",
+      "subtitle": "Antinomy of Common Flowers",
+      "category": "fight",
+      "year": 2017,
+      "cover": "assets/covers/th155.jpg",
+      "tag": "凭依华"
+    },
+    {
+      "id": "th095",
+      "th": "Th9.5",
+      "title": "东方文花帖",
+      "subtitle": "Shoot the Bullet",
+      "category": "spin",
+      "year": 2005,
+      "cover": "assets/covers/th095.jpg",
+      "tag": "文花帖"
+    },
+    {
+      "id": "th125",
+      "th": "Th12.5",
+      "title": "东方文花帖DS",
+      "subtitle": "Double Spoiler",
+      "category": "spin",
+      "year": 2010,
+      "cover": "assets/covers/th125.jpg",
+      "tag": "文花帖DS"
+    },
+    {
+      "id": "th128",
+      "th": "Th12.8",
+      "title": "妖精大战争",
+      "subtitle": "Great Fairy Wars",
+      "category": "spin",
+      "year": 2010,
+      "cover": "assets/covers/th128.jpg",
+      "tag": "妖精大战争"
+    },
+    {
+      "id": "th165",
+      "th": "Th16.5",
+      "title": "秘封噩梦日记",
+      "subtitle": "Violet Detector",
+      "category": "spin",
+      "year": 2018,
+      "cover": "assets/covers/th165.jpg",
+      "tag": "秘封噩梦日记"
+    },
+    {
+      "id": "th175",
+      "th": "Th17.5",
+      "title": "东方刚欲异闻",
+      "subtitle": "Suibotsushita",
+      "category": "spin",
+      "year": 2021,
+      "cover": "assets/covers/th175.jpg",
+      "tag": "刚欲异闻"
+    }
+  ]
+}
