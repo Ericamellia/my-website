@@ -3,16 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=./my-app/">
-  <title>东方Project同人作品查询</title>
+  <title>少女祈祷中…</title>
   <style>
-    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-           font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-           background: #f5f6fa; color: #2c3e50; }
-    a { color: #ec8fa5; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      background: #fafafa;
+      font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+      overflow: hidden;
+    }
+    /* 与站内加载页完全一致的「少女祈祷中」样式 */
+    .praying-text {
+      font-size: clamp(40px, 10vw, 86px);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #e91e63 0%, #9c27b0 50%, #673ab7 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 18px rgba(233, 30, 99, 0.22);
+      filter: drop-shadow(0 2px 0 rgba(255, 255, 255, 0.6));
+    }
+    .praying-text::after { content: ""; animation: praying-dots 1.5s infinite; }
+    @keyframes praying-dots {
+      0%, 100% { content: ""; }
+      25% { content: "."; }
+      50% { content: ".."; }
+      75% { content: "..."; }
+    }
+    .praying-img {
+      max-width: min(100%, 520px);
+      max-height: 60vh;
+      width: auto; height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+      background: #fff;
+    }
+    /* 兜底入口：加载偏慢时才淡入，避免正常情况干扰画面 */
+    .manual { font-size: 14px; color: #8a8a8a; opacity: 0; transition: opacity .4s; }
+    .manual.show { opacity: 1; }
+    .manual a { color: #ec8fa5; }
+    #preload { display: none; }
   </style>
 </head>
 <body>
-  <p>正在跳转到 <a href="./my-app/">东方Project同人作品查询</a>…</p>
+  <div class="praying-text">少女祈祷中</div>
+  <video class="praying-img" src="./my-app/assets/praying.mp4"
+         autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+  <p class="manual" id="manual">加载较慢？<a href="./my-app/">直接进入 →</a></p>
+
+  <noscript>
+    <p class="manual show">你的浏览器未启用脚本，<a href="./my-app/">点击进入 →</a></p>
+  </noscript>
+
+  <!-- 后台预加载目标站点：先播祈祷动画，等站内内容真正渲染完成后再跳转 -->
+  <iframe id="preload" src="./my-app/" tabindex="-1" aria-hidden="true"></iframe>
+
+  <script>
+    (function () {
+      var target = './my-app/';
+      var done = false;
+      var manual = document.getElementById('manual');
+      var f = document.getElementById('preload');
+
+      function go() {
+        if (done) return;
+        done = true;
+        window.location.replace(target);
+      }
+
+      // 轮询判断子页面是否已渲染出真实内容（加载态消失且 #app 有内容）
+      function waitRendered() {
+        var doc = null;
+        try { doc = f.contentDocument; } catch (e) { go(); return; }
+        if (!doc) { go(); return; }
+        var t0 = Date.now();
+        var timer = setInterval(function () {
+          var app = doc.getElementById('app');
+          var stillLoading = doc.querySelector('.loading-state');
+          var rendered = !!app && app.children.length > 0 && !stillLoading;
+          if (rendered || Date.now() - t0 > 7000) {
+            clearInterval(timer);
+            setTimeout(go, 250);   // 稍作缓冲，让首帧稳定
+          }
+        }, 150);
+      }
+
+      if (f) {
+        f.addEventListener('load', waitRendered);
+        f.addEventListener('error', go);
+      }
+      // 兜底：3.5s 显示手动入口，10s 后无论如何进入
+      setTimeout(function () { if (manual) manual.classList.add('show'); }, 3500);
+      setTimeout(go, 10000);
+    })();
+  </script>
 </body>
 </html>
