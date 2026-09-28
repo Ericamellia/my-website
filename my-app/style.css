@@ -194,12 +194,16 @@ nav { display: flex; gap: 0; }
 .module-card:hover .module-thumb img { filter: brightness(1.08); }
 .module-card h2 { margin-bottom: 4px; color: #333; font-size: 14px; }
 .module-card p { color: #666; font-size: 11px; }
-/* Day 11 交互反馈：进入首页时整个模块卡片（图+文一起）从下向上弹出，依次错开 */
+/* Day 11 交互反馈：进入首页时整个模块卡片（图+文一起）从下向上弹出，依次错开。
+   ⚠️ to 必须收在 transform:none —— 否则动画结束后元素永久保留 transform，
+   会形成层叠上下文，把卡片内的 hover 小窗 / 其他小窗图层困在顶栏(z-index:1000)之下。 */
 @keyframes pop-up {
   from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
-.module-card { animation: pop-up 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* fill-mode 用 backwards 而非 both：both 会把末帧永久套用，使元素长期处于层叠上下文，
+   把卡片上的 hover 小窗困在顶栏之下；backwards 只在延迟阶段套用首帧，动画结束后释放。 */
+.module-card { animation: pop-up 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .module-card:nth-child(1) { animation-delay: 0s; }
 .module-card:nth-child(2) { animation-delay: 0.08s; }
 .module-card:nth-child(3) { animation-delay: 0.16s; }
@@ -459,7 +463,7 @@ body.add-bg footer { background: transparent; }
 }
 /* 路由每次渲染都会重建 #app 的子元素，动画因此自动重新触发，无需改动任何渲染函数。
    （.add-card 自身的动画已移除，避免与页面级位移叠加成双倍距离。） */
-#app > * { animation: pageSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#app > * { animation: pageSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 /* 列表/网格里每张卡片再各自从下往上弹出（错开 60ms 形成瀑布感）。
    卡片是 #app 的孙级，不会与页面级动画冲突，只叠加出层次；同样以 transform:none 收尾。 */
 @keyframes cardSlideUp {
@@ -468,7 +472,7 @@ body.add-bg footer { background: transparent; }
 }
 #app .work-item,
 #app .video-card,
-#app .og-card { animation: cardSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#app .og-card { animation: cardSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 #app .work-item:nth-child(1), #app .video-card:nth-child(1), #app .og-card:nth-child(1) { animation-delay: 0.06s; }
 #app .work-item:nth-child(2), #app .video-card:nth-child(2), #app .og-card:nth-child(2) { animation-delay: 0.12s; }
 #app .work-item:nth-child(3), #app .video-card:nth-child(3), #app .og-card:nth-child(3) { animation-delay: 0.18s; }
@@ -554,6 +558,26 @@ body.no-scroll { overflow: hidden; }
   box-shadow: 0 8px 28px rgba(0,0,0,0.18);
   background: #fff;
 }
+
+/* ===== 子页面切换加载遮罩：目标子页首屏图片未就绪时，继续覆盖「少女祈祷中」 =====
+   复用上方 .praying-text / .praying-img 的样式，仅在此定义全屏fixed容器与粉调背景。
+   首屏由根加载页（index.html）负责祈祷与等待；进入 my-app 后的子页面切换才启用此遮罩。 */
+.route-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 16px;
+  text-align: center;
+  background: linear-gradient(135deg, #fbeff3 0%, #f4e7f0 100%);
+  animation: routeLoadingIn 0.25s ease;
+}
+.route-loading.show { display: flex; }
+@keyframes routeLoadingIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ===== 加载失败趣味页：被不明baka冻结（Day 11） ===== */
 .error-frozen { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -710,12 +734,14 @@ a.og-thumb:hover .hover-pop { display: block; }
 
 /* 原作详情页·人物标签：角色网格（带黄昏边境绘图缩略图） */
 .char-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+/* 同 og-card：用 top 代替 transform，避免 hover 时创建层叠上下文把内部小窗图层困住 */
 .char-tag {
+  position: relative; top: 0;
   display: block; text-decoration: none; color: inherit;
   background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: top 0.15s, box-shadow 0.15s;
 }
-.char-tag:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.char-tag:hover { top: -3px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
 .char-tag:hover .char-name { color: #ec8fa5; }
 .char-art {
   position: relative; display: flex; align-items: center; justify-content: center;
@@ -756,4 +782,57 @@ a.og-thumb:hover .hover-pop { display: block; }
   .char-info { text-align: center; }
   .char-basic th { width: 76px; }
 }
+
+/* ===== 作者/社团详细页（与角色页同格式） ===== */
+.circle-detail .circle-art-box { flex: 0 0 200px; max-width: 200px; }
+.circle-detail .circle-art-box .char-art { aspect-ratio: 1 / 1; border-radius: 50%; overflow: hidden; border: 4px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.12); background: linear-gradient(135deg, #fff0f6 0%, #ffe4ec 100%); }
+.circle-detail .circle-art-box .char-art-fallback { font-size: 13px; color: #b07; }
+.circle-platform, .circle-src { font-size: 13px; color: #5f6368; margin: 4px 0 0; }
+.circle-platform a, .circle-src a { color: #b07; text-decoration: none; }
+.circle-platform a:hover, .circle-src a:hover { text-decoration: underline; }
+
+/* ===== 下载原作页（下载链接 / 安装包分类 + 右下角上传） ===== */
+.dl-entry-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; }
+.dl-entry-btn svg { width: 18px; height: 18px; }
+.dl-page { padding-bottom: 96px; }               /* 给右下角悬浮上传按钮留出空间 */
+.dl-breadcrumb { margin-bottom: 8px; font-size: 13px; }
+.dl-breadcrumb a { color: #b07; text-decoration: none; }
+.dl-breadcrumb a:hover { text-decoration: underline; }
+.dl-head { margin-bottom: 6px; }
+.dl-section { margin-top: 22px; }
+.dl-title { font-size: 16px; color: #5f6368; margin-bottom: 10px; }
+.dl-list { list-style: none; display: grid; gap: 10px; }
+.dl-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px 14px; }
+.dl-item-main { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.dl-name { font-weight: 600; font-size: 14px; color: #333; }
+.dl-kind { font-size: 12px; color: #b07; background: #fdf1f4; border-radius: 10px; padding: 2px 8px; }
+.dl-note { font-size: 13px; color: #5f6368; margin: 6px 0 0; }
+.dl-item-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.dl-go { display: inline-flex; align-items: center; margin-top: 0; padding: 8px 16px; width: auto; }
+.dl-del { border: 1px solid #f0c4cf; background: #fff; color: #d96577; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.dl-del:hover { background: #fdf1f4; }
+button.fab-add { border: none; cursor: pointer; padding: 0; }
+/* 上传弹窗内的多行表单（每行 = 一条资源，可「＋ 添加一行」批量提交） */
+.dl-rows { display: grid; gap: 12px; }
+.dl-row { border: 1px solid #eee; border-radius: 8px; padding: 10px; display: grid; gap: 8px; background: #fafafa; }
+.dl-row-head { display: flex; gap: 8px; align-items: center; }
+.dl-row-type { flex: 1; }
+.dl-row-del { border: none; background: transparent; color: #d96577; cursor: pointer; font-size: 15px; padding: 4px 10px; font-family: inherit; }
+.dl-row-del:hover { color: #b03a4d; }
+.dl-row-file-label { display: grid; gap: 4px; font-size: 12px; color: #5f6368; }
+.dl-form-actions { margin-top: 10px; }
+.dl-form-actions .btn { display: inline-block; }
+
+/* ===== 全局图层顺序（顶栏之下＝内容；顶栏之上＝各类「小窗」图层） =====
+   顶栏 header 固定 z-index:1000。所有界面产生的小窗图层都必须位于顶栏之上：
+     · hover 预览小窗 .hover-pop  z-index:9999
+     · 排序菜单 .sort-menu        z-index:10000
+     · 大图预览 .lightbox         z-index:2000
+     · 修改信息弹窗 .edit-modal   z-index:2100
+     · 操作提示 .toast            z-index:2200
+     · 路由加载遮罩 .route-loading z-index:9990
+   前提：承载小窗的宿主元素不得永久保留 transform / filter / backdrop-filter 等
+   会创建层叠上下文且 z-index 低于顶栏的属性——否则小窗会被困在顶栏之下。
+   因此：#app 及其子项的入场动画一律以 transform:none 收尾；卡片 hover 抬升一律
+   用 top 而非 transform。今后新增小窗请沿用 ≥2000 的 z-index。 */
 

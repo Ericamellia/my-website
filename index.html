@@ -48,73 +48,116 @@
     .manual { font-size: 14px; color: #8a8a8a; opacity: 0; transition: opacity .4s; }
     .manual.show { opacity: 1; }
     .manual a { color: #ec8fa5; }
-    #preload { display: none; }
+    /* 预加载iframe：保留布局（不 display:none），opacity:0 隐藏在底层，
+       这样懒加载图片会按视口正常触发、getBoundingClientRect 也能算——首屏判定才准确；
+       同时它完全透明、位于 z-index:-1、不可点击，前台永远只看到少女祈祷中动画。 */
+    #preload {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      border: 0; opacity: 0;
+      z-index: -1; pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <div class="praying-text">少女祈祷中</div>
-  <video class="praying-img" src="./my-app/assets/praying.mp4"
+  <video class="praying-img" src="./my-app/assets/praying.mp4?v=2"
          autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
-  <p class="manual" id="manual">加载较慢？<a href="./my-app/">直接进入 →</a></p>
+  <p class="manual" id="manual">加载较慢？<a id="manualLink" href="./my-app/">直接进入 →</a></p>
 
   <noscript>
     <p class="manual show">你的浏览器未启用脚本，<a href="./my-app/">点击进入 →</a></p>
   </noscript>
 
-  <!-- 后台优先预加载即将跳转的界面（./my-app/ 首页），同时前台一直播放少女祈祷中动画；
-       待该界面图片（含 CSS 背景图、卡片图、视频首帧）全部就绪后再真正进入 -->
-  <iframe id="preload" src="./my-app/" tabindex="-1" aria-hidden="true"></iframe>
+  <!-- 后台优先预加载「即将跳转的页面」（默认首页，或地址栏里的深链如 #/music）；
+       前台一直播放少女祈祷中动画；待该页面首屏内容真正就绪后再进入；
+       若迟迟未就绪，则一直停在少女祈祷中，绝不把没加载好的页面亮给用户。 -->
+  <iframe id="preload" tabindex="-1" aria-hidden="true"></iframe>
 
   <script>
     (function () {
-      var target = './my-app/';
+      // 1) 目标路由：从进入链接的 hash 取出「即将跳转的页面」，默认首页。
+      //    这样深链（如 …/#/music）会直接预加载并直达该页面，而不是永远停在首页。
+      var targetRoute = (location.hash && location.hash.length > 1) ? location.hash : '#/';
+      var baseTarget = './my-app/' + targetRoute; // 例：./my-app/#/music
+
       var done = false;
       var manual = document.getElementById('manual');
+      var manualLink = document.getElementById('manualLink');
       var f = document.getElementById('preload');
-      var bgCache = {};   // 已探测过的 CSS 背景图 URL -> true/进行中
+      var bgCache = {}; // 已探测过的 CSS 背景图 URL -> true / 'loading'
+
+      // 手动入口与兜底链接都指向「即将跳转的页面」
+      if (manualLink) manualLink.setAttribute('href', baseTarget);
 
       function go() {
         if (done) return;
         done = true;
-        // 进入前再确保祈祷动画已播一会儿，避免闪烁
-        window.location.replace(target);
+        // 直达目标页面：hash 一并带上，深链不会掉回首页
+        window.location.replace(baseTarget);
       }
 
-      // 判断目标文档「渲染完成 + 图片全部就绪」
-      function imagesReady(doc) {
-        if (!doc) return false;
+      // 元素是否处于 display:none 子树中（display:none 的 iframe 内也能正确判定，不依赖布局）
+      function isHidden(el) {
+        var n = el;
+        while (n && n.nodeType === 1) {
+          try { if (n.ownerDocument.defaultView.getComputedStyle(n).display === 'none') return true; } catch (e) {}
+          n = n.parentNode;
+        }
+        return false;
+      }
+      // 元素是否在视口内：只等「首屏」可见的媒体，折下去的懒加载图不阻塞切换
+      function inViewport(el) {
+        try {
+          var r = el.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) return false;
+          var vw = el.ownerDocument.defaultView.innerWidth || 1024;
+          var vh = el.ownerDocument.defaultView.innerHeight || 768;
+          return r.top < vh && r.bottom > 0 && r.left < vw && r.right > 0;
+        } catch (e) { return false; }
+      }
 
-        // 1) 所有 <img> 必须加载完成且有效
-        var imgs = doc.querySelectorAll('img');
+      // 判断「即将跳转的页面」是否已渲染 + 首屏可见的图片/视频就绪 + 可见 CSS 背景就绪
+      function ready(doc) {
+        if (!doc) return false;
+        var app = doc.getElementById('app');
+        if (!app || app.children.length === 0) return false;
+        if (doc.querySelector('.loading-state')) return false; // 目标页自身还在少女祈祷中
+
+        // 1) 首屏可见的 <img> 必须加载完成（隐藏面板 / 折下懒加载 / hover 预览小窗不阻塞）
+        var imgs = app.querySelectorAll('img');
         for (var i = 0; i < imgs.length; i++) {
           var im = imgs[i];
+          if (isHidden(im) || !inViewport(im)) continue;
+          if (im.closest && im.closest('.hover-pop')) continue;
           if (!im.complete || im.naturalWidth === 0) return false;
         }
-
-        // 2) 所有 <video> 至少拿到首帧/元数据（封面已可显示）
-        var vids = doc.querySelectorAll('video');
+        // 2) 首屏可见的 <video> 至少拿到元数据（封面已可显示）
+        var vids = app.querySelectorAll('video');
         for (var j = 0; j < vids.length; j++) {
-          if (vids[j].readyState < 1) return false;
+          var vd = vids[j];
+          if (isHidden(vd) || !inViewport(vd)) continue;
+          if (vd.readyState < 1) return false;
         }
-
-        // 3) CSS 背景图（body / #app / 常见容器）：解析 url 并在 iframe 文档内预加载
-        var sel = 'body, #app, .cat-card, .home-hero, .module-card, .work-item, .og-card, .video-card, .char-detail, .detail-main';
+        // 3) 首屏可见元素的 CSS 背景图（body 首页背景 / 卡片图等）在 iframe 文档内预加载
+        var sel = 'body, #app, .home-hero, .module-card, .module-thumb, .work-item, .og-card, .video-card, .char-detail, .detail-main, .og-detail-cover-wrap, .cat-card';
         var elems = doc.querySelectorAll(sel);
         for (var k = 0; k < elems.length; k++) {
+          var el = elems[k];
+          if (isHidden(el) || !inViewport(el)) continue;
           var bg = null;
-          try { bg = doc.defaultView.getComputedStyle(elems[k]).backgroundImage; } catch (e) { continue; }
+          try { bg = doc.defaultView.getComputedStyle(el).backgroundImage; } catch (e) { continue; }
           if (!bg || bg === 'none' || bg.indexOf('url(') < 0) continue;
           if (bgCache[bg] === true) continue;
           var m = bg.match(/url\(["']?([^)"']+)["']?\)/);
           if (!m) continue;
           if (!(bg in bgCache)) {
             bgCache[bg] = 'loading';
-            var url = m[1];
-            var probe = doc.createElement('img');
-            (function (key) {
+            (function (key, url) {
+              var probe = doc.createElement('img');
               probe.onload = probe.onerror = function () { bgCache[key] = true; };
-            })(bg);
-            probe.src = url;   // 相对路径按 iframe 文档基准解析
+              probe.src = url;   // 相对路径按 iframe 文档基准解析
+            })(bg, m[1]);
           }
           if (bgCache[bg] !== true) return false;
         }
@@ -127,26 +170,67 @@
         if (!doc) { go(); return; }
         var t0 = Date.now();
         var timer = setInterval(function () {
-          var app = doc.getElementById('app');
-          var stillLoading = doc.querySelector('.loading-state');
-          var rendered = !!app && app.children.length > 0 && !stillLoading;
-          if (rendered && imagesReady(doc)) {
+          // 即将跳转的页面已就绪 → 立刻放该页面（首页也是同一逻辑）
+          if (ready(doc)) {
             clearInterval(timer);
-            setTimeout(go, 200);          // 稍作缓冲，让首帧稳定
+            setTimeout(go, 150);          // 稍作缓冲，让首帧稳定
           } else if (Date.now() - t0 > 12000) {
+            // 兜底：超时也进入，绝不卡死在加载页（最坏情况让站内自己的加载态兜底）
             clearInterval(timer);
-            go();                          // 兜底：绝不卡死在加载页
+            go();
           }
-        }, 150);
+        }, 120);
       }
 
       if (f) {
         f.addEventListener('load', waitRendered);
         f.addEventListener('error', go);
+        f.src = baseTarget; // 预加载「即将跳转的页面」本身
       }
       // 兜底：3.5s 显示手动入口，15s 后无论如何进入
       setTimeout(function () { if (manual) manual.classList.add('show'); }, 3500);
       setTimeout(go, 15000);
+
+      // ===== 后台按「排列顺序」预热各页面共用的静态资源（不阻塞切换到目标页） =====
+      // 加载顺序（对应需求：少女祈祷中 → baka冻结(出错时) → 首页背景 → 首页内容/图
+      //          → 上传作品背景/内容 → 即将跳转页(由上方 iframe 渲染) → 若无跳转则依序加载全部）：
+      //   ① 首页背景图        ② 各分类图（首页内容/图）  ③ 上传作品页背景图
+      //   ④ 各作者头像（来自 circles.json，按数据排列顺序）⑤ 深链到某分类时该分类图优先
+      // 这些图绝大多数被多个页面复用，预热后返回/切换都即时显示，不再转圈。
+      var MODFILE = { music: 'module-music.webp', doujin: 'module-doujin.jpg', game: 'module-game2.jpg', video: 'module-video2.jpg', art: 'module-art.jpg', original: 'module-original.jpg' };
+      function buildPreloadList() {
+        var list = ['./my-app/assets/bg-home.jpeg'];                 // ① 首页背景
+        ['module-music.webp', 'module-doujin.jpg', 'module-game2.jpg', 'module-video2.jpg', 'module-art.jpg', 'module-original.jpg']
+          .forEach(function (m) { list.push('./my-app/assets/modules/' + m); }); // ② 首页/分类内容图
+        list.push('./my-app/assets/add-bg.jpg?v=7');                 // ③ 上传作品页背景
+        // 深链到某分类时，把该分类图提前，符合「即将跳转页优先」
+        var m = targetRoute.match(/^#\/(music|doujin|game|video|art|original)/);
+        if (m && MODFILE[m[1]]) list.unshift('./my-app/assets/modules/' + MODFILE[m[1]]);
+        // ④ 作者头像：读 circles.json 按数据顺序补齐（覆盖「若无跳转则依序加载全部内容」）
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', './my-app/data/circles.json', true);
+          xhr.onload = function () {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              data.forEach(function (c) { if (c.avatar) list.push('./my-app/' + c.avatar); });
+            } catch (e) {}
+            preloadInOrder(list);
+          };
+          xhr.onerror = function () { preloadInOrder(list); };
+          xhr.send();
+        } catch (e) { preloadInOrder(list); }
+      }
+      function preloadInOrder(urls) {
+        var i = 0;
+        (function next() {
+          if (i >= urls.length) return;
+          var img = new Image();
+          img.onload = img.onerror = next;
+          img.src = urls[i++];   // 命中浏览器缓存，后续页面即时显示
+        })();
+      }
+      buildPreloadList();
     })();
   </script>
 </body>

@@ -8,20 +8,20 @@
 //     现在只请求一次，正常浏览时根本不再发网络请求，也就不会再误弹。
 //   ②【内存修改跨页丢失】——「上传作品 / 修改介绍」改的是内存里的 data，之前每次导航重新 fetch 会覆盖掉；
 //     现在跨页面保留（刷新仍清空，Day 23 接数据库后再持久化）。
-let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] }, characters: [] };
+let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] }, characters: [], circles: [] };
 let dataPromise = null;
 function loadData() {
   if (dataPromise) return dataPromise; // 已加载或正在加载：并发调用共享同一结果，不重复发请求
   dataPromise = (async () => {
-    const [m, d, g, v, a, o, og, c] = await Promise.all(
-      ['music','doujin','game','video','art','originals','original_games','characters'].map(k =>
+    const [m, d, g, v, a, o, og, c, ci] = await Promise.all(
+      ['music','doujin','game','video','art','originals','original_games','characters','circles'].map(k =>
         fetch(`data/${k}.json`, { cache: 'no-cache' })
           .then(r => {
             if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
             return r.json();
           }))
     );
-    data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og, characters: c?.characters || [] };
+    data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og, characters: c?.characters || [], circles: Array.isArray(ci) ? ci : (ci?.circles || []) };
   })();
   return dataPromise;
 }
@@ -29,6 +29,16 @@ function loadData() {
 // ===== 通用 =====
 const $app = document.getElementById('app');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 入场动画结束后清除该元素的 animation：若将来误用 both/forwards，末帧会被永久套用，
+// 使元素长期处于层叠上下文，把卡片上的 hover 小窗等「小窗图层」困在顶栏(z-index:1000)之下。
+// 动画结束即释放，保证任何界面产生的小窗都位于顶栏之上。
+document.addEventListener('animationend', e => {
+  const el = e.target;
+  if (el && el.style && el.matches &&
+      el.matches('#app > *, #app .work-item, #app .video-card, #app .og-card, #app .module-card')) {
+    el.style.animation = 'none';
+  }
+}, true);
 // 分类页空状态：任何分类没有作品时统一显示这句话
 const EMPTY_CATEGORY = '幻想乡的未知之地？！(𑘧ˬ𑘧)！？';
 
@@ -315,6 +325,15 @@ $app.addEventListener('click', e => {
     if (typeof renderFavs === 'function') renderFavs();
   }
 });
+
+// ===== 原作下载资源（下载链接 / 安装包） =====
+// 结构：{ [gameId]: [ { id, type:'link'|'pkg', name, url, note, kind } ] }，按原作分类存放。
+// 上传后优先 localStorage 持久化；无 localStorage 环境（无头验证脚本）退化为内存对象。
+let downloads = {};
+try { downloads = JSON.parse(localStorage.getItem('touhou_downloads') || '{}') || {}; } catch (e) {}
+const saveDownloads = () => { try { localStorage.setItem('touhou_downloads', JSON.stringify(downloads)); } catch (e) {} };
+const gameDownloads = id => (downloads[id] || (downloads[id] = []));
+const dlUid = () => 'dl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 // ===== 修改作品信息：详情页右栏「修改介绍」按钮 + 编辑弹窗（Day 10 新增） =====
 // 弹窗容器在 index.html 预置（与 lightbox 同套路），表单字段按模块动态填充。
@@ -848,6 +867,7 @@ const findCharacter = key => {
   const k = String(key || '').trim();
   return (data.characters || []).find(c => c.id === k || c.name === k || (c.aliases || []).includes(k));
 };
+const findCircle = name => (data.circles || []).find(c => c.name === name);
 // 某原作下、除「自机主角」外的全部角色（用于原作详情页「人物标签」面板）
 const gameCharacters = gameId => (data.characters || [])
   .filter(c => (c.games || []).includes(gameId) && !(c.playableIn || []).includes(gameId));
@@ -926,6 +946,10 @@ function renderOriginalGame(id) {
         <h2>${esc(g.title)}</h2>
         <p class="og-sub">${esc(g.subtitle)}</p>
         <p class="og-year">${g.year} · ${esc(data.original_games.categories.find(c => c.id === g.category)?.label || '')}</p>
+        <a class="detail-cta dl-entry-btn" href="#/original/${encodeURIComponent(g.id)}/download">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          下载原作
+        </a>
       </div>
     </div>
     <div class="og-tabs">
@@ -958,6 +982,155 @@ function renderOriginalGame(id) {
   };
   wtabs.forEach(tab => tab.addEventListener('click', () => switchWork(tab.dataset.wtab)));
   switchWork(initWork);
+}
+
+// ===== 下载原作页：按「下载链接 / 安装包」分类展示 + 右下角上传按钮 =====
+function renderOriginalDownload(id) {
+  const g = data.original_games.games.find(x => x.id === id);
+  if (!g) {
+    $app.innerHTML = `<p class="empty-state">未找到该原作</p><p><a href="#/original">← 返回原作列表</a></p>`;
+    return;
+  }
+  const list = gameDownloads(id);
+  const links = list.filter(d => d.type === 'link');
+  const pkgs = list.filter(d => d.type === 'pkg');
+
+  const itemHTML = d => `
+    <li class="dl-item">
+      <div class="dl-item-main">
+        <span class="dl-name">${esc(d.name || '未命名资源')}</span>
+        ${d.kind ? `<span class="dl-kind">${esc(d.kind)}</span>` : ''}
+      </div>
+      ${d.note ? `<p class="dl-note">${esc(d.note)}</p>` : ''}
+      <div class="dl-item-actions">
+        <a class="detail-cta detail-cta-ghost dl-go" href="${esc(d.url)}"
+           target="_blank" rel="noopener"${d.type === 'pkg' ? ` download="${esc(d.filename || d.name || '')}"` : ''}>
+          ${d.type === 'pkg' ? '下载安装包' : '前往下载'}
+        </a>
+        <button class="dl-del" type="button" data-dl-del="${esc(d.id)}" aria-label="删除该资源" title="删除该资源">✕ 删除</button>
+      </div>
+    </li>`;
+
+  const section = (title, arr, emptyHint) => `
+    <section class="dl-section">
+      <h3 class="dl-title">${title} (${arr.length})</h3>
+      ${arr.length ? `<ul class="dl-list">${arr.map(itemHTML).join('')}</ul>`
+        : `<p class="empty-state">${emptyHint}</p>`}
+    </section>`;
+
+  $app.innerHTML = `
+    <div class="dl-page">
+      <p class="dl-breadcrumb"><a href="#/original/${encodeURIComponent(id)}">← 返回 ${esc(g.title)}</a></p>
+      <h2 class="dl-head">${esc(g.title)} · 下载</h2>
+      <p class="work-meta">本页按「下载链接」与「安装包」分类整理该原作的下载资源。点击右下角按钮可上传多个下载链接或安装包。</p>
+      ${section('下载链接', links, '暂无下载链接，点右下角按钮添加')}
+      ${section('安装包', pkgs, '暂无安装包，点右下角按钮上传')}
+    </div>
+    <button class="fab-add" id="dlUploadBtn" type="button" aria-label="上传下载链接 / 安装包" title="上传下载链接 / 安装包">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      <span class="fab-tip">上传下载链接 / 安装包</span>
+    </button>`;
+
+  // 删除某条资源
+  $app.querySelectorAll('[data-dl-del]').forEach(btn => btn.addEventListener('click', () => {
+    const lid = btn.dataset.dlDel;
+    downloads[id] = (downloads[id] || []).filter(d => String(d.id) !== String(lid));
+    saveDownloads();
+    showToast('已删除该下载资源');
+    renderOriginalDownload(id);
+  }));
+  const upBtn = document.getElementById('dlUploadBtn');
+  if (upBtn) upBtn.addEventListener('click', () => openDownloadModal(id));
+}
+
+// 下载资源上传弹窗：一行 = 一条资源（类型 / 名称 / 链接或本地文件 / 备注），可「＋ 添加一行」批量提交
+const $dlModal = document.getElementById('dlModal');
+const $dlForm = document.getElementById('dlForm');
+const $dlClose = document.getElementById('dlClose');
+function closeDownloadModal() {
+  if ($dlModal) $dlModal.hidden = true;
+  document.body.classList.remove('no-scroll');
+}
+if ($dlClose) $dlClose.addEventListener('click', closeDownloadModal);
+if ($dlModal) $dlModal.addEventListener('click', e => { if (e.target === $dlModal) closeDownloadModal(); });
+
+function dlRowHTML() {
+  return `
+    <div class="dl-row" data-row>
+      <div class="dl-row-head">
+        <select class="field dl-row-type" aria-label="资源类型">
+          <option value="link">下载链接</option>
+          <option value="pkg">安装包</option>
+        </select>
+        <button class="dl-row-del" type="button" aria-label="删除此行" title="删除此行">✕</button>
+      </div>
+      <input class="field dl-row-name" placeholder="名称，如：Steam 商店页 / 官方安装包 v1.0">
+      <input class="field dl-row-url" placeholder="链接（https://…）">
+      <input class="field dl-row-note" placeholder="备注（选填），如：Windows / 需科学上网">
+      <label class="dl-row-file-label">或直接选择本地安装包文件
+        <input class="field dl-row-file" type="file">
+      </label>
+    </div>`;
+}
+function bindDlRowDel(scope) {
+  (scope || $dlForm).querySelectorAll('[data-row] .dl-row-del').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const rows = $dlForm.querySelectorAll('[data-row]');
+      if (rows.length <= 1) { showToast('至少保留一行'); return; }
+      btn.closest('[data-row]').remove();
+    });
+  });
+}
+function openDownloadModal(id) {
+  if (!$dlForm) return;
+  $dlForm.innerHTML = `
+    <div class="dl-rows" id="dlRows">${dlRowHTML()}</div>
+    <div class="dl-form-actions">
+      <button class="btn" type="button" id="dlAddRow">＋ 添加一行</button>
+    </div>
+    <div class="add-actions">
+      <button class="btn" type="button" id="dlCancel">取消</button>
+      <button class="detail-cta add-submit" type="submit">上传</button>
+    </div>`;
+  bindDlRowDel();
+  document.getElementById('dlAddRow').addEventListener('click', () => {
+    document.getElementById('dlRows').insertAdjacentHTML('beforeend', dlRowHTML());
+    bindDlRowDel();
+  });
+  document.getElementById('dlCancel').addEventListener('click', closeDownloadModal);
+  $dlForm.onsubmit = e => {
+    e.preventDefault();
+    const rows = Array.from($dlForm.querySelectorAll('[data-row]'));
+    let added = 0;
+    rows.forEach(row => {
+      const type = row.querySelector('.dl-row-type').value;
+      let name = (row.querySelector('.dl-row-name').value || '').trim();
+      let url = (row.querySelector('.dl-row-url').value || '').trim();
+      const note = (row.querySelector('.dl-row-note').value || '').trim();
+      const file = row.querySelector('.dl-row-file').files && row.querySelector('.dl-row-file').files[0];
+      let kind = '', filename = '';
+      // 选了本地文件：用 blob URL 作为临时直链（仅本次会话有效），文件名作为默认名称
+      if (file) {
+        try { url = URL.createObjectURL(file); } catch (err) { url = url || ''; }
+        filename = file.name;
+        if (!name) name = file.name;
+        kind = '本地文件（仅本次会话）';
+      }
+      if (!url && !name) return; // 整行空白，跳过
+      if (!url) { showToast('「' + (name || '未命名') + '」缺少链接或文件，已跳过'); return; }
+      gameDownloads(id).push({ id: dlUid(), type, name: name || (type === 'pkg' ? '安装包' : '下载链接'), url, note, kind, filename });
+      added++;
+    });
+    if (!added) { showToast('没有可上传的内容'); return; }
+    saveDownloads();
+    closeDownloadModal();
+    showToast('✓ 已上传 ' + added + ' 条下载资源');
+    renderOriginalDownload(id);
+  };
+  if ($dlModal) $dlModal.hidden = false;
+  document.body.classList.add('no-scroll');
 }
 
 // ===== 全站搜索（Day 10：顶栏搜索框 → #/search/<词> 分组结果页） =====
@@ -1036,6 +1209,7 @@ function renderSearch(q) {
 
 // ===== 反查（角色 / 作者 / 标签） =====
 function renderReverse(kind, val) {
+  if (kind === 'circle') return renderCircle(val);
   const fieldMap = { character: 'characters', circle: 'circle', tag: 'tags' };
   const labelMap = { character: '角色', circle: '作者', tag: '原作' };
   const field = fieldMap[kind];
@@ -1054,6 +1228,89 @@ function renderReverse(kind, val) {
       ${g.items.map(w => workCard(w, g.m)).join('')}
     </div>`).join('');
   $app.innerHTML = `<h2>${esc(labelMap[kind] || kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><div class="home-back">${homeFabHTML()}</div>`;
+}
+
+// ===== 作者详细页：与角色页同格式（头像 + 简介 + 平台信息 + 分类作品） =====
+function renderCircle(val) {
+  const ci = findCircle(val) || {};
+  const groups = ['music','doujin','game','video','art'].map(m => {
+    const items = (data[m]||[]).filter(w => {
+      const c = w.circle;
+      if (Array.isArray(c)) return c.includes(val);
+      return c === val;
+    });
+    return { m, items };
+  });
+  const total = groups.reduce((s, g) => s + g.items.length, 0);
+  if (!total) { $app.innerHTML = `<p class="empty-state">无匹配：${esc(val)}</p><div class="home-back">${homeFabHTML()}</div>`; return; }
+
+  const labels = { all: '全部', music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const moduleTabs = ['music','doujin','game','video','art'].map(m => ({ id: m, label: labels[m], count: groups.find(g => g.m === m).items.length }));
+  const allTab = { id: 'all', label: labels.all, count: total };
+  const workTabs = [allTab, ...moduleTabs].map(t => `
+    <button class="og-tab${t.id === 'all' ? ' active' : ''}" data-wtab="${esc(t.id)}" type="button">${esc(t.label)} (${t.count})</button>`
+  ).join('');
+  const allItems = groups.flatMap(g => g.items.map(w => ({ w, m: g.m })));
+  const allPanel = `
+    <div class="og-panel" data-wpanel="all">
+      ${allItems.length
+        ? `<div class="work-list work-list-og">${allItems.map(({ w, m }) => workCard(w, m, { showModule: true })).join('')}</div>`
+        : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+    </div>`;
+  const workPanels = allPanel + groups.map(g => `
+    <div class="og-panel hidden" data-wpanel="${esc(g.m)}">
+      ${g.items.length
+        ? `<div class="work-list work-list-og">${g.items.map(w => workCard(w, g.m, { showModule: true })).join('')}</div>`
+        : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+    </div>`
+  ).join('');
+
+  const tp = ci.top_platform || {};
+  const platformName = tp.name || 'unknown';
+  const platformLine = platformName !== 'unknown' && tp.url
+    ? `<p class="circle-platform">主平台：<a href="${esc(tp.url)}" target="_blank" rel="noopener">${esc(platformName)}${tp.followers ? ' · ' + esc(tp.followers) + ' 粉丝' : ''}</a></p>`
+    : '';
+  const intro = ci.intro || '（简介整理中）';
+  const sourceLine = ci.source_url
+    ? `<p class="circle-src">资料来源：<a href="${esc(ci.source_url)}" target="_blank" rel="noopener">${esc(ci.source_url)}</a></p>`
+    : '';
+  const avatar = ci.avatar || '';
+
+  $app.innerHTML = `
+    <div class="char-detail circle-detail">
+      <div class="char-head circle-head">
+        <div class="char-info circle-info">
+          <h2 class="char-name-h">${esc(val)}</h2>
+          ${ci.name_en ? `<p class="char-en">${esc(ci.name_en)}</p>` : ''}
+          <section class="char-moe circle-moe">
+            <h3>社团 · 简介</h3>
+            <p>${esc(intro)}</p>
+            ${platformLine}
+            ${sourceLine}
+          </section>
+        </div>
+        <div class="char-art-box circle-art-box">
+          <span class="char-art${avatar ? '' : ' no-art'}">
+            <img class="zoomable" src="${esc(avatar)}" alt="${esc(val)} 头像" loading="lazy"
+              onerror="this.style.display='none';this.parentNode.classList.add('no-art')">
+            <span class="char-art-fallback">${esc(val)}<br>头像待补</span>
+          </span>
+        </div>
+      </div>
+      <h3 class="char-section-title">该社团/作者的作品</h3>
+      ${total ? `<div class="og-tabs">${workTabs}</div>${workPanels}` : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+      <p><a href="#/">← 返回首页</a> · ${homeFabHTML('home-fab--sm')}</p>
+    </div>`;
+
+  if (total) {
+    const wtabs = document.querySelectorAll('.og-tab[data-wtab]');
+    const wpanels = document.querySelectorAll('.og-panel[data-wpanel]');
+    const switchWork = m => {
+      wtabs.forEach(b => b.classList.toggle('active', b.dataset.wtab === m));
+      wpanels.forEach(p => p.classList.toggle('hidden', p.dataset.wpanel !== m));
+    };
+    wtabs.forEach(tab => tab.addEventListener('click', () => switchWork(tab.dataset.wtab)));
+  }
 }
 
 // ===== 角色详细页：右上黄昏边境绘图 + 萌娘百科简介/基本资料 + 相关同人作品 =====
@@ -1295,8 +1552,87 @@ function showLoading() {
   $app.innerHTML = `
     <div class="loading-state">
       <div class="praying-text">少女祈祷中</div>
-      <video class="praying-img" src="assets/praying.mp4" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
     </div>`;
+}
+
+// ===== 子页面切换加载遮罩：目标子页首屏图片未就绪时，继续覆盖「少女祈祷中」 =====
+// 首屏由根加载页（index.html）负责祈祷与等待；进入 my-app 后第一次路由不再重复祈祷，
+// 其余子页面切换一律先亮起遮罩，等首屏图片（可见 img/video + body 级 CSS 背景图）就绪再揭开，
+// 避免把没加载好的页面亮给用户。带超时兜底，绝不卡死。
+let routeLoadingEl = null;
+function ensureRouteLoading() {
+  if (routeLoadingEl) return routeLoadingEl;
+  routeLoadingEl = document.createElement('div');
+  routeLoadingEl.id = 'route-loading';
+  routeLoadingEl.className = 'route-loading';
+  routeLoadingEl.innerHTML =
+    '<div class="praying-text">少女祈祷中</div>' +
+    '<video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>';
+  if (document.body) document.body.appendChild(routeLoadingEl);
+  return routeLoadingEl;
+}
+function showRouteLoading() { ensureRouteLoading().classList.add('show'); }
+function hideRouteLoading() { if (routeLoadingEl) routeLoadingEl.classList.remove('show'); }
+
+// 元素是否处于可见子树（不被 display:none / visibility:hidden 的祖先隐藏）
+function _elVisible(el) {
+  let n = el;
+  while (n && n !== document.body && n.nodeType === 1) {
+    const s = getComputedStyle(n);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    n = n.parentNode;
+  }
+  return true;
+}
+// 元素是否在首屏视口内（懒加载图不在视口内则不阻塞切换）
+function _inViewport(el) {
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  return r.bottom > 0 && r.top < vh;
+}
+// 预载某个 CSS 背景图 URL
+function _preloadBg(url) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = img.onerror = () => res();
+    img.src = url;
+  });
+}
+// 等目标页首屏图片就绪：可见 img/video + body 级 CSS 背景图；懒加载且不在首屏的图不阻塞；8s 超时兜底
+async function waitForPageImages(root) {
+  const proms = [];
+  root.querySelectorAll('img, video').forEach(el => {
+    if (!_elVisible(el)) return;
+    if (el.tagName === 'IMG' && el.getAttribute('loading') === 'lazy' && !_inViewport(el)) return;
+    if (el.tagName === 'IMG') {
+      if (!el.complete || el.naturalWidth === 0) {
+        proms.push(new Promise(res => {
+          el.addEventListener('load', res, { once: true });
+          el.addEventListener('error', res, { once: true });
+        }));
+      }
+    } else if (el.tagName === 'VIDEO') {
+      if (el.readyState < 2) {
+        proms.push(new Promise(res => {
+          el.addEventListener('loadeddata', res, { once: true });
+          el.addEventListener('error', res, { once: true });
+        }));
+      }
+    }
+  });
+  if (document.body) {
+    const bi = getComputedStyle(document.body).backgroundImage;
+    if (bi && bi !== 'none') {
+      const m = bi.match(/url\(["']?([^"')]+)["']?\)/);
+      if (m) proms.push(_preloadBg(m[1]));
+    }
+  }
+  if (!proms.length) return;
+  await Promise.race([
+    Promise.all(proms),
+    new Promise(res => setTimeout(res, 8000)),
+  ]);
 }
 // 「被不明baka冻结」趣味页（数据加载失败 / 「教训baka」按钮直达均用此）。
 // retryAction：揍完 baka 后的动作——真实加载失败传「重载数据」，按钮直达传「跳回原页面」。
@@ -1317,7 +1653,7 @@ function renderFrozen(retryAction) {
 }
 // 自包含的「少女祈祷中」外部页 HTML（新标签打开时用，内联样式不依赖本站 CSS）
 function prayingDocHtml() {
-  const vid = (location.href.split('#')[0].replace(/index\.html$/, '')) + 'assets/praying.mp4';
+  const vid = (location.href.split('#')[0].replace(/index\.html$/, '')) + 'assets/praying.mp4?v=2';
   return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>少女祈祷中…</title>'
     + '<style>html,body{margin:0;height:100%}body{display:flex;flex-direction:column;align-items:center;justify-content:center;'
     + 'background:linear-gradient(135deg,#fbeff3,#f4e7f0);font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;'
@@ -1356,9 +1692,14 @@ function goExternal(url, newTab) {
 }
 
 let firstLoad = true; // 首次进入站点时，保证「少女祈祷中」加载页至少显示一段最短时间，让用户确实看到
+let appFirstRoute = true; // 首屏由根加载页（index.html）负责祈祷与等待；进入 my-app 后第一次路由不再重复祈祷
 let bakaReturnHash = '#/'; // 点「教训baka」按钮进入冻结页前的原页面，揍完返回用
 async function routeInner() {
-  showLoading(); // 跳转前先显示少女祈祷中加载页（成功与失败两路都会先经过这里）
+  const isFirst = appFirstRoute;
+  appFirstRoute = false;
+  // 子页面切换：先亮起「少女祈祷中」遮罩，等目标页首屏图片就绪再揭开；
+  // 首屏已在根加载页祈祷过并确保图片就绪，进入 my-app 后第一次路由不重复祈祷。
+  if (!isFirst) showRouteLoading();
   try {
     // 进入网站时：先加载好少女祈祷中页面，等数据全部就绪（且至少展示一个最短时长）再渲染
     const waits = [loadData()];
@@ -1367,6 +1708,7 @@ async function routeInner() {
     firstLoad = false;
   } catch (e) {
     dataPromise = null; // 重置缓存，使「胖揍」重试（route）能重新拉取，而非复用上次失败的 Promise
+    if (!isFirst) hideRouteLoading();
     // 错误态：加载失败时给出「被不明baka冻结」趣味页，按钮即重试（先揍动画再重载）
     renderFrozen(() => { dataPromise = null; route(); });
     return;
@@ -1389,32 +1731,33 @@ async function routeInner() {
   if (gs && p[0] !== 'search') gs.value = '';
   // 每次路由先清掉原作详情页背景，由 renderOriginalGame 决定要不要重新挂上
   clearPageBg();
-  if (!p.length) return renderHome();
-  if (p[0] === 'original') {
-    return p[1] ? renderOriginalGame(decodeURIComponent(p[1])) : renderOriginals();
+  if (!p.length) renderHome();
+  else if (p[0] === 'original') {
+    if (p[2] === 'download') renderOriginalDownload(decodeURIComponent(p[1]));
+    else p[1] ? renderOriginalGame(decodeURIComponent(p[1])) : renderOriginals();
   }
-  if (p[0] === 'add') return renderAddChooser();
-  if (p[0] === 'fav') return renderFavs();
-  if (['music','doujin','game','video','art'].includes(p[0])) {
-    if (p[1] === 'add') return renderAddForm(p[0]);
-    return p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
+  else if (p[0] === 'add') renderAddChooser();
+  else if (p[0] === 'fav') renderFavs();
+  else if (['music','doujin','game','video','art'].includes(p[0])) {
+    if (p[1] === 'add') renderAddForm(p[0]);
+    else p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
   }
-  if (p[0] === 'character') {
-    return renderCharacter(decodeURIComponent(p[1] || ''));
-  }
-  if (['circle','tag'].includes(p[0])) {
-    const val = decodeURIComponent(p.slice(1).join('/'));
-    return renderReverse(p[0], val);
-  }
-  if (p[0] === 'search') {
-    const val = decodeURIComponent(p.slice(1).join('/')).trim();
-    return renderSearch(val);
-  }
-  if (p[0] === 'baka') {
-    // 教训baka：直达冻结页，揍完跳回进入前的原页面
+  else if (p[0] === 'character') renderCharacter(decodeURIComponent(p[1] || ''));
+  else if (['circle','tag'].includes(p[0])) renderReverse(p[0], decodeURIComponent(p.slice(1).join('/')));
+  else if (p[0] === 'search') renderSearch(decodeURIComponent(p.slice(1).join('/')).trim());
+  else if (p[0] === 'baka') {
+    if (!isFirst) hideRouteLoading();
+    // 教训baka：直达冻结页，揍完跳回进入前的原页面（冻结页直接显示，不再覆盖祈祷遮罩）
     return renderFrozen(() => { location.hash = bakaReturnHash || '#/'; });
   }
-  $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>';
+  else { $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>'; }
+
+  // 子页面：等首屏图片就绪再揭开「少女祈祷中」遮罩；首屏由根加载页已处理好，直接揭开。
+  // 图片始终在 DOM 中渲染好（仅被遮罩盖住），就绪即揭开，绝不把没加载好的页面亮给用户。
+  if (!isFirst) {
+    await waitForPageImages($app);
+    hideRouteLoading();
+  }
 }
 
 // 路由入口：正常渲染 + 返回导航时恢复离开时的滚动位置（分类标签已在各渲染函数内应用）

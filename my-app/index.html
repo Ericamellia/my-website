@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>东方Project同人作品查询｜Day 7 MVP</title>
-  <link rel="stylesheet" href="style.css?v=94">
+  <link rel="stylesheet" href="style.css?v=98">
   <script>
     // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
     function showLoadError(msg) {
@@ -70,7 +70,7 @@
           <span class="nav-label">原作</span>
         </a>
         <a class="nav-item nav-fav" href="#/fav" aria-label="我的收藏" title="我的收藏">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
           <span class="nav-label">我的收藏</span>
         </a>
       </nav>
@@ -79,7 +79,7 @@
   <main id="app" class="container">
     <div class="loading-state">
       <div class="praying-text">少女祈祷中</div>
-      <video class="praying-img" src="assets/praying.mp4" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
     </div>
   </main>
   <footer class="site-footer">
@@ -99,6 +99,16 @@
       <form id="editForm" class="edit-form"></form>
     </div>
   </div>
+  <!-- 上传下载资源弹窗：下载原作页右下角「上传」按钮唤起（app.js 填充表单内容） -->
+  <div id="dlModal" class="edit-modal" hidden>
+    <div class="edit-panel">
+      <div class="edit-head">
+        <h3>上传下载资源</h3>
+        <button id="dlClose" class="edit-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="dlForm" class="edit-form"></form>
+    </div>
+  </div>
   <!-- 操作反馈提示：收藏/保存/上传等动作完成时从底部浮出（app.js 控制内容与显隐） -->
   <div id="toast" class="toast" hidden></div>
   <!-- 返回顶端浮动按钮：固定在右下角，位于「加入作品」按钮上方（app.js 绑定点击） -->
@@ -111,6 +121,6 @@
     <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
     <span class="fab-tip">教训baka</span>
   </button>
-  <script src="app.js?v=76" defer></script>
+  <script src="app.js?v=80" defer></script>
 </body>
 </html>

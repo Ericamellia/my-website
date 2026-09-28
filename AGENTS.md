@@ -58,3 +58,56 @@
 - 每次改完代码，提醒我刷新浏览器看效果。
 - 生成过程中遇到表述不清晰的问题直接以问问题的形式问我，不要浪费算力
 - 保存好以读取所有内容，不要后续浪费算力
+
+## 加入作品 · 数据格式规范（2026-09-29 记录，之后新增作品一律照此格式）
+
+数据文件在 `my-app/data/`，每个板块一个 JSON 数组；作品 `id` 为**数字**、在各自板块内从 1 递增（新增时取 `Math.max(...已有id)+1`）。渲染统一走 `workCard` / `workCover`，封面优先级：`w.cover` → 由 `tags` 映射到的原作封面 → 板块占位图。
+
+### 1. 通用字段（music / doujin / game / art 全部必填）
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | number | 板块内唯一、自增 |
+| `name` | string | 作品名（优先原标题，可加括号补充，如「东方月神夜（Touhou Luna Nights）」） |
+| `circle` | string | 作者/社团；须与 `circles.json` 中 `name` 完全一致（决定 `#/circle/:名` 反查页） |
+| `creator` | string | 具体创作者/主催/画师 |
+| `year` | number | 发布年份 |
+| `characters` | string[] | 登场角色中文名，须与 `characters.json` 的 `name` 一致（决定角色反查与角色页归类） |
+| `tags` | string[] | 原作标签，须与 `original_games.json` 的 `tag` 一致（如「红魔乡」「妖妖梦」） |
+| `popularity` | number | 热度（数字） |
+| `cover` | string | 配图（见下方「配图规则」） |
+| `source_url` | string | 资料来源页（thwiki / pixiv / Steam / B站 等） |
+| `description` | string | 1–2 句中文简介 |
+| `views` | number | 浏览次数 |
+
+### 2. 板块专属字段
+
+- **music（同人音乐）**：`netease_url`（string，必填）——网易云播放/搜索直达链接。
+- **video（同人视频）**：`type`（视频类型，如「影绘动画」）、`platform`（如「bilibili」）、`url`（视频直链）、`bvid`（如「BV1xx411c79H」）、`original_title`（原曲名）。
+- **doujin / game / art**：无额外字段，用通用字段即可。
+
+### 3. 其他数据文件的格式
+
+- **原作** `original_games.json → games[]`：`id`(如 th06) / `th`(如 Th06) / `title` / `subtitle` / `category`(old·new·fight·spin·manga) / `year` / `cover` / `tag`。
+- **角色** `characters.json → characters[]`：`id` / `name` / `name_en` / `games[]` / `playableIn[]` / `twilight_art` / `moegirl{intro, basic{}}` / `source_url` / `aliases?(可选)`。
+- **社团** `circles.json[]`：`name` / `name_en` / `intro` / `source_url` / `avatar` / `top_platform{name, followers, url}`。
+- **原曲** `originals.json[]`：`id` / `title` / `game` / `track_no` / `description`。
+
+### 4. 配图规则（重点：必须用原网站/作者本人的配图）
+
+1. **配图一律取作品原发布网站、原作者本人的图**：
+   - 同人音乐 → 该社团在**网易云**真实发行专辑的封面；
+   - 同人漫画 / 同人游戏 → **thwiki / Steam** 的作品原封面；
+   - 同人图 → **pixiv** 作品原图；
+   - 同人视频 → **B 站**该视频封面（`https://i*.hdslb.com/...`）；
+   - 原作 → 官方原作封面；社团/角色 → 该社团/角色的官方或萌娘/THBWiki 图。
+2. **能下载的一律先下载到本地再引用**（避免盗链与失效），存放约定：
+   - 音乐 `assets/music/coverN.jpg`　漫画 `assets/works/doujinNN.jpg`　游戏 `assets/games/gameN.jpg`　同人图 `assets/art/artN.jpg`
+   - 原作封面 `assets/covers/thXX.jpg`（漫画 `mangaNN.jpg`）　社团头像 `assets/circles/<名字>.jpg`　角色绘图 `assets/characters/<id>.jpg`
+3. 只能外链时（如 B 站视频封面）必须带 `referrerpolicy="no-referrer"`（`workCard` 已对 video 自动加）。
+4. 找不到原图时回退板块占位图 `assets/modules/module-*.{webp,jpg}`；**不留空、不用无关图**。
+5. 图片 URL 一律 `https`。
+
+### 5. 上传表单对应关系
+
+页内「加入作品」表单（`renderAddForm`）字段与上表一一对应：作品名\* / 作者(社团) / 创作者 / 年份 / 登场角色(逗号分隔) / 原作标签(逗号分隔) / 热度 / 封面图地址 / 资料来源 / 作品简介（video 另有 类型 / 平台 / 视频链接）。`views` 不在表单内（新增默认 0）。
