@@ -1,22 +1,173 @@
-// ===== 数据加载（一次 fetch + Promise.all） =====
+// ===== 数据加载（首次进入才真正 fetch，之后复用内存 data） =====
 // cache: 'no-cache' —— python http.server 不发 Cache-Control，浏览器会启发式缓存 JSON，
 // 导致改了数据却看不到更新。强制回源校验，始终拿最新数据。
-let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] } };
-async function loadData() {
-  const [m, d, g, v, a, o, og] = await Promise.all(
-    ['music','doujin','game','video','art','originals','original_games'].map(k =>
-      fetch(`data/${k}.json`, { cache: 'no-cache' })
-        .then(r => {
-          if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
-          return r.json();
-        }))
-  );
-  data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og };
+// dataPromise：加载缓存。首次进入时 fetch 一次并缓存 Promise；之后所有路由（hashchange → route）
+// 都 await 同一个 Promise，绝不重复请求。这同时修掉两个坑：
+//   ①【baka 冻结页随机误现】——之前每次切页面都并发 7 个 fetch，快速连点/来回点会成打请求，
+//     任一瞬时失败（网络抖动/连接数上限/限流）就让 Promise.all 整体 reject → 误弹「baka 冻结」页。
+//     现在只请求一次，正常浏览时根本不再发网络请求，也就不会再误弹。
+//   ②【内存修改跨页丢失】——「上传作品 / 修改介绍」改的是内存里的 data，之前每次导航重新 fetch 会覆盖掉；
+//     现在跨页面保留（刷新仍清空，Day 23 接数据库后再持久化）。
+let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] }, characters: [] };
+let dataPromise = null;
+function loadData() {
+  if (dataPromise) return dataPromise; // 已加载或正在加载：并发调用共享同一结果，不重复发请求
+  dataPromise = (async () => {
+    const [m, d, g, v, a, o, og, c] = await Promise.all(
+      ['music','doujin','game','video','art','originals','original_games','characters'].map(k =>
+        fetch(`data/${k}.json`, { cache: 'no-cache' })
+          .then(r => {
+            if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
+            return r.json();
+          }))
+    );
+    data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og, characters: c?.characters || [] };
+  })();
+  return dataPromise;
 }
 
 // ===== 通用 =====
 const $app = document.getElementById('app');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 分类页空状态：任何分类没有作品时统一显示这句话
+const EMPTY_CATEGORY = '幻想乡的未知之地？！(𑘧ˬ𑘧)！？';
+
+// ===== 排序控件（收藏页 / 子列表页 / 搜索页 共用） =====
+// 排序维度：fav（收藏时间/数据顺序）、pop（热度）、views（浏览次数）。
+// 方向：asc = 升序（由远到近 / 由低到高 / 由少到多），desc = 降序（由近到远 / 由高到低 / 由多到少）。
+// 默认方向：fav 由近到远、pop 由高到低、views 由多到少（均为 desc）。
+let currentSort = 'fav';
+// 收藏页当前激活的分类标签（全部 / music / doujin / game / video / art）
+let currentFavTab = 'all';
+const SORT_LABELS = { fav: '按收藏时间', pop: '按热度', views: '按浏览次数' };
+const DIR_LABELS = {
+  fav:   { asc: '由远到近', desc: '由近到远' },
+  pop:   { asc: '由低到高', desc: '由高到低' },
+  views: { asc: '由少到多', desc: '由多到少' },
+};
+const DEFAULT_DIR = { fav: 'desc', pop: 'desc', views: 'desc' };
+const currentDir = { ...DEFAULT_DIR };
+const SORT_OPTIONS = [
+  { key: 'fav',   text: '按收藏时间排序' },
+  { key: 'pop',   text: '按热度排序' },
+  { key: 'views', text: '按浏览次数排序' },
+];
+// 对容器内卡片按排序键 + 方向重排（原地移动 DOM，保留搜索筛选的显隐状态）
+function sortDom(container, key, dir) {
+  if (!container) return;
+  const d = dir || (currentDir[key] || 'desc');
+  const mult = d === 'asc' ? 1 : -1;
+  const kids = Array.from(container.children);
+  const val = el => {
+    if (key === 'pop')   return Number(el.dataset.sortPop || 0);
+    if (key === 'views') return Number(el.dataset.sortViews || 0);
+    if (key === 'fav')   return el.dataset.idx !== undefined ? Number(el.dataset.idx) : Number(el.dataset.id || 0);
+    return Number(el.dataset.id || 0);
+  };
+  kids.sort((a, b) => mult * (val(a) - val(b)));
+  kids.forEach(el => container.appendChild(el));
+}
+// 方向按钮 HTML：依当前排序键生成对应的两个方向按钮（默认方向高亮）
+function dirButtonsHTML(key) {
+  const dir = currentDir[key] || 'desc';
+  return ['desc', 'asc'].map(d => `<button class="sort-dir${d === dir ? ' active' : ''}" type="button" data-dir="${d}">${esc(DIR_LABELS[key][d])}</button>`).join('');
+}
+// 排序控件 HTML：按钮显示当前「方式（方向）」，hover/展开可换方式，下方显示该方式对应的方向切换按钮
+function sortControlHTML() {
+  const key = currentSort;
+  const dir = currentDir[key] || 'desc';
+  return `
+  <div class="sort-control" id="sortControl">
+    <button class="sort-btn" id="sortBtn" type="button" aria-haspopup="true" aria-expanded="false">
+      <span class="sort-btn-label">排序：${esc(SORT_LABELS[key] + '（' + DIR_LABELS[key][dir] + '）')}</span>
+      <span class="sort-caret" aria-hidden="true">▾</span>
+    </button>
+    <ul class="sort-menu" id="sortMenu">
+      ${SORT_OPTIONS.map(o => `<li class="sort-opt${o.key === currentSort ? ' active' : ''}" data-sort="${o.key}" role="button" tabindex="0">${esc(o.text)}</li>`).join('')}
+    </ul>
+    <div class="sort-dirs" id="sortDirs">${dirButtonsHTML(key)}</div>
+  </div>`;
+}
+// 绑定排序控件：换方式 → 切换方向按钮并重排；换方向 → 重排。两个维度均即时生效
+function bindSort(gridSelector) {
+  const ctrl = document.getElementById('sortControl');
+  if (!ctrl || !ctrl.classList) return;
+  const btn = document.getElementById('sortBtn');
+  const menu = document.getElementById('sortMenu');
+  const dirs = document.getElementById('sortDirs');
+  const label = (ctrl.querySelector && ctrl.querySelector('.sort-btn-label')) || null;
+  const qsa = sel => (typeof document.querySelectorAll === 'function') ? document.querySelectorAll(sel) : [];
+  const reSort = () => qsa(gridSelector).forEach(c => sortDom(c, currentSort, currentDir[currentSort] || 'desc'));
+  const updateLabel = () => { if (label) label.textContent = '排序：' + SORT_LABELS[currentSort] + '（' + DIR_LABELS[currentSort][currentDir[currentSort] || 'desc'] + '）'; };
+  const bindDirs = () => {
+    const db = (dirs && typeof dirs.querySelectorAll === 'function') ? dirs.querySelectorAll('.sort-dir') : [];
+    db.forEach(b => {
+      const act = () => {
+        const d = b.dataset && b.dataset.dir;
+        if (!d) return;
+        currentDir[currentSort] = d;
+        db.forEach(x => x.classList && x.classList.toggle('active', !!(x.dataset && x.dataset.dir === d)));
+        updateLabel();
+        reSort();
+      };
+      if (b.addEventListener) b.addEventListener('click', act);
+    });
+  };
+  if (btn && btn.addEventListener) {
+    btn.addEventListener('click', e => {
+      e.stopPropagation && e.stopPropagation();
+      const open = !(ctrl.classList.contains && ctrl.classList.contains('open'));
+      ctrl.classList.toggle('open', open);
+      btn.setAttribute && btn.setAttribute('aria-expanded', String(open));
+    });
+  }
+  const opts = (menu && typeof menu.querySelectorAll === 'function') ? menu.querySelectorAll('.sort-opt') : [];
+  opts.forEach(li => {
+    const act = () => {
+      const key = li.dataset && li.dataset.sort;
+      if (!key) return;
+      currentSort = key;
+      if (menu && typeof menu.querySelectorAll === 'function') {
+        menu.querySelectorAll('.sort-opt').forEach(x => x.classList && x.classList.toggle('active', !!(x.dataset && x.dataset.sort === key)));
+      }
+      if (dirs && typeof dirs.querySelectorAll === 'function') { dirs.innerHTML = dirButtonsHTML(key); bindDirs(); }
+      ctrl.classList.remove('open');
+      btn && btn.setAttribute && btn.setAttribute('aria-expanded', 'false');
+      updateLabel();
+      reSort();
+    };
+    if (li.addEventListener) {
+      li.addEventListener('click', act);
+      li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault && e.preventDefault(); act(); } });
+    }
+  });
+  bindDirs();
+  // 初始化时立即按当前排序方式 + 方向重排一次（切换页面后保持用户上次的选择）
+  reSort();
+}
+// 全局：点击控件外部时收起菜单（脚本加载时注册一次）
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('click', e => {
+    const ctrl = document.getElementById('sortControl');
+    if (ctrl && !ctrl.contains(e.target)) {
+      ctrl.classList.remove('open');
+      const b = document.getElementById('sortBtn');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+// 全局：任何方式跳转外部其他网站前，先显示「少女祈祷中」页（拦截 target=_blank 的外链点击）
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('click', e => {
+    const a = (e.target && e.target.closest) ? e.target.closest('a[target="_blank"]') : null;
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (/^https?:\/\//i.test(href)) {
+      e.preventDefault();
+      goExternal(href, true);
+    }
+  });
+}
 
 // ===== 大图预览（点击详情页配图放大；Day 10 新增） =====
 const $lightbox = document.getElementById('lightbox');
@@ -33,40 +184,108 @@ function closeLightbox() {
   $lightbox.hidden = true;
   document.body.classList.remove('no-scroll');
 }
-// 事件委托：详情页内任何带 .zoomable 的配图都可点开放大
+// 事件委托：详情页 .zoomable 点开放大；列表/视频/原作卡片的 hover-pop 小窗点击打开原图
 $app.addEventListener('click', e => {
   const t = e.target && e.target.closest ? e.target.closest('.zoomable') : null;
-  if (t) openLightbox(t.currentSrc || t.src, t.alt);
+  if (t) { openLightbox(t.currentSrc || t.src, t.alt); return; }
+  const pop = e.target && e.target.closest ? e.target.closest('.hover-pop') : null;
+  if (pop) {
+    e.preventDefault();
+    e.stopPropagation();
+    const img = pop.querySelector('img');
+    if (img) goExternal(img.currentSrc || img.src, true);
+  }
 });
 if ($lightbox) $lightbox.addEventListener('click', closeLightbox);
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
-// ===== 顶栏返回按钮：回到上一个所处页面（Day 10 新增） =====
+// ===== 页面状态记忆：返回上一页时恢复分类标签与滚动位置 =====
+// pageState[hash] = { tab/wtab: 激活的分类标签, scrollTop: 离开时的滚动位置 }（内存态，刷新即清）
+const pageState = {};
+let backNav = false; // 左上角返回键按下时置 true，路由渲染完成后消费一次
+// 标记「这次是返回导航」：只有返回时才恢复上次状态，正常点进来一律走默认分类
+const markBackNav = () => { backNav = true; };
+const saveScroll = () => {
+  const k = location.hash || '#/';
+  (pageState[k] ||= {}).scrollTop = window.scrollY || 0;
+};
+// 滚动节流记录：离开页面前 pageState 里始终有最新位置可取
+let scrollTimer;
+window.addEventListener('scroll', () => {
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(saveScroll, 150);
+});
+
+// ===== 页面背景：原作详情页用该原作封面做整页背景（--page-bg 由 CSS 统一处理样式） =====
+// 只在渲染原作详情页时挂上，离开任何页面都会先清掉，避免串页。
+// 无头验证环境 document.body.style 不存在，故用能力检测保护。
+const setPageBg = url => {
+  if (!document.body) return;
+  document.body.classList.add('og-bg');
+  if (document.body.style && document.body.style.setProperty) {
+    document.body.style.setProperty('--page-bg', `url('${String(url).replace(/'/g, "\\'")}')`);
+  }
+};
+const clearPageBg = () => {
+  if (!document.body) return;
+  document.body.classList.remove('og-bg');
+  if (document.body.style && document.body.style.removeProperty) {
+    document.body.style.removeProperty('--page-bg');
+  }
+};
+
+// ===== 顶栏返回按钮：回到上一个所处页面（Day 10 新增；Day 11 补：返回后恢复页面状态） =====
 const $backBtn = document.getElementById('backBtn');
 if ($backBtn) $backBtn.addEventListener('click', () => {
   // 无历史记录时（新标签直接打开）退回首页
-  if (window.history && window.history.length > 1) window.history.back();
+  if (window.history && window.history.length > 1) {
+    saveScroll();       // 先记下当前页退出位置（滚动节流可能差最后一帧）
+    markBackNav();      // 标记返回导航：渲染时恢复分类，渲染后恢复滚动位置
+    window.history.back();
+  }
   else location.hash = '#/';
 });
+
+// ===== 操作反馈 toast（Day 11：让每个关键动作「生效」得看得见） =====
+// 容器在 index.html 预置（fixed 定位，跨 hash 路由不消失——上传后跳列表页提示仍可见）。
+// 连续触发时重置计时器：快速连点收藏/取消，只保留最后一条提示，不会叠一串。
+const $toast = document.getElementById('toast');
+let toastTimer;
+function showToast(msg) {
+  if (!$toast) return;
+  $toast.textContent = msg;
+  $toast.hidden = false;
+  // 重开动画：先摘掉类再强制回流，连续触发时每次都重新滑入
+  $toast.classList.remove('toast-in');
+  void $toast.offsetWidth;
+  $toast.classList.add('toast-in');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $toast.hidden = true; }, 2200);
+}
 
 // ===== 我的收藏（Day 10 新增） =====
 // 存储结构：[{ module, id }]。优先 localStorage 持久化；
 // 无 localStorage 环境（如无头验证脚本）读取会抛 ReferenceError，被 catch 后退化为内存数组。
 let favs = [];
+// 本次停留在「我的收藏」页期间取消收藏的作品：卡片仍保留在列表中（星为空心，可再次收藏），
+// 离开收藏页、或下次重新进入时才真正移除。记录原 idx/ts 以便原位保留、不打乱顺序。
+let stickyFavs = [];
+let wasOnFav = false; // 上一次路由是否停在收藏页，用于判断是否为「重新进入」
 try { favs = JSON.parse(localStorage.getItem('touhou_favs') || '[]'); } catch (e) {}
 const saveFavs = () => { try { localStorage.setItem('touhou_favs', JSON.stringify(favs)); } catch (e) {} };
 const isFav = (module, id) => favs.some(f => f.module === module && f.id === id);
 const toggleFav = (module, id) => {
   const i = favs.findIndex(f => f.module === module && f.id === id);
-  if (i >= 0) favs.splice(i, 1); else favs.push({ module, id });
+  if (i >= 0) favs.splice(i, 1); else favs.push({ module, id, ts: Date.now() });
   saveFavs();
 };
-// 详情页收藏按钮：三态文案由 CSS 控制（收藏 / 已收藏 / hover 取消收藏）
+// 详情页收藏按钮：星形图标——未收藏空心（描边）、已收藏实心（填充），由 CSS 按 .is-faved 切换
 const favBtn = (module, id) => {
-  const on = isFav(module, Number(id)) ? ' is-faved' : '';
-  return `<button class="detail-cta detail-cta-fav${on}" type="button"
-            data-module="${esc(module)}" data-id="${esc(id)}" aria-label="收藏该作品">
-          <span class="lbl-off">收藏</span><span class="lbl-on">已收藏</span><span class="lbl-un">取消收藏</span>
+  const on = isFav(module, Number(id));
+  return `<button class="detail-cta detail-cta-fav${on ? ' is-faved' : ''}" type="button"
+            data-module="${esc(module)}" data-id="${esc(id)}"
+            aria-label="${on ? '取消收藏' : '收藏该作品'}" title="${on ? '取消收藏' : '收藏'}">
+          <svg class="star-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
         </button>`;
 };
 // 事件委托：详情页内任意收藏按钮，点击即切换收藏状态并同步按钮样式
@@ -75,8 +294,26 @@ $app.addEventListener('click', e => {
   if (!b) return;
   e.preventDefault();
   const { module, id } = b.dataset;
-  toggleFav(module, Number(id));
-  b.classList.toggle('is-faved', isFav(module, Number(id)));
+  const nid = Number(id);
+  // 取消收藏前先记下它在收藏列表中的原始位置与时间，便于本页内原位保留、不打乱顺序
+  const prev = favs.find(f => f.module === module && f.id === nid);
+  const prevIdx = prev ? favs.indexOf(prev) : -1;
+  const prevTs = prev ? prev.ts : Date.now();
+  const wasOn = !!prev;
+  toggleFav(module, nid);
+  const on = isFav(module, nid);
+  b.classList.toggle('is-faved', on);
+  showToast(on ? '⭐ 已加入我的收藏' : '已从我的收藏移除');
+  // 收藏页卡片上的星形按钮：取消收藏后卡片暂留（星变空心，可再次收藏），
+  // 下次进入收藏页才真正移除；切换分类/计数仍保持正确。
+  const isCardStar = b.classList && b.classList.contains && b.classList.contains('fav-card-star');
+  if (isCardStar) {
+    if (wasOn && !on) {
+      stickyFavs = stickyFavs.filter(s => !(s.module === module && s.id === nid));
+      stickyFavs.push({ module, id: nid, ts: prevTs, idx: prevIdx });
+    }
+    if (typeof renderFavs === 'function') renderFavs();
+  }
 });
 
 // ===== 修改作品信息：详情页右栏「修改介绍」按钮 + 编辑弹窗（Day 10 新增） =====
@@ -169,12 +406,15 @@ function openEditModal(module, w) {
     e.preventDefault();
     applyEdit(module, w);
     closeEditModal();
+    showToast('✓ 修改已保存');
     renderDetail(module, String(w.id)); // 重渲染详情页展示新信息（不重新加载数据）
   };
   const cancel = document.getElementById('editCancel');
   if (cancel) cancel.addEventListener('click', closeEditModal);
   if ($editModal) $editModal.hidden = false;
   document.body.classList.add('no-scroll');
+  // 键盘友好（Day 11 加练）：弹窗一开焦点就落在作品名输入框，可直接打字；Esc 关闭见全局监听
+  try { document.getElementById('edName')?.focus?.(); } catch (e) {}
 }
 
 // 详情页「修改介绍」按钮（事件委托）：找到对应作品后唤起编辑弹窗
@@ -242,19 +482,31 @@ const workCard = (w, module, opts = {}) => {
   const attrs = 'search' in opts
     ? ` data-search="${esc(opts.search)}" data-original="${esc(w.original || '')}"`
     : '';
+  const idxAttr = (opts.idx !== undefined) ? ` data-idx="${esc(opts.idx)}"` : '';
   const origLink = w.original ? `<br>原曲: ${lnkOriginal(w.original)}` : '';
   const badge = module === 'video' && w.type ? `<span class="card-badge">${esc(w.type)}</span>` : '';
   const extraRow = module === 'video'
     ? `<div class="work-meta">创作者: ${esc(w.creator)} · 平台: ${esc(w.platform)}</div>`
     : (w.creator ? `<div class="work-meta">创作者: ${esc(w.creator)}</div>` : '');
   const cover = workCover(w, module);
-  return `<div class="work-item"${attrs}>
+  const moduleLabels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const catLabel = opts.showModule && moduleLabels[module] ? `<span class="cat-label">${esc(moduleLabels[module])}</span>` : '';
+  // 星形按钮的实心/空心按「当前真实收藏状态」渲染：
+  // 收藏页上刚取消收藏、但本次仍暂留的卡片会显示为空心星，可再次点击收藏。
+  const starOn = isFav(module, w.id);
+  const favStar = opts.favStar
+    ? `<button class="detail-cta-fav fav-card-star${starOn ? ' is-faved' : ''}" type="button" data-module="${esc(module)}" data-id="${esc(w.id)}" aria-label="${starOn ? '取消收藏' : '收藏'}" title="${starOn ? '取消收藏' : '收藏'}">
+        <svg class="star-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+       </button>`
+    : '';
+  return `<div class="work-item"${attrs}${idxAttr} data-id="${esc(w.id)}" data-sort-pop="${w.popularity || 0}" data-sort-views="${w.views || 0}">
       <a class="card-thumb" href="#/${module}/${w.id}" aria-label="查看 ${esc(w.name)} 详情">
         <img src="${esc(cover)}" alt="${esc(w.name)} 封面" loading="lazy"${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.remove()">
         ${badge}
         <span class="hover-pop" aria-hidden="true"><img src="${esc(cover)}" alt=""${module === 'video' ? ' referrerpolicy="no-referrer"' : ''} onerror="this.parentElement.remove()"></span>
       </a>
       <div class="card-body">
+        ${catLabel}
         <h3><a href="#/${module}/${w.id}">${esc(w.name)}</a></h3>
         <div class="work-meta">
           <span>作者: ${lnkCircle(w.circle)}</span>
@@ -265,6 +517,7 @@ const workCard = (w, module, opts = {}) => {
         <div class="work-meta">角色: ${(w.characters || []).map(lnkChar).join(', ')}</div>
         ${(w.tags || []).length || origLink ? `<div class="work-meta">原作: ${(w.tags || []).map(lnkTag).join(' ')}${origLink}</div>` : ''}
       </div>
+      ${favStar}
     </div>`;
 };
 
@@ -284,17 +537,60 @@ function renderHome() {
     <h2 class="section-title">按原作查询</h2>
     <div class="module-grid">
       <a class="module-card" href="#/original"><div class="module-thumb"><img src="assets/modules/module-original.jpg" alt="原作" loading="lazy" onerror="this.parentElement.remove()"></div><h2>原作</h2><p>${data.original_games.games.length} 部官方原作</p></a>
+    </div>
+    ${fabAddHome}`;
+}
+
+// 首页「加入作品」浮动按钮：形状/位置与子页面 FAB 一致，点击进入分类选择页
+const fabAddHome = `
+  <a class="fab-add" href="#/add" aria-label="加入作品" title="加入作品">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></path></svg>
+    <span class="fab-tip">点击上传作品</span>
+  </a>`;
+
+// ===== 搜索无结果：趣味空状态 + 三按钮（与全站搜索 renderSearch 一致） =====
+// 在 applyFilter 判定 0 命中时调用；q 为当前搜索框内容（用于百度预填）
+function fillSearchEmpty(el, q) {
+  const baiduUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(q || '');
+  el.innerHTML = `
+    <p class="search-empty-title">你想要的知识或许在幻想乡境界之外哦</p>
+    <div class="search-empty-actions">
+      <button id="searchOtherBtn" class="btn" type="button">去看看幻想乡的其他风景</button>
+      <button id="baiduBtn" class="btn" type="button" data-baidu="${esc(baiduUrl)}">去幻想乡以外的世界寻找</button>
+      <button id="addWorkBtn" class="btn" type="button" data-go="#/add">寻找境界的妖怪将其遁入幻想</button>
     </div>`;
+  const gs = document.getElementById('globalSearch');
+  // ① 去看看幻想乡的其他风景：清空搜索框，并跳转到空白搜索页 #/search/
+  document.getElementById('searchOtherBtn').addEventListener('click', () => {
+    if (gs) { gs.value = ''; if (gs.focus) gs.focus(); }
+    const inline = document.getElementById('search');
+    if (inline) {
+      inline.value = '';
+      if (inline.dispatchEvent) inline.dispatchEvent(new Event('input'));
+    }
+    const oid = document.getElementById('origFilter');
+    if (oid) oid.value = '';
+    if (typeof location !== 'undefined') location.hash = '#/search/';
+  });
+  // ② 去幻想乡以外的世界寻找：新标签打开百度，预填未搜到的内容
+  document.getElementById('baiduBtn').addEventListener('click', () => {
+    goExternal(document.getElementById('baiduBtn').dataset.baidu, true);
+  });
+  // ③ 寻找境界的妖怪将其遁入幻想：跳转首页「加入作品」编辑页
+  document.getElementById('addWorkBtn').addEventListener('click', () => {
+    location.hash = document.getElementById('addWorkBtn').dataset.go;
+  });
 }
 
 // ===== 模块列表（共用渲染，支持搜索 + 原曲筛选） =====
 function renderList(module) {
   if (module === 'video') return renderVideoList();
+  currentSort = 'pop'; // 模块子列表默认按热度排序
   const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', art: '同人图' };
   const items = data[module].map(w => {
     const search = [w.name, w.circle, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase();
     return workCard(w, module, { search });
-  }).join('') || '<p class="empty-state">暂无数据</p>';
+  }).join('') || `<p class="empty-state">${EMPTY_CATEGORY}</p>`;
 
   const origFilter = module === 'music' ? `
     <div style="margin-top:12px;">
@@ -308,10 +604,11 @@ function renderList(module) {
 
   $app.innerHTML = `
     <h2>${labels[module]}</h2>
+    ${sortControlHTML()}
     <input id="search" class="field" placeholder="搜索作品名/作者/角色/标签…">
     ${origFilter}
-    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空筛选条件<br><button id="clearBtn" class="btn">清空搜索与筛选</button></p>
-    <div class="work-list${module === 'music' ? ' work-list-music' : ''}">${items}</div>
+    <div id="no-result" class="search-empty" hidden></div>
+    <div class="work-list${module === 'music' ? ' work-list-music' : ''}" id="workGrid">${items}</div>
     ${fabBtn(module)}`;
 
   // 统一过滤：搜索词 AND 原曲筛选同时生效（PRD 通用规则），无结果时显示空状态
@@ -324,24 +621,23 @@ function renderList(module) {
       it.style.display = ok ? '' : 'none';
       if (ok) visible++;
     });
-    document.getElementById('no-result').hidden = visible !== 0;
+    const nr = document.getElementById('no-result');
+    if (visible === 0) { fillSearchEmpty(nr, q); nr.hidden = false; }
+    else { nr.hidden = true; }
   };
   document.getElementById('search').addEventListener('input', applyFilter);
   if (module === 'music') {
     document.getElementById('origFilter').addEventListener('change', applyFilter);
   }
-  document.getElementById('clearBtn').addEventListener('click', () => {
-    document.getElementById('search').value = '';
-    if (module === 'music') document.getElementById('origFilter').value = '';
-    applyFilter();
-  });
+  bindSort('#workGrid');
 }
 
 // ===== 同人视频列表（封面卡片） =====
 function renderVideoList() {
+  currentSort = 'pop'; // 同人视频列表默认按热度排序
   const items = data.video.map(w => {
     const search = [w.name, w.circle, w.creator, w.type, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase();
-    return `<div class="video-card" data-search="${esc(search)}">
+    return `<div class="video-card" data-search="${esc(search)}" data-id="${esc(w.id)}" data-sort-pop="${w.popularity || 0}" data-sort-views="${w.views || 0}">
       <a class="video-thumb" href="#/video/${w.id}" aria-label="查看 ${esc(w.name)} 详情">
         <img src="${esc(w.cover)}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
         <span class="video-type">${esc(w.type)}</span>
@@ -359,13 +655,14 @@ function renderVideoList() {
         ${(w.tags||[]).length ? `<div class="work-meta">${w.tags.map(lnkTag).join(' ')}</div>` : ''}
       </div>
     </div>`;
-  }).join('') || '<p class="empty-state">暂无数据</p>';
+  }).join('') || `<p class="empty-state">${EMPTY_CATEGORY}</p>`;
 
   $app.innerHTML = `
     <h2>同人视频</h2>
+    ${sortControlHTML()}
     <input id="search" class="field" placeholder="搜索视频名/作者/创作者/角色/标签…">
-    <p id="no-result" class="empty-state" hidden>无匹配结果 —— 换个关键词，或清空搜索<br><button id="clearBtn" class="btn">清空搜索</button></p>
-    <div class="video-grid">${items}</div>
+    <div id="no-result" class="search-empty" hidden></div>
+    <div class="video-grid" id="workGrid">${items}</div>
     ${fabBtn('video')}`;
 
   const applyFilter = () => {
@@ -376,13 +673,46 @@ function renderVideoList() {
       it.style.display = ok ? '' : 'none';
       if (ok) visible++;
     });
-    document.getElementById('no-result').hidden = visible !== 0;
+    const nr = document.getElementById('no-result');
+    if (visible === 0) { fillSearchEmpty(nr, q); nr.hidden = false; }
+    else { nr.hidden = true; }
   };
   document.getElementById('search').addEventListener('input', applyFilter);
-  document.getElementById('clearBtn').addEventListener('click', () => {
-    document.getElementById('search').value = '';
-    applyFilter();
-  });
+  bindSort('#workGrid');
+}
+
+// ===== 添加作品：分类选择页（首页「加入作品」FAB 入口） =====
+function renderAddChooser() {
+  const items = [
+    { m: 'music',  label: '同人音乐', img: 'assets/modules/module-music.webp' },
+    { m: 'doujin', label: '同人漫画', img: 'assets/modules/module-doujin.jpg' },
+    { m: 'game',   label: '同人游戏', img: 'assets/modules/module-game2.jpg' },
+    { m: 'video',  label: '同人视频', img: 'assets/modules/module-video2.jpg' },
+    { m: 'art',    label: '同人图',   img: 'assets/modules/module-art.jpg' },
+  ];
+  $app.innerHTML = `
+    <div class="add-page">
+      <div class="add-card">
+        <h2>加入作品 · 选择所属分类</h2>
+        <p class="work-meta">这部作品属于哪个板块？点击下方分类，进入对应的编辑界面。</p>
+        <div class="module-grid">
+          ${items.map(it => `
+            <a class="module-card" href="#/${it.m}/add">
+              <div class="module-thumb"><img src="${it.img}" alt="${it.label}" loading="lazy" onerror="this.parentElement.remove()"></div>
+              <h2>${it.label}</h2>
+            </a>`).join('')}
+        </div>
+        <div class="home-back">${homeFabHTML()}</div>
+      </div>
+    </div>`;
+}
+
+// ===== 返回首页按钮：粉色圆形 + 房子图标（页内所有「返回首页」链接统一复用） =====
+function homeFabHTML(extraClass) {
+  const cls = extraClass ? ' ' + extraClass : '';
+  return `<a class="home-fab${cls}" href="#/" aria-label="返回首页" title="返回首页">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+  </a>`;
 }
 
 // ===== 添加作品：右下角浮动按钮（FAB）+ 上传表单（Day 10 新增） =====
@@ -399,25 +729,29 @@ function renderAddForm(module) {
       <label>平台<input id="addPlatform" class="field" placeholder="如：Bilibili"></label>
       <label>视频链接<input id="addUrl" class="field" placeholder="https://…"></label>` : '';
   $app.innerHTML = `
-    <h2>添加作品 · ${labels[module]}</h2>
-    <p class="work-meta">填写完成后点击右下方「上传」按钮，作品将以同列表一致的卡片形式加入${labels[module]}板块。</p>
-    <form id="addForm" class="add-form">
-      <label>作品名 *<input id="addName" class="field" required placeholder="必填"></label>
-      <label>作者（社团）<input id="addCircle" class="field" placeholder="如：IOSYS"></label>
-      <label>创作者<input id="addCreator" class="field" placeholder="如：ARM"></label>
-      <label>年份<input id="addYear" class="field" type="number" placeholder="如：2024"></label>
-      <label>登场角色（逗号分隔）<input id="addChars" class="field" placeholder="如：博丽灵梦, 雾雨魔理沙"></label>
-      <label>原作标签（逗号分隔）<input id="addTags" class="field" placeholder="如：红魔乡, 妖妖梦"></label>
-      <label>热度（数字）<input id="addPop" class="field" type="number" placeholder="如：5000"></label>
-      <label>封面图地址<input id="addCover" class="field" placeholder="https://… 留空则按原作标签匹配封面"></label>
-      <label>资料来源地址<input id="addSource" class="field" placeholder="https://…"></label>
-      ${videoFields}
-      <label>作品简介<textarea id="addDesc" class="field" rows="4" placeholder="一两句话介绍这部作品"></textarea></label>
-      <div class="add-actions">
-        <a class="btn" href="#/${module}">取消</a>
-        <button class="detail-cta add-submit" type="submit">上传</button>
+    <div class="add-page">
+      <div class="add-card">
+        <h2>添加作品 · ${labels[module]}</h2>
+        <p class="work-meta">填写完成后点击右下方「上传」按钮，作品将以同列表一致的卡片形式加入${labels[module]}板块。</p>
+        <form id="addForm" class="add-form">
+          <label>作品名 *<input id="addName" class="field" required placeholder="必填"></label>
+          <label>作者（社团）<input id="addCircle" class="field" placeholder="如：IOSYS"></label>
+          <label>创作者<input id="addCreator" class="field" placeholder="如：ARM"></label>
+          <label>年份<input id="addYear" class="field" type="number" placeholder="如：2024"></label>
+          <label>登场角色（逗号分隔）<input id="addChars" class="field" placeholder="如：博丽灵梦, 雾雨魔理沙"></label>
+          <label>原作标签（逗号分隔）<input id="addTags" class="field" placeholder="如：红魔乡, 妖妖梦"></label>
+          <label>热度（数字）<input id="addPop" class="field" type="number" placeholder="如：5000"></label>
+          <label>封面图地址<input id="addCover" class="field" placeholder="https://… 留空则按原作标签匹配封面"></label>
+          <label>资料来源地址<input id="addSource" class="field" placeholder="https://…"></label>
+          ${videoFields}
+          <label>作品简介<textarea id="addDesc" class="field" rows="4" placeholder="一两句话介绍这部作品"></textarea></label>
+          <div class="add-actions">
+            <a class="btn" href="#/${module}">取消</a>
+            <button class="detail-cta add-submit" type="submit">上传</button>
+          </div>
+        </form>
       </div>
-    </form>`;
+    </div>`;
   document.getElementById('addForm').addEventListener('submit', e => {
     e.preventDefault();
     const val = id => (document.getElementById(id).value || '').trim();
@@ -442,39 +776,58 @@ function renderAddForm(module) {
       w.url = val('addUrl') || w.source_url || '#';
     }
     data[module].push(w);
+    showToast(`✓ 「${w.name}」上传成功，已加入${labels[module]}`);
     location.hash = `#/${module}`;
   });
 }
 
 // ===== 原作板块：全部官方原作按「旧作/新作/格斗作/外传」分组 =====
 function ogCard(g) {
-  return `<a class="og-card" href="#/original/${g.id}">
-    <div class="og-cover-wrap">
-      <img src="${esc(g.cover)}" alt="${esc(g.title)} 封面" loading="lazy" onerror="this.parentElement.style.display='none'">
-      <span class="og-th">${esc(g.th)}</span>
-    </div>
+  return `<div class="og-card">
+    <a class="og-thumb" href="#/original/${g.id}" aria-label="查看 ${esc(g.title)} 详情">
+      <div class="og-cover-wrap">
+        <img src="${esc(g.cover)}" alt="${esc(g.title)} 封面" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <span class="og-th">${esc(g.th)}</span>
+      </div>
+      <span class="hover-pop" aria-hidden="true"><img src="${esc(g.cover)}" alt=""></span>
+    </a>
     <div class="og-info">
-      <h4>${esc(g.title)}</h4>
+      <h4><a href="#/original/${g.id}">${esc(g.title)}</a></h4>
       <p class="og-sub">${esc(g.subtitle)}</p>
       <p class="og-year">${g.year}</p>
     </div>
-  </a>`;
+  </div>`;
 }
+
+// Th 号转数值（Th7.5 → 7.5），用于把格斗作插到正确的整数作之间。
+// 官方漫画等没有 Th 号的条目返回 9999，统一排在最后（按数据里的年份顺序）。
+const thNum = g => {
+  const m = String(g.th || '').match(/^th\s*([\d.]+)/i);
+  return m ? parseFloat(m[1]) : 9999;
+};
 
 function renderOriginals() {
   const cats = data.original_games.categories;
-  const groups = cats.map(c => {
-    const list = data.original_games.games.filter(g => g.category === c.id);
-    return `<section class="og-group" data-cat="${c.id}">
-      <h3>${esc(c.label)} (${list.length} 部)</h3>
-      <div class="og-grid">${list.map(ogCard).join('')}</div>
-    </section>`;
-  }).join('');
+  // 所有原作按 Th 号从小到大排一次，各分类视图继承这个顺序（filter 不改变顺序）
+  const sorted = [...data.original_games.games].sort((a, b) => thNum(a) - thNum(b));
+  // 分类视图：最前面加「全部」，点它一次看所有原作；savedTab 允许 'all'
+  const views = [
+    { id: 'all', label: '全部', list: sorted },
+    ...cats.map(c => ({ id: c.id, label: c.label, list: sorted.filter(g => g.category === c.id) })),
+  ];
+  // 只有返回导航才恢复上次激活的分类；从首页等处正常进来一律停在「全部」
+  const savedTab = backNav ? (pageState['#/original'] || {}).tab : null;
+  const initTab = views.some(v => v.id === savedTab) ? savedTab : 'all';
+  const groups = views.map(v => `
+    <section class="og-group${v.id === initTab ? '' : ' hidden'}" data-cat="${v.id}">
+      <h3>${esc(v.label)} (${v.list.length} 部)</h3>
+      <div class="og-grid">${v.list.map(ogCard).join('')}</div>
+    </section>`).join('');
 
   $app.innerHTML = `
     <h2>官方原作</h2>
     <div class="og-tabs">
-      ${cats.map(c => `<button class="og-tab" data-tab="${c.id}">${esc(c.label)}</button>`).join('')}
+      ${views.map(v => `<button class="og-tab" data-tab="${v.id}">${esc(v.label)}</button>`).join('')}
     </div>
     <div class="og-panels">${groups}</div>`;
 
@@ -483,10 +836,21 @@ function renderOriginals() {
   const switchTab = id => {
     tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === id));
     panels.forEach(p => p.classList.toggle('hidden', p.dataset.cat !== id));
+    (pageState['#/original'] ||= {}).tab = id; // 记住激活的分类，返回时恢复
   };
   tabs.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-  switchTab(cats[0]?.id || 'old');
+  switchTab(initTab);
 }
+
+// ===== 角色查询辅助 =====
+// 角色按 id / 中文名 / 别名（如「蕾米莉亚·斯卡雷特」）都能命中，兼容作品数据里的两种写法
+const findCharacter = key => {
+  const k = String(key || '').trim();
+  return (data.characters || []).find(c => c.id === k || c.name === k || (c.aliases || []).includes(k));
+};
+// 某原作下、除「自机主角」外的全部角色（用于原作详情页「人物标签」面板）
+const gameCharacters = gameId => (data.characters || [])
+  .filter(c => (c.games || []).includes(gameId) && !(c.playableIn || []).includes(gameId));
 
 // ===== 单个原作详情页：封面 + Th 标注 + 人物/原曲标签页 + 同人作品 =====
 function renderOriginalGame(id) {
@@ -496,21 +860,61 @@ function renderOriginalGame(id) {
     return;
   }
 
-  // 按 tag 匹配该原作下的同人作品
-  const worksByModule = {};
+  // 「人物标签」面板用的角色集合（除自机主角外）；下面的同人作品也按这些角色分类
+  const chars = gameCharacters(g.id);
+  // 该原作下的同人作品：以「人物标签」里的角色作为分类标签，
+  // 作品按其「介绍栏(description)」是否出现该角色（含别名）归类；哪个角色都没命中的进「其他」。
+  const matched = [];
   ['music','doujin','game','video','art'].forEach(m => {
     (data[m] || []).forEach(w => {
       if ((w.tags || []).includes(g.tag) || w.original_game === g.tag) {
-        (worksByModule[m] ||= []).push(w);
+        matched.push({ w, m });
       }
     });
   });
-  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
-  const workBlocks = Object.keys(worksByModule).map(m => `
-    <div class="group-block">
-      <h3>${labels[m]} (${worksByModule[m].length})</h3>
-      ${worksByModule[m].map(w => workCard(w, m)).join('')}
+  const descOf = w => String(w.description || '');
+  const hitNames = (w, ch) => [ch.name, ...(ch.aliases || [])].some(n => descOf(w).includes(n));
+  // 角色标签：只保留至少有 1 部作品的角色，避免空标签
+  const charTabs = chars
+    .map(ch => ({
+      id: ch.id,
+      label: ch.name,
+      items: matched.filter(({ w }) => hitNames(w, ch)).map(({ w, m }) => workCard(w, m, { showModule: true })),
+    }))
+    .filter(t => t.items.length);
+  // 介绍栏未提及任何人物标签角色的作品归入「其他」
+  const others = matched
+    .filter(({ w }) => !chars.some(ch => hitNames(w, ch)))
+    .map(({ w, m }) => workCard(w, m, { showModule: true }));
+  if (others.length) charTabs.push({ id: 'other', label: '其他', items: others });
+  const firstActive = charTabs[0]?.id || 'other';
+  // 只有返回导航才恢复上次激活的分类；正常点进来一律从第一个有作品的分类开始
+  const savedWtab = backNav ? (pageState[`#/original/${id}`] || {}).wtab : null;
+  const initWork = charTabs.some(t => t.id === savedWtab) ? savedWtab : firstActive;
+  const workTabs = charTabs.map(t =>
+    `<button class="og-tab" data-wtab="${esc(t.id)}" type="button">${esc(t.label)} (${t.items.length})</button>`
+  ).join('');
+  const workPanels = charTabs.map(t => `
+    <div class="og-panel${t.id === initWork ? '' : ' hidden'}" data-wpanel="${esc(t.id)}">
+      ${t.items.length
+        ? `<div class="work-list work-list-og">${t.items.join('')}</div>`
+        : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
     </div>`).join('');
+
+  setPageBg(g.cover); // 整页背景换成该原作的封面（样式由 CSS 的 body.og-bg 处理）
+
+  // 「人物标签」面板：该原作下除自机主角外的全部角色，每个带黄昏边境绘图缩略图，点开进角色详细页
+  const charsPanel = chars.length
+    ? `<div class="char-grid">${chars.map(ch => `
+        <a class="char-tag" href="#/character/${encodeURIComponent(ch.id)}" title="${esc(ch.name)}">
+          <span class="char-art${ch.twilight_art ? '' : ' no-art'}">
+            <img src="${esc(ch.twilight_art || '')}" alt="${esc(ch.name)} 绘图" loading="lazy"
+              onerror="this.style.display='none';this.parentNode.classList.add('no-art')">
+            <span class="char-art-fallback">${esc(ch.name)}</span>
+          </span>
+          <span class="char-name">${esc(ch.name)}</span>
+        </a>`).join('')}</div>`
+    : `<p class="empty-state">该原作的角色资料整理中…</p>`;
 
   $app.innerHTML = `
     <div class="og-detail-header">
@@ -528,27 +932,40 @@ function renderOriginalGame(id) {
       <button class="og-tab active" data-tab="chars">人物标签</button>
       <button class="og-tab" data-tab="music">原曲标签</button>
     </div>
-    <div class="og-panel" data-panel="chars"><p class="empty-state">人物标签内容待补充…</p></div>
+    <div class="og-panel" data-panel="chars">${charsPanel}</div>
     <div class="og-panel hidden" data-panel="music"><p class="empty-state">原曲标签内容待补充…</p></div>
     <h3 class="og-section-title">该原作下的同人作品</h3>
-    ${workBlocks || '<p class="empty-state">暂无同人作品数据</p>'}
+    <div class="og-tabs">${workTabs}</div>
+    ${workPanels}
     <p><a href="#/original">← 返回原作列表</a></p>`;
 
-  const tabs = document.querySelectorAll('.og-tab');
-  const panels = document.querySelectorAll('.og-panel');
+  // 人物/原曲标签页（data-tab）与同人作品分类标签页（data-wtab）属性隔离，互不干扰
+  const tabs = document.querySelectorAll('.og-tab[data-tab]');
+  const panels = document.querySelectorAll('.og-panel[data-panel]');
   tabs.forEach(tab => tab.addEventListener('click', () => {
     const t = tab.dataset.tab;
     tabs.forEach(b => b.classList.remove('active'));
     tab.classList.add('active');
     panels.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== t));
   }));
+  // 同人作品分类切换：点标签只显示对应板块的作品面板
+  const wtabs = document.querySelectorAll('.og-tab[data-wtab]');
+  const wpanels = document.querySelectorAll('.og-panel[data-wpanel]');
+  const switchWork = m => {
+    wtabs.forEach(b => b.classList.toggle('active', b.dataset.wtab === m));
+    wpanels.forEach(p => p.classList.toggle('hidden', p.dataset.wpanel !== m));
+    (pageState[`#/original/${id}`] ||= {}).wtab = m; // 记住激活的分类，返回时恢复
+  };
+  wtabs.forEach(tab => tab.addEventListener('click', () => switchWork(tab.dataset.wtab)));
+  switchWork(initWork);
 }
 
 // ===== 全站搜索（Day 10：顶栏搜索框 → #/search/<词> 分组结果页） =====
 function renderSearch(q) {
+  currentSort = 'pop'; // 搜索页默认按热度排序（由高到低）
   const gs = document.getElementById('globalSearch');
   if (gs && (gs.value || '') !== q) gs.value = q;
-  if (!q) { $app.innerHTML = '<p class="empty-state">输入关键词开始全站搜索</p>'; return; }
+  if (!q) { $app.innerHTML = '<p class="empty-state">输入关键词探寻幻想乡</p>'; return; }
   const ql = q.toLowerCase();
   const matchWork = w => [w.name, w.circle, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase().includes(ql);
   const matchVideo = w => [w.name, w.circle, w.creator, w.type, ...(w.characters||[]), ...(w.tags||[])].join(' ').toLowerCase().includes(ql);
@@ -562,9 +979,34 @@ function renderSearch(q) {
   ];
   const total = groups.reduce((s, g) => s + g.items.length, 0);
   if (!total) {
-    $app.innerHTML = `<p class="empty-state">全站搜索「${esc(q)}」无匹配结果 —— 换个关键词试试<br><button id="clearBtn" class="btn">清空搜索</button></p>`;
-    const b = document.getElementById('clearBtn');
-    b.addEventListener('click', () => { location.hash = '#/'; });
+    // 全站搜索无结果：显示趣味空状态 + 三个引导按钮
+    const baiduUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(q); // 跳转百度时预填未搜到的内容
+    $app.innerHTML = `
+      <div class="search-empty">
+        <p class="search-empty-title">你想要的知识或许在幻想乡境界之外哦</p>
+        <div class="search-empty-actions">
+          <button id="searchOtherBtn" class="btn" type="button">去看看幻想乡的其他风景</button>
+          <button id="baiduBtn" class="btn" type="button" data-baidu="${esc(baiduUrl)}">去幻想乡以外的世界寻找</button>
+          <button id="addWorkBtn" class="btn" type="button" data-go="#/add">寻找境界的妖怪将其遁入幻想</button>
+        </div>
+      </div>`;
+    const gs = document.getElementById('globalSearch');
+    // ① 去看看幻想乡的其他风景：清空搜索框，并跳转到空白搜索页 #/search/
+    document.getElementById('searchOtherBtn').addEventListener('click', () => {
+      if (gs) { gs.value = ''; if (gs.focus) gs.focus(); }
+      const inline = document.getElementById('search');
+      if (inline) inline.value = '';
+      if (typeof location !== 'undefined') location.hash = '#/search/';
+    });
+    // ② 去幻想乡以外的世界寻找：新标签打开百度，搜索框预填未搜到的内容
+    document.getElementById('baiduBtn').addEventListener('click', () => {
+      const url = document.getElementById('baiduBtn').dataset.baidu;
+      goExternal(url, true);
+    });
+    // ③ 寻找境界的妖怪将其遁入幻想：跳转首页「加入作品」编辑页
+    document.getElementById('addWorkBtn').addEventListener('click', () => {
+      location.hash = document.getElementById('addWorkBtn').dataset.go;
+    });
     return;
   }
   const blocks = groups.filter(g => g.items.length).map(g => `
@@ -573,7 +1015,7 @@ function renderSearch(q) {
       <div class="work-list">${g.items.map(w => {
         if (g.m === 'original') {
           const cov = tagCover(w) || moduleFallback.video;
-          return `<div class="work-item">
+          return `<div class="work-item" data-id="0" data-sort-pop="0" data-sort-views="0">
           <div class="card-thumb"><img src="${esc(cov)}" alt="${esc(w)} 封面" loading="lazy" onerror="this.remove()"></div>
           <div class="card-body">
             <h3><a href="#/original">${esc(w)}</a></h3>
@@ -584,7 +1026,12 @@ function renderSearch(q) {
         return workCard(w, g.m);
       }).join('')}</div>
     </div>`).join('');
-  $app.innerHTML = `<h2>全站搜索：${esc(q)}（${total} 条）</h2>${blocks}<p><a href="#/">← 返回首页</a></p>`;
+  $app.innerHTML = `
+    <h2>全站搜索：${esc(q)}（${total} 条）</h2>
+    ${sortControlHTML()}
+    <div id="searchResults">${blocks}</div>
+    <div class="home-back">${homeFabHTML()}</div>`;
+  bindSort('#searchResults .work-list');
 }
 
 // ===== 反查（角色 / 作者 / 标签） =====
@@ -600,19 +1047,98 @@ function renderReverse(kind, val) {
     return { m, items };
   });
   const total = groups.reduce((s, g) => s + g.items.length, 0);
-  if (!total) { $app.innerHTML = `<p class="empty-state">无匹配：${esc(val)}</p><p><a href="#/">← 返回首页</a></p>`; return; }
+  if (!total) { $app.innerHTML = `<p class="empty-state">无匹配：${esc(val)}</p><div class="home-back">${homeFabHTML()}</div>`; return; }
   const blocks = groups.filter(g => g.items.length).map(g => `
     <div class="group-block">
       <h2>${esc(g.m)} (${g.items.length})</h2>
       ${g.items.map(w => workCard(w, g.m)).join('')}
     </div>`).join('');
-  $app.innerHTML = `<h2>${esc(labelMap[kind] || kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><p><a href="#/">← 返回首页</a></p>`;
+  $app.innerHTML = `<h2>${esc(labelMap[kind] || kind)}: ${esc(val)}</h2><div class="work-list">${blocks}</div><div class="home-back">${homeFabHTML()}</div>`;
+}
+
+// ===== 角色详细页：右上黄昏边境绘图 + 萌娘百科简介/基本资料 + 相关同人作品 =====
+function renderCharacter(key) {
+  const ch = findCharacter(key);
+  if (!ch) {
+    $app.innerHTML = `<p class="empty-state">未找到该角色</p><p><a href="#/original">← 返回原作列表</a></p>`;
+    return;
+  }
+  // 关联作品：作品 characters 字段含该角色的中文名或任一别名（兼容「蕾米莉亚」/「蕾米莉亚·斯卡雷特」两种写法）
+  const names = [ch.name, ...(ch.aliases || [])];
+  const labels = { all: '全部', music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const modules = ['music', 'doujin', 'game', 'video', 'art'];
+  const groups = modules.map(m => {
+    const items = (data[m] || []).filter(w => (w.characters || []).some(n => names.includes(n)));
+    return { m, items };
+  });
+  const total = groups.reduce((s, g) => s + g.items.length, 0);
+  const allTab = { id: 'all', label: labels.all, count: total };
+  const moduleTabs = modules.map(m => ({ id: m, label: labels[m], count: groups.find(g => g.m === m).items.length }));
+  const workTabs = [allTab, ...moduleTabs].map(t => `
+    <button class="og-tab${t.id === 'all' ? ' active' : ''}" data-wtab="${esc(t.id)}" type="button">${esc(t.label)} (${t.count})</button>`
+  ).join('');
+  // 「全部」面板：汇总所有分类作品并横向排列；每个卡片额外标注所属分类
+  const allItems = groups.flatMap(g => g.items.map(w => ({ w, m: g.m })));
+  const allPanel = `
+    <div class="og-panel" data-wpanel="all">
+      ${allItems.length
+        ? `<div class="work-list work-list-og">${allItems.map(({ w, m }) => workCard(w, m, { showModule: true })).join('')}</div>`
+        : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+    </div>`;
+  const workPanels = allPanel + groups.map(g => `
+    <div class="og-panel hidden" data-wpanel="${esc(g.m)}">
+      ${g.items.length
+        ? `<div class="work-list work-list-og">${g.items.map(w => workCard(w, g.m, { showModule: true })).join('')}</div>`
+        : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+    </div>`
+  ).join('');
+
+  const mg = ch.moegirl || {};
+  const basic = mg.basic || {};
+  const basicRows = Object.entries(basic)
+    .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('');
+
+  $app.innerHTML = `
+    <div class="char-detail">
+      <div class="char-head">
+        <div class="char-info">
+          <h2 class="char-name-h">${esc(ch.name)}</h2>
+          ${ch.name_en ? `<p class="char-en">${esc(ch.name_en)}</p>` : ''}
+          ${basic['称号'] ? `<p class="char-title">「${esc(basic['称号'])}」</p>` : ''}
+          <section class="char-moe">
+            <h3>萌娘百科 · 简介</h3>
+            <p>${esc(mg.intro || '（简介整理中）')}</p>
+            ${basicRows ? `<h3>萌娘百科 · 基本资料</h3><table class="char-basic"><tbody>${basicRows}</tbody></table>` : ''}
+            ${ch.source_url ? `<p class="char-src">资料来源：<a href="${esc(ch.source_url)}" target="_blank" rel="noopener">${esc(ch.source_url)}</a></p>` : ''}
+          </section>
+        </div>
+        <div class="char-art-box">
+          <span class="char-art${ch.twilight_art ? '' : ' no-art'}">
+            <img class="zoomable" src="${esc(ch.twilight_art || '')}" alt="${esc(ch.name)} 黄昏边境绘图" loading="lazy"
+              onerror="this.style.display='none';this.parentNode.classList.add('no-art')">
+            <span class="char-art-fallback">${esc(ch.name)}<br>绘图待补</span>
+          </span>
+        </div>
+      </div>
+      <h3 class="char-section-title">与该角色相关的同人作品</h3>
+      ${total ? `<div class="og-tabs">${workTabs}</div>${workPanels}` : `<p class="empty-state">${EMPTY_CATEGORY}</p>`}
+      <p><a href="#/original">← 返回原作列表</a> · ${homeFabHTML('home-fab--sm')}</p>`;
+
+  if (total) {
+    const wtabs = document.querySelectorAll('.og-tab[data-wtab]');
+    const wpanels = document.querySelectorAll('.og-panel[data-wpanel]');
+    const switchWork = m => {
+      wtabs.forEach(b => b.classList.toggle('active', b.dataset.wtab === m));
+      wpanels.forEach(p => p.classList.toggle('hidden', p.dataset.wpanel !== m));
+    };
+    wtabs.forEach(tab => tab.addEventListener('click', () => switchWork(tab.dataset.wtab)));
+  }
 }
 
 // ===== 详情页 =====
 function renderDetail(module, id) {
   const w = data[module].find(x => x.id === Number(id));
-  if (!w) { $app.innerHTML = `<p class="empty-state">未找到该作品</p><p><a href="#/">← 首页</a></p>`; return; }
+  if (!w) { $app.innerHTML = `<p class="empty-state">未找到该作品</p><div class="home-back">${homeFabHTML()}</div>`; return; }
   if (module === 'video') return renderVideoDetail(w);
   const origRow = w.original ? `<div class="work-meta">原作原曲: ${lnkOriginal(w.original)}</div>` : '';
   const gameRow = w.original_game ? `<div class="work-meta">原作游戏: ${lnkTag(w.original_game)}</div>` : '';
@@ -638,7 +1164,13 @@ function renderDetail(module, id) {
         <button class="btn edit-btn" type="button" data-module="${esc(module)}" data-id="${esc(w.id)}">✎ 修改介绍</button>
       </div>
     </div>
-    <p><a href="#/${module}">← 返回${esc(module)}</a> · <a href="#/">首页</a></p>`;
+    <p class="detail-nav">
+      <a class="nav-fab" href="#/${module}" aria-label="返回上一页" title="返回上一页">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        <span class="fab-tip">返回上一页</span>
+      </a>
+      ${homeFabHTML('home-fab--sm')}
+    </p>`;
 }
 
 // ===== 视频详情页 =====
@@ -653,7 +1185,7 @@ function renderVideoDetail(w) {
           <span class="video-type">${esc(w.type)}</span>
         </div>
         <p class="zoom-hint">点击配图查看大图</p>
-        ${detailActions('video', w.id, w.source_url, w.cover)}
+        ${detailActions('video', w.id, w.url || w.source_url, w.cover)}
       </div>
       <div class="detail-info">
         <div class="work-meta">作者: ${lnkCircle(w.circle)} · 创作者: ${esc(w.creator)} · ${w.year}</div>
@@ -667,56 +1199,209 @@ function renderVideoDetail(w) {
         <button class="btn edit-btn" type="button" data-module="video" data-id="${esc(w.id)}">✎ 修改介绍</button>
       </div>
     </div>
-    <p><a href="#/video">← 返回同人视频</a> · <a href="#/">首页</a></p>`;
+    <p class="detail-nav">
+      <a class="nav-fab" href="#/video" aria-label="返回上一页" title="返回上一页">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        <span class="fab-tip">返回上一页</span>
+      </a>
+      <a class="home-fab home-fab--sm" href="#/" aria-label="返回首页" title="返回首页">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span class="fab-tip">返回首页</span>
+      </a>
+    </p>`;
 }
 
 // ===== 我的收藏页：跨模块聚合所有收藏作品（Day 10 新增） =====
 // 数据被移除/刷新丢失的作品自动跳过，不会出现死卡片。
 function renderFavs() {
-  const cards = favs.map(f => {
-    const w = (data[f.module] || []).find(x => x.id === f.id);
-    return w ? workCard(w, f.module) : '';
-  }).filter(Boolean).join('');
+  currentSort = 'fav'; // 收藏页默认按收藏时间排序
+  // 列表 = 真实收藏 + 本次停留期间取消收藏但暂留的条目（已被重新收藏的会自动过滤掉）
+  const favEntries = favs.map((f, i) => ({ module: f.module, id: f.id, ts: f.ts, idx: i }));
+  const stickyEntries = stickyFavs
+    .filter(s => !isFav(s.module, s.id))
+    .map(s => ({ module: s.module, id: s.id, ts: s.ts, idx: s.idx }));
+  // 按原始收藏位置排序，暂留卡片保持在原位，列表顺序不会被打乱
+  const favItems = [...favEntries, ...stickyEntries]
+    .sort((a, b) => a.idx - b.idx)
+    .map((f, i) => {
+      const w = (data[f.module] || []).find(x => x.id === f.id);
+      return w ? { ...w, _module: f.module, _idx: i, _ts: f.ts } : null;
+    }).filter(Boolean);
+  const hasFavs = favItems.length > 0;
+  const slogan = '<div class="fav-slogan' + (hasFavs ? ' fav-slogan-fixed' : '') + '">将你感兴趣之物置入独属于你的隙间吧！</div>';
+
+  if (!hasFavs) {
+    $app.innerHTML = `
+      <h2>我的收藏 (${favItems.length})</h2>
+      <p class="empty-state">${slogan}</p>
+      <div class="home-back">${homeFabHTML()}</div>`;
+    return;
+  }
+
+  const modules = ['music', 'doujin', 'game', 'video', 'art'];
+  const labels = { music: '同人音乐', doujin: '同人漫画', game: '同人游戏', video: '同人视频', art: '同人图' };
+  const counts = { all: favItems.length };
+  modules.forEach(m => counts[m] = favItems.filter(x => x._module === m).length);
+  const makeCards = items => items.map(x => workCard(x, x._module, { idx: x._idx, favStar: true })).join('');
+  const allCards = makeCards(favItems);
+
+  const tabsHTML = `
+    <div class="fav-tabs">
+      <button class="fav-tab${currentFavTab === 'all' ? ' active' : ''}" data-ftab="all" type="button">全部 (${counts.all})</button>
+      ${modules.map(m => `<button class="fav-tab${currentFavTab === m ? ' active' : ''}" data-ftab="${m}" type="button">${labels[m]} (${counts[m]})</button>`).join('')}
+    </div>`;
+
+  const panelsHTML = `
+    <div class="fav-panels" id="workGrid">
+      <div class="fav-panel${currentFavTab === 'all' ? ' active' : ''}" data-fpanel="all">
+        ${allCards ? `<div class="work-list fav-work-list">${allCards}</div>` : '<p class="empty-state">暂无收藏</p>'}
+      </div>
+      ${modules.map(m => {
+        const items = favItems.filter(x => x._module === m);
+        return `<div class="fav-panel${currentFavTab === m ? ' active' : ''}" data-fpanel="${m}">
+          ${items.length ? `<div class="work-list fav-work-list">${makeCards(items)}</div>` : '<p class="empty-state">暂无该分类收藏</p>'}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  const maxTs = favItems.reduce((m, x) => Math.max(m, x._ts || 0), 0);
+  const lastTime = maxTs ? new Date(maxTs).toLocaleString('zh-CN') : '未知';
+
   $app.innerHTML = `
-    <h2>我的收藏 (${favs.length})</h2>
-    ${cards
-      ? `<div class="work-list">${cards}</div>`
-      : '<p class="empty-state">还没有收藏任何作品<br>打开任意作品详情页，点击「收藏」按钮即可加入这里</p>'}
-    <p><a href="#/">← 返回首页</a></p>`;
+    <h2>我的收藏 (${favItems.length})</h2>
+    ${sortControlHTML()}
+    ${tabsHTML}
+    ${panelsHTML}
+    <div class="fav-last-time">最后收藏时间：${esc(lastTime)}</div>
+    ${slogan}`;
+
+  bindSort('.fav-panel .work-list');
+  // 分类标签切换：切模块时重新渲染，保留当前排序
+  if (typeof document.querySelectorAll === 'function') {
+    document.querySelectorAll('.fav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        currentFavTab = tab.dataset && tab.dataset.ftab;
+        renderFavs();
+      });
+    });
+  }
 }
 
 // ===== 路由 =====
-async function route() {
+// 跳转前统一显示「少女祈祷中」加载页：所有界面（含真实加载失败时的 baka 冻结页）
+// 都先经过这一阶段，确保数据全部加载成功后才渲染目标页。
+function showLoading() {
+  $app.innerHTML = `
+    <div class="loading-state">
+      <div class="praying-text">少女祈祷中</div>
+      <video class="praying-img" src="assets/praying.mp4" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+    </div>`;
+}
+// 「被不明baka冻结」趣味页（数据加载失败 / 「教训baka」按钮直达均用此）。
+// retryAction：揍完 baka 后的动作——真实加载失败传「重载数据」，按钮直达传「跳回原页面」。
+function renderFrozen(retryAction) {
+  $app.innerHTML = `
+    <div class="empty-state error-frozen">
+      <p class="frozen-msg">该页面似乎被不明baka冻结了<br>请狠狠地揍她一顿，让她知道你的厉害！</p>
+      <button id="retryBtn" class="btn punch-btn" type="button">胖揍一顿baka</button>
+      <img class="frozen-baka" src="assets/baka-cirno.jpg" alt="被冻住的baka" onerror="this.remove()">
+    </div>`;
+  const btn = document.getElementById('retryBtn');
+  if (btn && btn.addEventListener) btn.addEventListener('click', () => {
+    const img = document.querySelector ? document.querySelector('.frozen-baka') : null;
+    if (img && img.classList) img.classList.add('shaking');
+    showToast('正在胖揍baka…');
+    setTimeout(() => { if (typeof retryAction === 'function') retryAction(); else route(); }, 500);
+  });
+}
+// 自包含的「少女祈祷中」外部页 HTML（新标签打开时用，内联样式不依赖本站 CSS）
+function prayingDocHtml() {
+  const vid = (location.href.split('#')[0].replace(/index\.html$/, '')) + 'assets/praying.mp4';
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>少女祈祷中…</title>'
+    + '<style>html,body{margin:0;height:100%}body{display:flex;flex-direction:column;align-items:center;justify-content:center;'
+    + 'background:linear-gradient(135deg,#fbeff3,#f4e7f0);font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;'
+    + 'color:#d96577;min-height:100vh}'
+    + '.t{font-size:clamp(40px,8vw,86px);font-weight:800;background:linear-gradient(90deg,#e58aa0,#b06ab3);'
+    + '-webkit-background-clip:text;background-clip:text;color:transparent;animation:p 1.4s ease-in-out infinite}'
+    + '.t::after{content:"";animation:praying-dots 1.5s infinite}'
+    + '.i{margin-top:24px;max-width:min(100%,520px);width:60%;max-height:60vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.18);background:#fff}'
+    + '.s{margin-top:16px;font-size:14px;color:#a86;opacity:.7}'
+    + '@keyframes p{0%,100%{opacity:.55}50%{opacity:1}}'
+    + '@keyframes praying-dots{0%,100%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}</style></head><body>'
+    + '<div class="t">少女祈祷中</div>'
+    + '<video class="i" src="' + vid + '" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>'
+    + '<div class="s">正在前往幻想乡之外…</div></body></html>';
+}
+// 跳转外部网站：先显示「少女祈祷中」页，待外部站点加载完成后自然取代祈祷页
+function goExternal(url, newTab) {
+  if (newTab !== false) {
+    let w = null;
+    try { w = window.open('about:blank', '_blank'); } catch (e) { w = null; }
+    if (w) {
+      try {
+        w.document.open();
+        w.document.write(prayingDocHtml());
+        w.document.close();
+      } catch (e) { /* 部分浏览器禁止写 about:blank，忽略，直接跳转 */ }
+      // 稍等让祈祷页先渲染，再跳外部站（其自身加载完成后即取代祈祷页）
+      setTimeout(() => { try { w.location.href = url; } catch (e2) { try { window.open(url, '_blank'); } catch (e3) {} } }, 350);
+    } else {
+      try { window.open(url, '_blank'); } catch (e) {} // 弹窗被拦截：直接打开，不再拦截祈祷页
+    }
+  } else {
+    showLoading();
+    setTimeout(() => { location.href = url; }, 350);
+  }
+}
+
+let firstLoad = true; // 首次进入站点时，保证「少女祈祷中」加载页至少显示一段最短时间，让用户确实看到
+let bakaReturnHash = '#/'; // 点「教训baka」按钮进入冻结页前的原页面，揍完返回用
+async function routeInner() {
+  showLoading(); // 跳转前先显示少女祈祷中加载页（成功与失败两路都会先经过这里）
   try {
-    await loadData();
+    // 进入网站时：先加载好少女祈祷中页面，等数据全部就绪（且至少展示一个最短时长）再渲染
+    const waits = [loadData()];
+    if (firstLoad) waits.push(new Promise(r => setTimeout(r, 450)));
+    await Promise.all(waits);
+    firstLoad = false;
   } catch (e) {
-    // 错误态：数据加载失败时给出原因和出路，而不是停在「加载中」
-    $app.innerHTML = `
-      <div class="empty-state">
-        <p>数据加载失败：${esc(e.message)}</p>
-        <p class="hint">常见原因：本地服务没启动 / 端口不对 / 数据文件缺失。<br>请按 RUN.md 启动服务后再试。</p>
-        <button id="retryBtn" class="btn">重试</button>
-      </div>`;
-    document.getElementById('retryBtn').addEventListener('click', route);
+    dataPromise = null; // 重置缓存，使「胖揍」重试（route）能重新拉取，而非复用上次失败的 Promise
+    // 错误态：加载失败时给出「被不明baka冻结」趣味页，按钮即重试（先揍动画再重载）
+    renderFrozen(() => { dataPromise = null; route(); });
     return;
   }
   const h = location.hash.slice(1) || '/';
   const p = h.split('/').filter(Boolean);
   // 首页才显示背景图，子页面保持干净白底
   if (document.body && document.body.classList) document.body.classList.toggle('home-bg', !p.length);
+  // 上传作品两个页面（#/add 与 #/{模块}/add）：挂上与首页同层（body）的柔化八云紫背景
+  const isAddPage = p[0] === 'add' ||
+    (['music', 'doujin', 'game', 'video', 'art'].includes(p[0]) && p[1] === 'add');
+  if (document.body && document.body.classList) document.body.classList.toggle('add-bg', isAddPage);
+  // 收藏页暂存：本次停留期间取消收藏的条目会暂留在列表中；
+  // 一旦离开收藏页、或下次重新进入（此前不在收藏页）就清空，届时才会真正移除。
+  const onFav = p[0] === 'fav';
+  if (!onFav || !wasOnFav) stickyFavs = [];
+  wasOnFav = onFav;
   // 离开搜索页时清空顶栏搜索框（renderSearch 内部负责同步成搜索词）
   const gs = document.getElementById('globalSearch');
   if (gs && p[0] !== 'search') gs.value = '';
+  // 每次路由先清掉原作详情页背景，由 renderOriginalGame 决定要不要重新挂上
+  clearPageBg();
   if (!p.length) return renderHome();
   if (p[0] === 'original') {
     return p[1] ? renderOriginalGame(decodeURIComponent(p[1])) : renderOriginals();
   }
+  if (p[0] === 'add') return renderAddChooser();
   if (p[0] === 'fav') return renderFavs();
   if (['music','doujin','game','video','art'].includes(p[0])) {
     if (p[1] === 'add') return renderAddForm(p[0]);
     return p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
   }
-  if (['character','circle','tag'].includes(p[0])) {
+  if (p[0] === 'character') {
+    return renderCharacter(decodeURIComponent(p[1] || ''));
+  }
+  if (['circle','tag'].includes(p[0])) {
     const val = decodeURIComponent(p.slice(1).join('/'));
     return renderReverse(p[0], val);
   }
@@ -724,7 +1409,24 @@ async function route() {
     const val = decodeURIComponent(p.slice(1).join('/')).trim();
     return renderSearch(val);
   }
+  if (p[0] === 'baka') {
+    // 教训baka：直达冻结页，揍完跳回进入前的原页面
+    return renderFrozen(() => { location.hash = bakaReturnHash || '#/'; });
+  }
   $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>';
+}
+
+// 路由入口：正常渲染 + 返回导航时恢复离开时的滚动位置（分类标签已在各渲染函数内应用）
+async function route() {
+  await routeInner();
+  if (backNav) {
+    backNav = false;
+    const st = pageState[location.hash || '#/'];
+    if (st && st.scrollTop && typeof window.scrollTo === 'function') {
+      // 等一帧让浏览器完成布局，再跳回离开时的位置
+      requestAnimationFrame(() => window.scrollTo(0, st.scrollTop));
+    }
+  }
 }
 
 // 顶栏全站搜索：输入防抖 300ms 跳转结果页；清空回首页
@@ -737,6 +1439,21 @@ document.getElementById('globalSearch').addEventListener('input', e => {
     if (location.hash !== target) location.hash = target;
   }, 300);
 });
+
+// 返回顶端按钮：点击平滑滚动到页面顶部（全局固定，所有页面生效）
+const backTopBtn = document.getElementById('backTop');
+if (backTopBtn) {
+  backTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+// 教训baka 按钮：固定在返回顶端按钮正上方；点击直达冻结页，揍完跳回原页面
+const bakaBtn = document.getElementById('bakaBtn');
+if (bakaBtn && bakaBtn.addEventListener) {
+  bakaBtn.addEventListener('click', () => {
+    if (location.hash === '#/baka') return; // 已在冻结页则不再重复进入
+    bakaReturnHash = location.hash || '#/';
+    location.hash = '#/baka';
+  });
+}
 
 window.addEventListener('hashchange', route);
 route();

@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>东方Project同人作品查询｜Day 7 MVP</title>
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=94">
   <script>
     // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
     function showLoadError(msg) {
       var app = document.getElementById('app');
-      if (!app || !/加载中/.test(app.textContent)) return;
+      if (!app || !app.querySelector('.loading-state')) return;
       app.innerHTML = '<p class="empty-state">页面加载出错：' + msg +
         '<br>请先按 Ctrl+F5 强制刷新；若仍不行，把这段文字发给我。</p>';
     }
@@ -77,7 +77,10 @@
     </div>
   </header>
   <main id="app" class="container">
-    <p class="empty-state">加载中…</p>
+    <div class="loading-state">
+      <div class="praying-text">少女祈祷中</div>
+      <video class="praying-img" src="assets/praying.mp4" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+    </div>
   </main>
   <footer class="site-footer">
     Day 7 MVP · 数据为模拟（mock）· 部署: GitHub Pages
@@ -96,6 +99,18 @@
       <form id="editForm" class="edit-form"></form>
     </div>
   </div>
-  <script src="app.js?v=28" defer></script>
+  <!-- 操作反馈提示：收藏/保存/上传等动作完成时从底部浮出（app.js 控制内容与显隐） -->
+  <div id="toast" class="toast" hidden></div>
+  <!-- 返回顶端浮动按钮：固定在右下角，位于「加入作品」按钮上方（app.js 绑定点击） -->
+  <button id="backTop" class="fab fab-backtop" type="button" aria-label="返回顶端" title="返回顶端">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
+    <span class="fab-tip">返回顶端</span>
+  </button>
+  <!-- 教训baka 浮动按钮：固定在返回顶端按钮正上方（app.js 绑定点击） -->
+  <button id="bakaBtn" class="fab fab-baka" type="button" aria-label="教训baka" title="教训baka">
+    <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
+    <span class="fab-tip">教训baka</span>
+  </button>
+  <script src="app.js?v=75" defer></script>
 </body>
 </html>

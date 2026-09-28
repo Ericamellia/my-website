@@ -15,6 +15,10 @@
     {
       "id": "spin",
       "label": "外传"
+    },
+    {
+      "id": "manga",
+      "label": "官方漫画"
     }
   ],
   "games": [
@@ -327,6 +331,86 @@
       "year": 2021,
       "cover": "assets/covers/th175.jpg",
       "tag": "刚欲异闻"
+    },
+    {
+      "id": "manga01",
+      "th": "漫画",
+      "title": "东方三月精 ~ Eastern and Little Nature Deity.",
+      "subtitle": "作画：比良坂真琴 · 全1卷",
+      "category": "manga",
+      "year": "2005–2007",
+      "cover": "assets/covers/manga01.jpg",
+      "tag": "三月精"
+    },
+    {
+      "id": "manga02",
+      "th": "漫画",
+      "title": "东方三月精 ~ Strange and Bright Nature Deity.",
+      "subtitle": "作画：比良坂真琴 · 全3卷",
+      "category": "manga",
+      "year": "2006–2009",
+      "cover": "assets/covers/manga02.jpg",
+      "tag": "三月精"
+    },
+    {
+      "id": "manga03",
+      "th": "漫画",
+      "title": "东方三月精 ~ Oriental Sacred Place.",
+      "subtitle": "作画：比良坂真琴 · 全3卷",
+      "category": "manga",
+      "year": "2009–2012",
+      "cover": "assets/covers/manga03.jpg",
+      "tag": "三月精"
+    },
+    {
+      "id": "manga04",
+      "th": "漫画",
+      "title": "东方三月精 ~ Visionary Fairies in Shrine.",
+      "subtitle": "作画：比良坂真琴 · 全3卷",
+      "category": "manga",
+      "year": "2016–2019",
+      "cover": "assets/covers/manga04.jpg",
+      "tag": "三月精"
+    },
+    {
+      "id": "manga05",
+      "th": "漫画",
+      "title": "东方儚月抄 ~ Silent Sinner in Blue.",
+      "subtitle": "作画：秋★枝 · 全3卷",
+      "category": "manga",
+      "year": "2007–2009",
+      "cover": "assets/covers/manga05.jpg",
+      "tag": "儚月抄"
+    },
+    {
+      "id": "manga06",
+      "th": "漫画",
+      "title": "东方儚月抄 ~ 月宫的兔子与地上的兔子",
+      "subtitle": "作画：あらたとしひら · 全2卷",
+      "category": "manga",
+      "year": "2007–2009",
+      "cover": "assets/covers/manga06.jpg",
+      "tag": "儚月抄"
+    },
+    {
+      "id": "manga07",
+      "th": "漫画",
+      "title": "东方茨歌仙 ~ Wild and Horned Hermit.",
+      "subtitle": "作画：あずまあや · 全10卷",
+      "category": "manga",
+      "year": "2010–2019",
+      "cover": "assets/covers/manga07.jpg",
+      "tag": "茨歌仙"
+    },
+    {
+      "id": "manga08",
+      "th": "漫画",
+      "title": "东方铃奈庵 ~ Forbidden Scrollery.",
+      "subtitle": "作画：春河もえ · 全7卷",
+      "category": "manga",
+      "year": "2012–2017",
+      "cover": "assets/covers/manga08.jpg",
+      "tag": "铃奈庵"
     }
   ]
 }

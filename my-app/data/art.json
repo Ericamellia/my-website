@@ -5,12 +5,18 @@
     "creator": "Miv4t",
     "circle": "Miv4t",
     "year": 2016,
-    "characters": ["西行寺幽幽子"],
-    "tags": ["妖妖梦", "东方Project"],
+    "characters": [
+      "西行寺幽幽子"
+    ],
+    "tags": [
+      "妖妖梦",
+      "东方Project"
+    ],
     "popularity": 10000,
     "cover": "assets/art/art1.jpg",
     "source_url": "https://www.pixiv.net/artworks/60181142",
-    "description": "Miv4t 绘制的西行寺幽幽子同人插画，标题为 LAST WORDS。"
+    "description": "Miv4t 绘制的西行寺幽幽子同人插画，标题为 LAST WORDS。",
+    "views": 2279
   },
   {
     "id": 2,
@@ -18,12 +24,17 @@
     "creator": "wukloo",
     "circle": "wukloo",
     "year": 2016,
-    "characters": ["八云紫"],
-    "tags": ["东方Project"],
+    "characters": [
+      "八云紫"
+    ],
+    "tags": [
+      "东方Project"
+    ],
     "popularity": 8000,
     "cover": "assets/art/art2.jpg",
     "source_url": "https://www.pixiv.net/artworks/59572603",
-    "description": "wukloo 绘制的八云紫同人插画。"
+    "description": "wukloo 绘制的八云紫同人插画。",
+    "views": 3256
   },
   {
     "id": 3,
@@ -31,12 +42,18 @@
     "creator": "大魔王るあえる",
     "circle": "大魔王るあえる",
     "year": 2018,
-    "characters": ["琪露诺"],
-    "tags": ["妖精大战争", "东方Project"],
+    "characters": [
+      "琪露诺"
+    ],
+    "tags": [
+      "妖精大战争",
+      "东方Project"
+    ],
     "popularity": 10000,
     "cover": "assets/art/art3.jpg",
     "source_url": "https://www.pixiv.net/artworks/67170050",
-    "description": "大魔王るあえる 绘制的琪露诺主题同人插画，主题为冰与清凉。"
+    "description": "大魔王るあえる 绘制的琪露诺主题同人插画，主题为冰与清凉。",
+    "views": 4233
   },
   {
     "id": 4,
@@ -44,12 +61,18 @@
     "creator": "Lota",
     "circle": "Lota",
     "year": 2017,
-    "characters": ["魂魄妖梦"],
-    "tags": ["妖妖梦", "东方Project"],
+    "characters": [
+      "魂魄妖梦"
+    ],
+    "tags": [
+      "妖妖梦",
+      "东方Project"
+    ],
     "popularity": 5000,
     "cover": "assets/art/art4.jpg",
     "source_url": "https://www.pixiv.net/artworks/65002165",
-    "description": "Lota 绘制的魂魄妖梦同人插画。"
+    "description": "Lota 绘制的魂魄妖梦同人插画。",
+    "views": 5210
   },
   {
     "id": 5,
@@ -57,12 +80,23 @@
     "creator": "九十九",
     "circle": "九十九",
     "year": 2010,
-    "characters": ["帕秋莉·诺蕾姬", "芙兰朵露·斯卡雷特", "蕾米莉亚·斯卡雷特", "十六夜咲夜", "小恶魔", "红美铃"],
-    "tags": ["红魔乡", "东方Project"],
+    "characters": [
+      "帕秋莉·诺蕾姬",
+      "芙兰朵露·斯卡雷特",
+      "蕾米莉亚·斯卡雷特",
+      "十六夜咲夜",
+      "小恶魔",
+      "红美铃"
+    ],
+    "tags": [
+      "红魔乡",
+      "东方Project"
+    ],
     "popularity": 12000,
     "cover": "assets/art/art5.jpg",
     "source_url": "https://www.pixiv.net/artworks/9780427",
-    "description": "九十九 绘制的红魔馆全员欢迎主题同人插画。"
+    "description": "九十九 绘制的红魔馆全员欢迎主题同人插画。",
+    "views": 6187
   },
   {
     "id": 6,
@@ -70,12 +104,18 @@
     "creator": "bob",
     "circle": "bob",
     "year": 2014,
-    "characters": ["藤原妹红"],
-    "tags": ["永夜抄", "东方Project"],
+    "characters": [
+      "藤原妹红"
+    ],
+    "tags": [
+      "永夜抄",
+      "东方Project"
+    ],
     "popularity": 10000,
     "cover": "assets/art/art6.jpg",
     "source_url": "https://www.pixiv.net/artworks/45350924",
-    "description": "bob 绘制的藤原妹红同人插画。"
+    "description": "bob 绘制的藤原妹红同人插画。",
+    "views": 7164
   },
   {
     "id": 7,
@@ -83,11 +123,17 @@
     "creator": "久蒼穹",
     "circle": "久蒼穹",
     "year": 2026,
-    "characters": ["帕秋莉·诺蕾姬"],
-    "tags": ["红魔乡", "东方Project"],
+    "characters": [
+      "帕秋莉·诺蕾姬"
+    ],
+    "tags": [
+      "红魔乡",
+      "东方Project"
+    ],
     "popularity": 3000,
     "cover": "assets/art/art7.jpg",
     "source_url": "https://www.pixiv.net/artworks/149552832",
-    "description": "久蒼穹 绘制的帕秋莉·诺蕾姬同人插画，红魔馆魔女主题。"
+    "description": "久蒼穹 绘制的帕秋莉·诺蕾姬同人插画，红魔馆魔女主题。",
+    "views": 141
   }
 ]

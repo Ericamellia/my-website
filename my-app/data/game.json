@@ -5,12 +5,20 @@
     "circle": "Team Ladybug",
     "creator": "Team Ladybug",
     "year": 2019,
-    "characters": ["十六夜咲夜", "蕾米莉亚", "帕秋莉", "红美铃"],
-    "tags": ["红魔乡"],
+    "characters": [
+      "十六夜咲夜",
+      "蕾米莉亚",
+      "帕秋莉",
+      "红美铃"
+    ],
+    "tags": [
+      "红魔乡"
+    ],
     "popularity": 9600,
     "cover": "assets/games/game1.jpg",
     "source_url": "https://store.steampowered.com/app/851100/Touhou_Luna_Nights/",
-    "description": "Team Ladybug 开发、WSS playground 发行的类银河城动作游戏，操纵十六夜咲夜运用时间停止在平行世界的红魔馆中探索脱出。"
+    "description": "Team Ladybug 开发、WSS playground 发行的类银河城动作游戏，操纵十六夜咲夜运用时间停止在平行世界的红魔馆中探索脱出。",
+    "views": 1653
   },
   {
     "id": 2,
@@ -18,12 +26,17 @@
     "circle": "二色幽紫蝶 · Re零同人社",
     "creator": "二色幽紫蝶",
     "year": 2021,
-    "characters": ["米斯蒂娅"],
-    "tags": ["永夜抄"],
+    "characters": [
+      "米斯蒂娅"
+    ],
+    "tags": [
+      "永夜抄"
+    ],
     "popularity": 9400,
     "cover": "assets/games/game2.jpg",
     "source_url": "https://store.steampowered.com/app/1584090/",
-    "description": "二色幽紫蝶 · Re零同人社开发的像素风居酒屋经营模拟游戏，米斯蒂娅白天采集食材、学习食谱，夜晚招待幻想乡的客人们。"
+    "description": "二色幽紫蝶 · Re零同人社开发的像素风居酒屋经营模拟游戏，米斯蒂娅白天采集食材、学习食谱，夜晚招待幻想乡的客人们。",
+    "views": 2630
   },
   {
     "id": 3,
@@ -31,12 +44,19 @@
     "circle": "AQUA STYLE",
     "creator": "AQUA STYLE",
     "year": 2018,
-    "characters": ["博丽灵梦", "森近霖之助"],
-    "tags": ["红魔乡", "星莲船"],
+    "characters": [
+      "博丽灵梦",
+      "森近霖之助"
+    ],
+    "tags": [
+      "红魔乡",
+      "星莲船"
+    ],
     "popularity": 7800,
     "cover": "assets/games/game3.jpg",
     "source_url": "https://store.steampowered.com/app/931500/Touhou_Genso_Wanderer_Reloaded/",
-    "description": "AQUA STYLE 开发的 Roguelike RPG，博丽灵梦深入随机生成的迷宫，调查香霖町突然出现的高塔异变。"
+    "description": "AQUA STYLE 开发的 Roguelike RPG，博丽灵梦深入随机生成的迷宫，调查香霖町突然出现的高塔异变。",
+    "views": 3607
   },
   {
     "id": 4,
@@ -44,12 +64,15 @@
     "circle": "Analogue Reverie",
     "creator": "Analogue Reverie",
     "year": 2022,
-    "characters": ["灯笼坂爱美"],
+    "characters": [
+      "灯笼坂爱美"
+    ],
     "tags": [],
     "popularity": 6000,
     "cover": "assets/games/game4.jpg",
     "source_url": "https://store.steampowered.com/app/1664410/",
-    "description": "Analogue Reverie 开发的免费同人弹幕游戏，以原创角色灯笼坂爱美为主角，关卡设计广受好评。"
+    "description": "Analogue Reverie 开发的免费同人弹幕游戏，以原创角色灯笼坂爱美为主角，关卡设计广受好评。",
+    "views": 4584
   },
   {
     "id": 5,
@@ -57,11 +80,16 @@
     "circle": "給食頭蛮",
     "creator": "給食頭蛮",
     "year": 2021,
-    "characters": ["赤蛮奇"],
-    "tags": ["神灵庙"],
+    "characters": [
+      "赤蛮奇"
+    ],
+    "tags": [
+      "神灵庙"
+    ],
     "popularity": 5400,
     "cover": "assets/games/game5.jpg",
     "source_url": "https://store.steampowered.com/app/1635980/",
-    "description": "給食頭蛮开发、Phoenixx 发行的解谜平台跳跃游戏，以赤蛮奇为主角，通过投掷头颅解开重重关卡。"
+    "description": "給食頭蛮开发、Phoenixx 发行的解谜平台跳跃游戏，以赤蛮奇为主角，通过投掷头颅解开重重关卡。",
+    "views": 5561
   }
 ]

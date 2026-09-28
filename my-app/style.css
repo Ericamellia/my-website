@@ -9,12 +9,56 @@ body.home-bg {
   background: #fafafa url('assets/bg-home.jpeg') no-repeat center center fixed;
   background-size: cover;
 }
+/* 原作板块详情页：整页背景换成该原作封面（--page-bg 由 app.js 按当前原作动态写入）。
+   三层处理让它「适合做背景」：
+   1) cover + center + fixed —— 任意尺寸封面都铺满且居中，滚动时不动；
+   2) 白色薄纱渐变叠在图上 —— 压柔封面色彩，避免花纹干扰；
+   3) 内容容器提白到 0.86 —— 保证深色文字在任何封面上都可读。 */
+body.og-bg {
+  background-color: #fafafa;
+  background-image: linear-gradient(rgba(250, 250, 250, 0.45), rgba(250, 250, 250, 0.45)), var(--page-bg);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  background-size: cover;
+}
+body.og-bg main.container { background: rgba(255, 255, 255, 0.86); }
 a { color: #1a73e8; text-decoration: none; }
 a:hover { color: #d93025; text-decoration: underline; }
 .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; background: rgba(255,255,255,0.75); border-radius: 0 0 6px 6px; }
 
 footer { background: rgba(255,255,255,0.75); }
 .site-footer { text-align: center; color: #5f6368; font-size: 12px; padding: 24px 16px; margin-top: 32px; }
+
+/* 我的收藏页标语：空态内联显示；有收藏时固定吸附在视口底部，不随滚动移动 */
+.fav-slogan {
+  margin: 32px auto 8px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #c2186a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+.fav-slogan-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 6px 16px;
+  /* 纯文字：去掉粉色渐变底、上边框、阴影与毛玻璃 */
+  background: transparent;
+  border-top: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: 13px;   /* 缩小文字（基准 17px） */
+  font-weight: 500;
+}
+/* 标语已改为纯文字且变小，底部留白相应减少 */
+.fav-work-list { padding-bottom: 40px; }
 
 /* ===== 组件约束：表单控件 .field（Day 9 提炼） =====
    约束对象：全站所有输入框 / 下拉框。
@@ -55,15 +99,52 @@ header .container { display: flex; justify-content: space-between; align-items: 
 /* Day 10 修：欢迎语必须同一行——brand 不许收缩换行，h1 强制 nowrap */
 header .brand { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 header h1 { font-size: 22px; font-weight: 700; color: #ec8fa5; margin: 0; white-space: nowrap; }
-header .home-link { position: relative; display: inline-flex; align-items: center; color: #1a73e8; padding: 2px; border-radius: 6px; }
-header .home-link:hover { color: #d93025; background: #ff9eb5; }
+/* 返回主页 / 返回上一页：统一为粉色圆形按钮（与页内 .home-fab 视觉一致） */
+header .home-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: #fff; background: #ec8fa5; padding: 0; border: none; box-shadow: 0 2px 6px rgba(236,143,165,.5); transition: background .15s, transform .15s; }
+header .home-link svg { width: 22px; height: 22px; }
+header .home-link:hover { color: #fff; background: #d96577; transform: scale(1.06); text-decoration: none; }
 header .home-link:hover .nav-label { opacity: 1; transform: translateX(-50%) translateY(0); }
 /* Day 10 新增：返回按钮（主页按钮左侧，history.back()）——button 元素清默认样式 */
-button.home-link { border: none; background: none; cursor: pointer; font: inherit; }
+button.home-link { border: none; background: #ec8fa5; cursor: pointer; font: inherit; box-shadow: 0 2px 6px rgba(236,143,165,.5); }
+
+/* ===== 返回首页：粉色圆形按钮 + 房子图标（页内所有「返回首页」链接统一复用） ===== */
+.home-fab {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #ec8fa5; color: #fff; border: none; padding: 0;
+  box-shadow: 0 3px 10px rgba(236,143,165,.55);
+  cursor: pointer; text-decoration: none; vertical-align: middle;
+  transition: background .15s, transform .15s;
+}
+.home-fab:hover { background: #d96577; transform: scale(1.06); color: #fff; text-decoration: none; }
+.home-fab svg { width: 26px; height: 26px; display: block; }
+/* 面包屑内联用的小号变体 */
+.home-fab--sm { width: 34px; height: 34px; box-shadow: 0 2px 6px rgba(236,143,165,.5); }
+.home-fab--sm svg { width: 18px; height: 18px; }
+/* 页底「返回首页」容器的居中 + 间距 */
+.home-back { margin-top: 24px; text-align: center; }
+
+/* 详情页底部导航：返回上一页（实心粉圆 + 反向箭头）+ 返回首页，均 hover 显示文字 */
+.detail-nav { display: flex; align-items: center; gap: 14px; margin-top: 24px; }
+.nav-fab {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #ec8fa5; color: #fff; border: none; padding: 0;
+  box-shadow: 0 2px 6px rgba(236,143,165,.5); text-decoration: none; cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+.nav-fab:hover { background: #d96577; transform: scale(1.06); color: #fff; text-decoration: none; }
+.nav-fab svg { width: 22px; height: 22px; display: block; }
+/* 面包屑内的返回首页按钮（home-fab--sm）也需定位参考 + hover 文字提示 */
+.home-fab { position: relative; }
+.home-fab:hover .fab-tip { opacity: 1; }
+.nav-fab:hover .fab-tip { opacity: 1; }
+/* 详情页导航气泡：显示在按钮正上方居中（覆盖默认左侧定位） */
+.detail-nav .fab-tip { right: auto; left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%); }
 
 /* ===== 顶栏全站搜索框（Day 10：规格与 .field 同源，宽度固定适配头部三栏布局） =====
    Day 10 修：基准宽 340→240px（可缩至 110px），给「歡迎來到人與妖怪的世界！」腾出同行空间 */
-.header-search-wrap { flex: 0 1 240px; min-width: 110px; display: flex; align-items: center; gap: 8px; }
+.header-search-wrap { flex: 0 1 360px; min-width: 160px; display: flex; align-items: center; gap: 8px; }
 .search-icon { flex: 0 0 auto; color: #5f6368; }
 .header-search {
   flex: 1;
@@ -108,10 +189,23 @@ nav { display: flex; gap: 0; }
 
 /* ===== 首页卡片 ===== */
 .module-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 16px; }
-.module-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px; text-align: center; transition: transform 0.15s; }
-.module-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.module-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px; text-align: center; transition: box-shadow 0.15s; }
+.module-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+.module-card:hover .module-thumb img { filter: brightness(1.08); }
 .module-card h2 { margin-bottom: 4px; color: #333; font-size: 14px; }
 .module-card p { color: #666; font-size: 11px; }
+/* Day 11 交互反馈：进入首页时整个模块卡片（图+文一起）从下向上弹出，依次错开 */
+@keyframes pop-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.module-card { animation: pop-up 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.module-card:nth-child(1) { animation-delay: 0s; }
+.module-card:nth-child(2) { animation-delay: 0.08s; }
+.module-card:nth-child(3) { animation-delay: 0.16s; }
+.module-card:nth-child(4) { animation-delay: 0.24s; }
+.module-card:nth-child(5) { animation-delay: 0.32s; }
+.module-card:nth-child(6) { animation-delay: 0.4s; }
 .module-thumb { aspect-ratio: 1 / 1; overflow: hidden; border-radius: 6px; margin-bottom: 8px; background: linear-gradient(135deg, #e3ebf7, #f0e6f6); }
 .module-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
@@ -131,19 +225,64 @@ nav { display: flex; gap: 0; }
 @media (max-width: 720px) {
   .work-list.work-list-music { grid-template-columns: repeat(2, 1fr); }
 }
+/* 分类页（角色详情 / 原作详情）：作品横向排列，可横向滚动；角色详情「全部」面板混合多分类，
+   每个卡片通过 .cat-label 标注所属分类 */
+.work-list.work-list-og {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 4px 4px 12px;
+}
+.work-list-og .work-item { flex: 0 0 auto; width: 180px; }
+.work-list-og .card-thumb { aspect-ratio: 1 / 1; }
+@media (max-width: 900px) {
+  .work-list-og .work-item { width: 160px; }
+}
+@media (max-width: 720px) {
+  .work-list-og .work-item { width: 140px; }
+}
 /* Day 10 修：卡片不再 overflow:hidden——它会剪掉朝上方弹出的 hover 小窗；
    圆角收边改由封面图自身带圆角实现（见下方 > img 规则）。 */
-.work-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; }
+.work-item { position: relative; background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; }
 .card-thumb { position: relative; aspect-ratio: 16 / 9; background: linear-gradient(135deg, #e3ebf7, #f0e6f6); display: flex; align-items: center; justify-content: center; }
 .card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .work-list .card-thumb > img { border-radius: 5px 5px 0 0; }
 .card-badge { position: relative; z-index: 1; font-size: 12px; color: #5f6368; background: rgba(255, 255, 255, 0.88); padding: 3px 10px; border-radius: 12px; }
+/* 收藏页卡片右下角星形按钮（快速取消收藏） */
+.fav-card-star {
+  position: absolute; right: 8px; bottom: 8px; z-index: 10;
+  width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%;
+  background: #ec8fa5; color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18); transition: transform .15s, background .15s;
+}
+.fav-card-star:hover { background: #d96577; transform: scale(1.08); }
+.fav-card-star svg { width: 18px; height: 18px; }
+
+/* 收藏页分类标签 */
+.fav-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.fav-tab {
+  padding: 7px 14px; border: 1px solid #e3c7d2; border-radius: 20px;
+  background: #fff; color: #5a4a55; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.fav-tab:hover { border-color: #ec8fa5; color: #d96577; }
+.fav-tab.active { background: #ec8fa5; color: #fff; border-color: #ec8fa5; }
+.fav-panels {}
+.fav-panel { display: none; }
+.fav-panel.active { display: block; }
+.fav-last-time { color: #888; font-size: 13px; text-align: right; margin: 16px 0 8px; }
+
 /* Day 10 新增：封面整体可点进详情页，hover 轻微提亮提示可点击 */
 a.card-thumb, a.video-thumb { text-decoration: none; }
 a.card-thumb img, a.video-thumb img { transition: filter 0.15s ease; }
 a.card-thumb:hover img, a.video-thumb:hover img { filter: brightness(1.08); }
-/* Day 10 新增：悬停封面弹出原配图小窗（hover-pop），点击小窗即跳详情页 */
-.hover-pop { display: none; position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); z-index: 1500; background: #fff; padding: 6px; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28); }
+/* Day 10 新增：悬停封面弹出原配图小窗（hover-pop），点击小窗打开原图（新标签） */
+.hover-pop { display: none; position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); z-index: 9999; background: #fff; padding: 6px; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28); cursor: zoom-in; }
+/* 在封面与小窗之间（以及小窗自身）补一块隐形「桥」，避免鼠标从封面移向小窗时
+   穿过 10px 空隙导致小窗消失；桥是 .hover-pop 的子元素，悬停它即等价于悬停小窗，
+   进而保持父级 a.*-thumb:hover，使小窗持续显示 */
+.hover-pop::before { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 12px; }
 a.card-thumb:hover .hover-pop, a.video-thumb:hover .hover-pop { display: block; }
 /* Day 10 修：position/inset/height 必须 !important——文件后面的 .video-thumb img { position:absolute; inset:0; height:100% }
    与本规则同特异性（0,1,1）且更靠后，会把视频小窗内嵌图钉成绝对定位导致只见局部。 */
@@ -151,6 +290,8 @@ a.card-thumb:hover .hover-pop, a.video-thumb:hover .hover-pop { display: block; 
 /* Day 10 调：同人视频 hover 小窗加大——4 列卡片约 258px 宽，小窗 340px 略大于整卡（16:9 视频封放大约 1.3 倍） */
 a.video-thumb .hover-pop img { width: 340px; max-height: 380px; }
 .card-body { padding: 8px 10px 10px; }
+/* 分类页卡片：所属分类小标签（角色详情「全部」面板 / 原作详情角色标签页） */
+.cat-label { display: inline-block; font-size: 11px; color: #fff; background: #ec8fa5; padding: 2px 8px; border-radius: 10px; margin-bottom: 6px; }
 /* Day 9 修：标题下间距 6px→8px 归入 8px 体系；加溢出防护（规则 5：超长专辑名不撑破卡片） */
 .work-item h3 { font-size: 14px; margin-bottom: 6px; overflow-wrap: anywhere; }
 .work-meta { color: #666; font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
@@ -158,6 +299,39 @@ a.video-thumb .hover-pop img { width: 340px; max-height: 380px; }
 .work-meta .tag { display: inline-block; padding: 2px 8px; background: #f0f7ff; border-radius: 12px; font-size: 12px; }
 .popularity { color: #f9ab00; }
 .module-card h2 { overflow-wrap: anywhere; }
+
+/* ===== 排序控件（收藏页 / 子列表页 / 搜索页 共用） ===== */
+.sort-control { position: relative; display: inline-block; margin: 12px 0; }
+.sort-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: #fff; color: #5a4a55;
+  border: 1px solid #e3c7d2; border-radius: 20px; cursor: pointer;
+  font-size: 13px; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.sort-btn:hover { border-color: #ec8fa5; color: #d96577; }
+.sort-caret { font-size: 10px; opacity: .7; }
+.sort-menu {
+  display: none; position: absolute; left: 0; top: calc(100% - 2px); z-index: 10000;
+  min-width: 168px; margin: 0; padding: 6px 0; list-style: none;
+  background: #fff; border: 1px solid #f0d9e1; border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.16);
+}
+.sort-control:hover .sort-menu,
+.sort-control.open .sort-menu { display: block; }
+.sort-opt {
+  padding: 9px 16px; font-size: 13px; color: #5a4a55; cursor: pointer; white-space: nowrap;
+}
+.sort-opt:hover { background: #fdf1f4; color: #d96577; }
+.sort-opt.active { color: #d96577; font-weight: 700; background: #fdf1f4; }
+/* 方向切换按钮：依当前排序方式显示对应的两个方向（如 由近到远 / 由远到近） */
+.sort-dirs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sort-dir {
+  padding: 6px 12px; background: #fff; color: #5a4a55;
+  border: 1px solid #e3c7d2; border-radius: 16px; cursor: pointer;
+  font-size: 12px; font-weight: 600; transition: all .15s ease;
+}
+.sort-dir:hover { border-color: #ec8fa5; color: #d96577; }
+.sort-dir.active { background: #d96577; border-color: #d96577; color: #fff; }
 
 /* ===== 详情页：左图右文（Day 10 修） ===== */
 .detail-layout { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 20px; align-items: start; margin: 16px 0; }
@@ -171,20 +345,45 @@ a.video-thumb .hover-pop img { width: 340px; max-height: 380px; }
 .detail-cta-ghost { background: #fff; color: #ec8fa5; border: 1px solid #ec8fa5; }
 .detail-cta-ghost:hover { background: #fdf1f4; color: #d96577; border-color: #d96577; }
 
-/* ===== 收藏按钮（Day 10 新增：三态——未收藏「收藏」/ 已收藏「已收藏」/ hover「取消收藏」） =====
-   位置：详情页「点击查看」与「下载原图」之间。状态文案由 span 显隐控制，JS 只切 .is-faved。 */
+/* ===== 收藏按钮（星形：未收藏空心描边 / 已收藏实心填充，JS 只切 .is-faved） =====
+   详情页操作区与收藏页卡片共用；收藏页的 .fav-card-star 恒带 .is-faved，故始终实心。 */
 .detail-cta-fav {
   border: 1px solid #ec8fa5; background: #fff; color: #ec8fa5;
-  cursor: pointer; font: inherit; font-weight: 600; font-size: 14px;
+  cursor: pointer; font: inherit;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .detail-cta-fav:hover { background: #fdf1f4; color: #d96577; border-color: #d96577; }
-.detail-cta-fav .lbl-on, .detail-cta-fav .lbl-un { display: none; }
+/* 空心星：仅描边、不填充 */
+.detail-cta-fav .star-icon { width: 20px; height: 20px; display: block; }
+.detail-cta-fav .star-icon path {
+  fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round;
+}
+/* 实心星：已收藏 */
 .detail-cta-fav.is-faved { border-color: #f9ab00; color: #f9ab00; background: #fff8e6; }
-.detail-cta-fav.is-faved .lbl-off { display: none; }
-.detail-cta-fav.is-faved .lbl-on { display: inline; }
+.detail-cta-fav.is-faved .star-icon path { fill: currentColor; }
 .detail-cta-fav.is-faved:hover { background: #fff3d6; color: #e8a300; border-color: #e8a300; }
-.detail-cta-fav.is-faved:hover .lbl-on { display: none; }
-.detail-cta-fav.is-faved:hover .lbl-un { display: inline; }
+/* 收藏页卡片星形按钮保持原有 18px（覆盖上面的 20px） */
+.fav-card-star .star-icon { width: 18px; height: 18px; }
+
+/* ===== 操作反馈 toast（Day 11：动作生效的可见提示，底部居中浮出 2.2s） ===== */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; z-index: 2200;
+  transform: translateX(-50%) translateY(16px);
+  background: #222; color: #fff; font-size: 14px;
+  padding: 10px 20px; border-radius: 22px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast[hidden] { display: none; }
+.toast.toast-in { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== 键盘焦点态（Day 11 加练：Tab 走到任何可点元素都有可见焦点环） =====
+   :focus-visible 只在键盘导航时显示，鼠标点击不会出现，不干扰日常使用 */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #ec8fa5; outline-offset: 2px; border-radius: 4px;
+}
+.fab-add:focus-visible { outline-offset: 4px; }
 
 /* ===== 修改作品信息弹窗（Day 10 新增：详情页右栏「修改介绍」按钮唤起） ===== */
 .edit-modal { position: fixed; inset: 0; z-index: 2100; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -209,10 +408,77 @@ a.video-thumb .hover-pop img { width: 340px; max-height: 380px; }
 .fab-add svg { width: 28px; height: 28px; }
 .fab-tip { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: #222; color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 4px; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; }
 .fab-add:hover .fab-tip { opacity: 1; }
+/* 返回顶端按钮：固定在「加入作品」FAB 正上方 */
+.fab-backtop { position: fixed; right: 28px; bottom: 100px; z-index: 1600; width: 56px; height: 56px; border: none; border-radius: 50%; background: #ec8fa5; color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(217, 101, 119, 0.4); }
+.fab-backtop:hover { background: #d96577; }
+.fab-backtop svg { width: 28px; height: 28px; }
+.fab-backtop:focus-visible { outline: 2px solid #ec8fa5; outline-offset: 4px; }
+.fab-backtop:hover .fab-tip { opacity: 1; }
+/* 教训baka 按钮：固定在返回顶端按钮正上方，粉色实心圆 + 颜文字 */
+.fab-baka { position: fixed; right: 28px; bottom: 172px; z-index: 1600; width: 56px; height: 56px; border: none; border-radius: 50%; background: #ec8fa5; color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(217, 101, 119, 0.4); }
+.fab-baka:hover { background: #d96577; transform: scale(1.06); }
+.fab-baka .baka-face { font-size: 20px; line-height: 1; user-select: none; }
+.fab-baka:focus-visible { outline: 2px solid #ec8fa5; outline-offset: 4px; }
+.fab-baka:hover .fab-tip { opacity: 1; }
 .add-form { display: grid; gap: 12px; max-width: 560px; margin-top: 16px; }
 .add-form label { display: grid; gap: 4px; font-size: 13px; color: #333; }
 .add-form textarea.field { resize: vertical; }
 .add-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+/* 上传/添加页背景：与首页背景同属 body 层，覆盖整个网页（头部为不透明粉色，自然遮挡，与首页一致）。
+   柔化后的八云紫图完整居中、白底填充、固定不随滚动 —— 位置与首页背景完全相同。 */
+body.add-bg {
+  /* 定位改 center bottom：竖屏时 contain 的画布高度小于视口，贴底才能让人物下缘接到网页最下方；
+     横屏时画布本就铺满视口高度，效果与居中一致。 */
+  background: #fff url('assets/add-bg.jpg?v=7') center bottom / contain no-repeat fixed;
+}
+/* 让 body 背景完整透出：内容区与页脚去掉自带的白色遮罩 */
+body.add-bg main.container,
+body.add-bg footer { background: transparent; }
+.add-page {
+  min-height: 100vh;
+  padding: 28px 16px 48px;
+}
+.add-card {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 24px 28px 28px;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 14px;
+  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.add-card h2 { margin-top: 0; }
+/* 全站页面内容进入时从下往上弹出。
+   ⚠️ to 必须收在 transform:none —— 若以 translateY(0) 收尾，元素会永久保留 transform
+   而形成层叠上下文，把 .hover-pop(z-index:9999) 困在顶栏(z-index:1000)之下，
+   也会破坏内部 position:fixed 的定位。 */
+@keyframes pageSlideUp {
+  from { opacity: 0; transform: translateY(36px); }
+  to { opacity: 1; transform: none; }
+}
+/* 路由每次渲染都会重建 #app 的子元素，动画因此自动重新触发，无需改动任何渲染函数。
+   （.add-card 自身的动画已移除，避免与页面级位移叠加成双倍距离。） */
+#app > * { animation: pageSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* 列表/网格里每张卡片再各自从下往上弹出（错开 60ms 形成瀑布感）。
+   卡片是 #app 的孙级，不会与页面级动画冲突，只叠加出层次；同样以 transform:none 收尾。 */
+@keyframes cardSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+#app .work-item,
+#app .video-card,
+#app .og-card { animation: cardSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#app .work-item:nth-child(1), #app .video-card:nth-child(1), #app .og-card:nth-child(1) { animation-delay: 0.06s; }
+#app .work-item:nth-child(2), #app .video-card:nth-child(2), #app .og-card:nth-child(2) { animation-delay: 0.12s; }
+#app .work-item:nth-child(3), #app .video-card:nth-child(3), #app .og-card:nth-child(3) { animation-delay: 0.18s; }
+#app .work-item:nth-child(4), #app .video-card:nth-child(4), #app .og-card:nth-child(4) { animation-delay: 0.24s; }
+#app .work-item:nth-child(5), #app .video-card:nth-child(5), #app .og-card:nth-child(5) { animation-delay: 0.30s; }
+#app .work-item:nth-child(6), #app .video-card:nth-child(6), #app .og-card:nth-child(6) { animation-delay: 0.36s; }
+#app .work-item:nth-child(7), #app .video-card:nth-child(7), #app .og-card:nth-child(7) { animation-delay: 0.42s; }
+#app .work-item:nth-child(8), #app .video-card:nth-child(8), #app .og-card:nth-child(8) { animation-delay: 0.48s; }
+/* 第 9 张及以后统一用最大延迟，避免长列表越往下越慢 */
+#app .work-item:nth-child(n+9), #app .video-card:nth-child(n+9), #app .og-card:nth-child(n+9) { animation-delay: 0.48s; }
 .add-submit { border: none; cursor: pointer; font: inherit; min-width: 120px; }
 .detail-info .work-meta { font-size: 13px; margin-top: 4px; }
 .detail-info p { margin-top: 12px; line-height: 1.6; }
@@ -229,6 +495,83 @@ body.no-scroll { overflow: hidden; }
 .empty-state { text-align: center; padding: 48px 16px; color: #5f6368; }
 .empty-state .hint { color: #5f6368; font-size: 13px; }
 
+/* 全站搜索无结果：趣味空状态 + 三个引导按钮（Day 11 后续） */
+.search-empty { text-align: center; padding: 56px 16px; }
+.search-empty-title { font-size: 20px; font-weight: 600; color: #c2185b; margin: 0 0 22px; }
+.search-empty-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.search-empty-actions .btn {
+  margin-top: 0;
+  background: #fff;
+  border-color: #ec8fa5;
+  color: #d96577;
+  transition: all .15s ease;
+}
+.search-empty-actions .btn:hover {
+  background: #d96577;
+  border-color: #d96577;
+  color: #fff;
+}
+
+/* 首页/首次进入加载占位：少女祈祷中 + 萃香图 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  gap: 24px;
+  padding: 24px 16px;
+}
+.praying-text {
+  font-size: clamp(40px, 10vw, 86px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+  background: linear-gradient(135deg, #e91e63 0%, #9c27b0 50%, #673ab7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 18px rgba(233, 30, 99, 0.22);
+  filter: drop-shadow(0 2px 0 rgba(255,255,255,0.6));
+}
+/* 少女祈祷中… 的省略号：逐点出现（. → .. → ...）后回到无点，循环往复，每态时长一致 */
+.praying-text::after { content: ""; animation: praying-dots 1.5s infinite; }
+@keyframes praying-dots {
+  0%, 100% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+.praying-img {
+  max-width: min(100%, 520px);
+  max-height: 60vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+  background: #fff;
+}
+
+/* ===== 加载失败趣味页：被不明baka冻结（Day 11） ===== */
+.error-frozen { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.frozen-msg { font-size: 16px; font-weight: 600; color: #333; line-height: 1.8; }
+.punch-btn { background: #ec8fa5; border-color: #ec8fa5; color: #fff; font-weight: 600; margin-top: 14px; }
+.punch-btn:hover { background: #d96577; border-color: #d96577; color: #fff; }
+/* baka 图：按钮下方居中 */
+.frozen-baka { display: block; width: min(260px, 60vw); margin-top: 22px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+/* 点「胖揍一顿baka」后：图左右抖动 */
+@keyframes baka-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-6deg) translateX(-6px); }
+  40% { transform: rotate(5deg) translateX(6px); }
+  60% { transform: rotate(-4deg) translateX(-4px); }
+  80% { transform: rotate(3deg) translateX(3px); }
+}
+.frozen-baka.shaking { animation: baka-shake 0.45s ease; }
+
 /* ===== 区块标题（原「反查入口」内联样式收编，规则 4） ===== */
 .section-title { margin-top: 32px; }
 
@@ -238,7 +581,7 @@ body.no-scroll { overflow: hidden; }
   header h1 { font-size: 18px; }
   .nav-item { width: 44px; height: 44px; }
   .nav-item svg { width: 26px; height: 26px; }
-  .header-search-wrap { flex-basis: 160px; }
+  .header-search-wrap { flex-basis: 220px; }
   .module-grid { grid-template-columns: repeat(2, 1fr); }
   .work-list { grid-template-columns: repeat(2, 1fr); }
 }
@@ -297,20 +640,31 @@ body.no-scroll { overflow: hidden; }
 .og-group.hidden { display: none; }
 .og-group h3 { font-size: 16px; color: #5f6368; margin-bottom: 12px; }
 
+/* 原作查询页：一行 6 个，1:1 封面，hover 弹大图小窗（与作品列表一致） */
 .og-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
 }
 
+/* 原作卡片：hover 时整体上移。注意：这里用 top 代替 transform，
+   因为 transform 会在 hover 时给卡片创建新的层叠上下文，把内部的 .hover-pop
+   小窗困在该上下文内，导致它无法盖过顶栏（z-index 再高也没用）。
+   position: relative 本身不创建层叠上下文，因此小窗仍处于根层叠上下文，
+   配合 z-index: 9999 即可真正位于顶栏之上。 */
 .og-card {
-  display: block; background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden;
-  text-decoration: none; color: inherit; transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  top: 0;
+  background: #fff; border: 1px solid #e8e8e8; border-radius: 8px;
+  transition: top 0.15s, box-shadow 0.15s;
 }
-.og-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
-.og-card:hover .og-info h4 { color: #ec8fa5; }
+.og-card:hover { top: -3px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.og-card:hover .og-info h4 a { color: #ec8fa5; }
 
-.og-cover-wrap { position: relative; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #fce4ec, #f3e5f5); display: flex; align-items: center; justify-content: center; }
+.og-thumb { position: relative; display: block; text-decoration: none; color: inherit; }
+a.og-thumb:hover .hover-pop { display: block; }
+/* 封面区域裁剪圆角，hover-pop 放在 og-thumb 内与 cover-wrap 同级，不会被它裁掉 */
+.og-cover-wrap { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 8px 8px 0 0; background: linear-gradient(135deg, #fce4ec, #f3e5f5); display: flex; align-items: center; justify-content: center; }
 .og-cover-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .og-th {
   position: absolute; top: 6px; left: 6px;
@@ -319,10 +673,19 @@ body.no-scroll { overflow: hidden; }
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-.og-info { padding: 12px; text-align: center; }
-.og-info h4 { font-size: 14px; margin-bottom: 4px; transition: color 0.15s; }
+.og-info { padding: 10px; text-align: center; }
+.og-info h4 { font-size: 13px; margin-bottom: 4px; transition: color 0.15s; }
+.og-info h4 a { color: inherit; text-decoration: none; }
+.og-info h4 a:hover { color: #ec8fa5; text-decoration: underline; }
 .og-sub { font-size: 11px; color: #5f6368; line-height: 1.35; margin-bottom: 4px; }
 .og-year { font-size: 12px; color: #999; }
+
+@media (max-width: 900px) {
+  .og-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 720px) {
+  .og-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* 原作详情页 */
 .og-detail-header { display: flex; gap: 24px; align-items: flex-start; margin: 16px 0 24px; flex-wrap: wrap; }
@@ -343,5 +706,54 @@ body.no-scroll { overflow: hidden; }
   .og-detail-header { flex-direction: column; align-items: center; }
   .og-detail-cover-wrap { max-width: 160px; }
   .og-detail-meta { text-align: center; }
+}
+
+/* 原作详情页·人物标签：角色网格（带黄昏边境绘图缩略图） */
+.char-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.char-tag {
+  display: block; text-decoration: none; color: inherit;
+  background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.char-tag:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.char-tag:hover .char-name { color: #ec8fa5; }
+.char-art {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 1 / 1; overflow: hidden; border-radius: 8px 8px 0 0;
+  background: linear-gradient(135deg, #fce4ec, #f3e5f5);
+}
+.char-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.char-art.no-art img { display: none; }
+.char-art-fallback { padding: 8px; text-align: center; font-size: 12px; color: #b07; line-height: 1.4; }
+.char-name { display: block; padding: 8px 6px; text-align: center; font-size: 13px; }
+
+@media (max-width: 900px) { .char-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 720px) { .char-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* 角色详细页 */
+.char-detail { animation: fade-in 0.2s; }
+.char-head { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px; }
+.char-info { flex: 1; min-width: 240px; }
+.char-name-h { font-size: 24px; margin-bottom: 4px; }
+.char-en { font-size: 14px; color: #5f6368; margin-bottom: 4px; }
+.char-title { font-size: 14px; color: #ec8fa5; margin-bottom: 12px; font-weight: 600; }
+.char-art-box { flex: 0 0 260px; max-width: 260px; }
+.char-art-box .char-art { border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.1); aspect-ratio: 3 / 4; }
+.char-art-box .char-art img { object-fit: contain; background: #fff; }
+.char-art-box .char-art-fallback { font-size: 14px; }
+.char-moe h3 { font-size: 15px; color: #5f6368; margin: 16px 0 6px; }
+.char-moe p { line-height: 1.6; margin: 0 0 8px; }
+.char-basic { width: 100%; border-collapse: collapse; margin: 4px 0 8px; font-size: 13px; }
+.char-basic th, .char-basic td { border: 1px solid #eee; padding: 6px 10px; text-align: left; vertical-align: top; }
+.char-basic th { background: #fafafa; width: 92px; color: #5f6368; font-weight: 600; white-space: nowrap; }
+.char-src { font-size: 12px; color: #999; word-break: break-all; }
+.char-section-title { margin: 24px 0 12px; font-size: 16px; color: #5f6368; }
+.char-work-h { font-size: 14px; color: #5f6368; margin: 14px 0 8px; }
+
+@media (max-width: 720px) {
+  .char-head { flex-direction: column; align-items: center; }
+  .char-art-box { max-width: 200px; }
+  .char-info { text-align: center; }
+  .char-basic th { width: 76px; }
 }
 
