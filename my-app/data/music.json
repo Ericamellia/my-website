@@ -19,6 +19,7 @@
     "popularity": 14280,
     "cover": "assets/works/music01.jpg",
     "source_url": "https://thwiki.cc/%E6%9D%B1%E6%96%B9%E4%B9%99%E5%A5%B3%E5%9B%83%E5%AD%90",
+    "netease_url": "https://music.163.com/#/search/m/?s=%E6%9D%B1%E6%96%B9%E4%B9%99%E5%A5%B3%E5%9B%83%E5%AD%90",
     "description": "IOSYS 于 C70 发布的经典东方同人音乐专辑，曲风活泼。",
     "views": 1027
   },
@@ -40,6 +41,7 @@
     "popularity": 12860,
     "cover": "assets/works/music02.jpg",
     "source_url": "https://thwiki.cc/TOHO_BOSSA_NOVA",
+    "netease_url": "https://music.163.com/#/search/m/?s=TOHO%20BOSSA%20NOVA%20ShibayanRecords",
     "description": "ShibayanRecords 将 Bossa Nova 与东方旋律融合的专辑。",
     "views": 2004
   },
@@ -62,6 +64,7 @@
     "popularity": 11540,
     "cover": "assets/works/music03.jpg",
     "source_url": "https://thwiki.cc/Lyrical_Crimson",
+    "netease_url": "https://music.163.com/#/search/m/?s=Lyrical%20Crimson%20EastNewSound",
     "description": "EastNewSound 的代表性东方同人 Trance 编曲专辑。",
     "views": 2981
   },
@@ -80,6 +83,7 @@
     "popularity": 10520,
     "cover": "assets/works/music04.jpg",
     "source_url": "https://thwiki.cc/Lost_Dream",
+    "netease_url": "https://music.163.com/#/search/m/?s=Lost%20Dream%20%E7%BF%A0%E6%9C%88%E5%A0%82",
     "description": "翠月堂 2026 年免费发布的古典风格东方同人单曲，封面角色为旧作的卡娜。",
     "views": 3958
   },
@@ -100,6 +104,7 @@
     "popularity": 13500,
     "cover": "assets/works/music05.jpg",
     "source_url": "https://thwiki.cc/%E5%87%8B%E5%8F%B6%E6%A3%95%E7%A0%94%E7%A9%B6%E8%AE%A1%E5%88%92I",
+    "netease_url": "https://music.163.com/#/search/m/?s=%E5%87%8B%E5%8F%B6%E6%A3%95%E7%A0%94%E7%A9%B6%E8%AE%A1%E5%88%92I",
     "description": "UESTC幻想乡在东方收获祭9发布的 444 页凋叶棕音乐评论志，系统研究 RD-Sounds 的编曲作品。",
     "views": 4935
   },
@@ -120,6 +125,7 @@
     "popularity": 11900,
     "cover": "assets/works/music06.jpg",
     "source_url": "https://thwiki.cc/%E7%9F%B3%E9%B9%B8%E5%B1%8B%E3%81%AE%E3%81%8A%E6%AD%B3%E6%9A%AE",
+    "netease_url": "https://music.163.com/#/search/m/?s=%E7%9F%B3%E9%B9%B8%E5%B1%8B%E3%81%AE%E3%81%8A%E6%AD%B3%E6%9A%AE",
     "description": "石鹸屋在 C69 会场限定发售的东方摇滚编曲 Demo CD，节奏鲜明。",
     "views": 5912
   }

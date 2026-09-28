@@ -1151,12 +1151,13 @@ function renderDetail(module, id) {
           <img class="zoomable" src="${esc(workCover(w, module))}" alt="${esc(w.name)} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
         </div>
         <p class="zoom-hint">点击配图查看大图</p>
-        ${detailActions(module, w.id, w.source_url, workCover(w, module))}
+        ${detailActions(module, w.id, w.netease_url || w.source_url, workCover(w, module))}
       </div>
       <div class="detail-info">
         <div class="work-meta">作者: ${lnkCircle(w.circle)} · ${w.year} · <span class="popularity">${stars(w.popularity)}</span> · 热度: ${w.popularity}</div>
         ${creatorRow}
         ${origRow}${gameRow}
+        ${w.netease_url ? `<div class="work-meta">网易云试听: <a href="${esc(w.netease_url)}" target="_blank" rel="noopener">music.163.com ↗</a></div>` : ''}
         <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
         <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}</div>
         <p style="margin-top:0;">${esc(w.description)}</p>
