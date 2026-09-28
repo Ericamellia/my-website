@@ -1,132 +1,121 @@
 [
   {
     "id": 1,
-    "name": "東方乙女囃子",
+    "name": "ハルトマンの妖怪少女",
+    "circle": "COOL&CREATE",
+    "creator": "有泉",
+    "year": 2007,
+    "characters": [
+      "西行寺幽幽子",
+      "魂魄妖梦"
+    ],
+    "tags": [
+      "妖妖梦"
+    ],
+    "popularity": 16800,
+    "cover": "",
+    "source_url": "https://thwiki.cc/ハルトマンの妖怪少女",
+    "netease_url": "https://music.163.com/#/search/m/?s=ハルトマンの妖怪少女",
+    "description": "COOL&CREATE 于 C72 发布的东方同人声乐专辑，以妖妖梦主题曲改编的人声曲目最为知名。",
+    "views": 5921
+  },
+  {
+    "id": 2,
+    "name": "チルノのパーフェクトさんすう教室",
     "circle": "IOSYS",
     "creator": "ARM",
-    "year": 2006,
+    "year": 2009,
     "characters": [
-      "十六夜咲夜",
+      "琪露诺"
+    ],
+    "tags": [
+      "红魔乡"
+    ],
+    "popularity": 15100,
+    "cover": "",
+    "source_url": "https://thwiki.cc/チルノのパーフェクトさんすう教室",
+    "netease_url": "https://music.163.com/#/search/m/?s=チルノのパーフェクトさんすう教室",
+    "description": "IOSYS 于 C76 发布的琪露诺主题同人专辑，多首人声改编曲在网络上广为流传。",
+    "views": 4102
+  },
+  {
+    "id": 3,
+    "name": "東方我楽多叢書",
+    "circle": "凋叶棕",
+    "creator": "RD-Sounds",
+    "year": 2010,
+    "characters": [
+      "稗田阿求",
       "博丽灵梦",
       "雾雨魔理沙"
     ],
     "tags": [
-      "红魔乡",
-      "妖妖梦",
-      "永夜抄",
-      "花映塚"
+      "旧作",
+      "Mystic Square"
     ],
-    "popularity": 14280,
-    "cover": "assets/works/music01.jpg",
-    "source_url": "https://thwiki.cc/%E6%9D%B1%E6%96%B9%E4%B9%99%E5%A5%B3%E5%9B%83%E5%AD%90",
-    "netease_url": "https://music.163.com/#/search/m/?s=%E6%9D%B1%E6%96%B9%E4%B9%99%E5%A5%B3%E5%9B%83%E5%AD%90",
-    "description": "IOSYS 于 C70 发布的经典东方同人音乐专辑，曲风活泼。",
-    "views": 1027
-  },
-  {
-    "id": 2,
-    "name": "TOHO BOSSA NOVA",
-    "circle": "ShibayanRecords",
-    "creator": "Shibayan",
-    "year": 2012,
-    "characters": [
-      "蕾米莉亚"
-    ],
-    "tags": [
-      "红魔乡",
-      "妖妖梦",
-      "花映塚",
-      "星莲船"
-    ],
-    "popularity": 12860,
-    "cover": "assets/works/music02.jpg",
-    "source_url": "https://thwiki.cc/TOHO_BOSSA_NOVA",
-    "netease_url": "https://music.163.com/#/search/m/?s=TOHO%20BOSSA%20NOVA%20ShibayanRecords",
-    "description": "ShibayanRecords 将 Bossa Nova 与东方旋律融合的专辑。",
-    "views": 2004
-  },
-  {
-    "id": 3,
-    "name": "Lyrical Crimson",
-    "circle": "EastNewSound",
-    "creator": "黒鳥",
-    "year": 2008,
-    "characters": [
-      "雾雨魔理沙",
-      "芙兰朵露"
-    ],
-    "tags": [
-      "红魔乡",
-      "妖妖梦",
-      "永夜抄",
-      "风神录"
-    ],
-    "popularity": 11540,
-    "cover": "assets/works/music03.jpg",
-    "source_url": "https://thwiki.cc/Lyrical_Crimson",
-    "netease_url": "https://music.163.com/#/search/m/?s=Lyrical%20Crimson%20EastNewSound",
-    "description": "EastNewSound 的代表性东方同人 Trance 编曲专辑。",
-    "views": 2981
+    "popularity": 13900,
+    "cover": "",
+    "source_url": "https://thwiki.cc/東方我楽多叢書",
+    "netease_url": "https://music.163.com/#/search/m/?s=東方我楽多叢書",
+    "description": "凋叶棕（RD-Sounds）以东方旧作（含 Mystic Square）为题材的叙事性同人音乐专辑。",
+    "views": 3310
   },
   {
     "id": 4,
-    "name": "Lost Dream",
-    "circle": "翠月堂",
-    "creator": "Hisui",
-    "year": 2026,
+    "name": "アルティメットトゥルース",
+    "circle": "暁Records",
+    "creator": "ねじ式",
+    "year": 2014,
     "characters": [
-      "卡娜"
+      "古明地さとり"
     ],
     "tags": [
-      "怪绮谈"
+      "地霊殿"
     ],
-    "popularity": 10520,
-    "cover": "assets/works/music04.jpg",
-    "source_url": "https://thwiki.cc/Lost_Dream",
-    "netease_url": "https://music.163.com/#/search/m/?s=Lost%20Dream%20%E7%BF%A0%E6%9C%88%E5%A0%82",
-    "description": "翠月堂 2026 年免费发布的古典风格东方同人单曲，封面角色为旧作的卡娜。",
-    "views": 3958
+    "popularity": 14400,
+    "cover": "",
+    "source_url": "https://thwiki.cc/アルティメットトゥルース",
+    "netease_url": "https://music.163.com/#/search/m/?s=アルティメットトゥルース",
+    "description": "暁Records 于 C86 发布的地霊殿主题同人声乐专辑，古明地さとり相关曲目人气很高。",
+    "views": 2877
   },
   {
     "id": 5,
-    "name": "凋叶棕研究计划I",
-    "circle": "UESTC幻想乡",
-    "creator": "UESTC幻想乡",
-    "year": 2024,
+    "name": "月まで届け、不死の煙",
+    "circle": "豚乙女",
+    "creator": "コバヤシユウ",
+    "year": 2011,
     "characters": [
-      "爱丽丝",
-      "比那名居天子"
+      "蓬莱山輝夜"
     ],
     "tags": [
-      "妖妖梦",
-      "绯想天"
+      "永夜抄"
     ],
-    "popularity": 13500,
-    "cover": "assets/works/music05.jpg",
-    "source_url": "https://thwiki.cc/%E5%87%8B%E5%8F%B6%E6%A3%95%E7%A0%94%E7%A9%B6%E8%AE%A1%E5%88%92I",
-    "netease_url": "https://music.163.com/#/search/m/?s=%E5%87%8B%E5%8F%B6%E6%A3%95%E7%A0%94%E7%A9%B6%E8%AE%A1%E5%88%92I",
-    "description": "UESTC幻想乡在东方收获祭9发布的 444 页凋叶棕音乐评论志，系统研究 RD-Sounds 的编曲作品。",
-    "views": 4935
+    "popularity": 13700,
+    "cover": "",
+    "source_url": "https://thwiki.cc/月まで届け、不死の煙",
+    "netease_url": "https://music.163.com/#/search/m/?s=月まで届け、不死の煙",
+    "description": "豚乙女于 C80 发布的蓬莱山輝夜主题同人声乐专辑，永夜抄改编曲目氛围独特。",
+    "views": 2540
   },
   {
     "id": 6,
-    "name": "石鹸屋のお歳暮",
-    "circle": "石鹸屋",
-    "creator": "石鹸屋",
-    "year": 2005,
+    "name": "サンセットカフェ",
+    "circle": "ShibayanRecords",
+    "creator": "Shibayan",
+    "year": 2008,
     "characters": [
-      "上白泽慧音",
-      "露米娅"
+      "蕾米莉亚",
+      "帕秋莉"
     ],
     "tags": [
-      "红魔乡",
-      "永夜抄"
+      "红魔乡"
     ],
-    "popularity": 11900,
-    "cover": "assets/works/music06.jpg",
-    "source_url": "https://thwiki.cc/%E7%9F%B3%E9%B9%B8%E5%B1%8B%E3%81%AE%E3%81%8A%E6%AD%B3%E6%9A%AE",
-    "netease_url": "https://music.163.com/#/search/m/?s=%E7%9F%B3%E9%B9%B8%E5%B1%8B%E3%81%AE%E3%81%8A%E6%AD%B3%E6%9A%AE",
-    "description": "石鹸屋在 C69 会场限定发售的东方摇滚编曲 Demo CD，节奏鲜明。",
-    "views": 5912
+    "popularity": 12100,
+    "cover": "",
+    "source_url": "https://thwiki.cc/サンセットカフェ",
+    "netease_url": "https://music.163.com/#/search/m/?s=サンセットカフェ",
+    "description": "ShibayanRecords 于 C74 发布的 Bossa Nova 风格东方同人专辑，红魔乡主题曲改编轻盈舒缓。",
+    "views": 1980
   }
 ]
