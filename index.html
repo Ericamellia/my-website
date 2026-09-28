@@ -61,7 +61,8 @@
     <p class="manual show">你的浏览器未启用脚本，<a href="./my-app/">点击进入 →</a></p>
   </noscript>
 
-  <!-- 后台预加载目标站点：先播祈祷动画，等站内内容真正渲染完成后再跳转 -->
+  <!-- 后台优先预加载即将跳转的界面（./my-app/ 首页），同时前台一直播放少女祈祷中动画；
+       待该界面图片（含 CSS 背景图、卡片图、视频首帧）全部就绪后再真正进入 -->
   <iframe id="preload" src="./my-app/" tabindex="-1" aria-hidden="true"></iframe>
 
   <script>
@@ -70,14 +71,56 @@
       var done = false;
       var manual = document.getElementById('manual');
       var f = document.getElementById('preload');
+      var bgCache = {};   // 已探测过的 CSS 背景图 URL -> true/进行中
 
       function go() {
         if (done) return;
         done = true;
+        // 进入前再确保祈祷动画已播一会儿，避免闪烁
         window.location.replace(target);
       }
 
-      // 轮询判断子页面是否已渲染出真实内容（加载态消失且 #app 有内容）
+      // 判断目标文档「渲染完成 + 图片全部就绪」
+      function imagesReady(doc) {
+        if (!doc) return false;
+
+        // 1) 所有 <img> 必须加载完成且有效
+        var imgs = doc.querySelectorAll('img');
+        for (var i = 0; i < imgs.length; i++) {
+          var im = imgs[i];
+          if (!im.complete || im.naturalWidth === 0) return false;
+        }
+
+        // 2) 所有 <video> 至少拿到首帧/元数据（封面已可显示）
+        var vids = doc.querySelectorAll('video');
+        for (var j = 0; j < vids.length; j++) {
+          if (vids[j].readyState < 1) return false;
+        }
+
+        // 3) CSS 背景图（body / #app / 常见容器）：解析 url 并在 iframe 文档内预加载
+        var sel = 'body, #app, .cat-card, .home-hero, .module-card, .work-item, .og-card, .video-card, .char-detail, .detail-main';
+        var elems = doc.querySelectorAll(sel);
+        for (var k = 0; k < elems.length; k++) {
+          var bg = null;
+          try { bg = doc.defaultView.getComputedStyle(elems[k]).backgroundImage; } catch (e) { continue; }
+          if (!bg || bg === 'none' || bg.indexOf('url(') < 0) continue;
+          if (bgCache[bg] === true) continue;
+          var m = bg.match(/url\(["']?([^)"']+)["']?\)/);
+          if (!m) continue;
+          if (!(bg in bgCache)) {
+            bgCache[bg] = 'loading';
+            var url = m[1];
+            var probe = doc.createElement('img');
+            (function (key) {
+              probe.onload = probe.onerror = function () { bgCache[key] = true; };
+            })(bg);
+            probe.src = url;   // 相对路径按 iframe 文档基准解析
+          }
+          if (bgCache[bg] !== true) return false;
+        }
+        return true;
+      }
+
       function waitRendered() {
         var doc = null;
         try { doc = f.contentDocument; } catch (e) { go(); return; }
@@ -87,9 +130,12 @@
           var app = doc.getElementById('app');
           var stillLoading = doc.querySelector('.loading-state');
           var rendered = !!app && app.children.length > 0 && !stillLoading;
-          if (rendered || Date.now() - t0 > 7000) {
+          if (rendered && imagesReady(doc)) {
             clearInterval(timer);
-            setTimeout(go, 250);   // 稍作缓冲，让首帧稳定
+            setTimeout(go, 200);          // 稍作缓冲，让首帧稳定
+          } else if (Date.now() - t0 > 12000) {
+            clearInterval(timer);
+            go();                          // 兜底：绝不卡死在加载页
           }
         }, 150);
       }
@@ -98,9 +144,9 @@
         f.addEventListener('load', waitRendered);
         f.addEventListener('error', go);
       }
-      // 兜底：3.5s 显示手动入口，10s 后无论如何进入
+      // 兜底：3.5s 显示手动入口，15s 后无论如何进入
       setTimeout(function () { if (manual) manual.classList.add('show'); }, 3500);
-      setTimeout(go, 10000);
+      setTimeout(go, 15000);
     })();
   </script>
 </body>
