@@ -107,7 +107,11 @@ function bindSort(gridSelector) {
   const dirs = document.getElementById('sortDirs');
   const label = (ctrl.querySelector && ctrl.querySelector('.sort-btn-label')) || null;
   const qsa = sel => (typeof document.querySelectorAll === 'function') ? document.querySelectorAll(sel) : [];
-  const reSort = () => qsa(gridSelector).forEach(c => sortDom(c, currentSort, currentDir[currentSort] || 'desc'));
+  // 重排后列表回到「只显示三行」：换排序后前三行应该是新顺序的前三行
+  const reSort = () => qsa(gridSelector).forEach(c => {
+    sortDom(c, currentSort, currentDir[currentSort] || 'desc');
+    resetPagedList(c);
+  });
   const updateLabel = () => { if (label) label.textContent = '排序：' + SORT_LABELS[currentSort] + '（' + DIR_LABELS[currentSort][currentDir[currentSort] || 'desc'] + '）'; };
   const bindDirs = () => {
     const db = (dirs && typeof dirs.querySelectorAll === 'function') ? dirs.querySelectorAll('.sort-dir') : [];
@@ -624,9 +628,9 @@ function renderList(module) {
   $app.innerHTML = `
     <h2>${labels[module]}</h2>
     ${sortControlHTML()}
-    <input id="search" class="field" placeholder="搜索作品名/作者/角色/标签…">
+    <input id="search" class="field" aria-label="搜索作品：可按作品名、作者、角色、标签筛选" placeholder="搜索作品名/作者/角色/标签…">
     ${origFilter}
-    <div id="no-result" class="search-empty" hidden></div>
+    <div id="no-result" class="search-empty" role="status" aria-live="polite" hidden></div>
     <div class="work-list${module === 'music' ? ' work-list-music' : ''}" id="workGrid">${items}</div>
     ${fabBtn(module)}`;
 
@@ -643,12 +647,15 @@ function renderList(module) {
     const nr = document.getElementById('no-result');
     if (visible === 0) { fillSearchEmpty(nr, q); nr.hidden = false; }
     else { nr.hidden = true; }
+    // 筛选结果变了 → 列表回到「只显示三行」，避免沿用上一次展开的数量
+    resetPagedList(document.getElementById('workGrid'));
   };
   document.getElementById('search').addEventListener('input', applyFilter);
   if (module === 'music') {
     document.getElementById('origFilter').addEventListener('change', applyFilter);
   }
   bindSort('#workGrid');
+  applyPresetQuery();
 }
 
 // ===== 同人视频列表（封面卡片） =====
@@ -679,8 +686,8 @@ function renderVideoList() {
   $app.innerHTML = `
     <h2>同人视频</h2>
     ${sortControlHTML()}
-    <input id="search" class="field" placeholder="搜索视频名/作者/创作者/角色/标签…">
-    <div id="no-result" class="search-empty" hidden></div>
+    <input id="search" class="field" aria-label="搜索视频：可按视频名、作者、创作者、角色、标签筛选" placeholder="搜索视频名/作者/创作者/角色/标签…">
+    <div id="no-result" class="search-empty" role="status" aria-live="polite" hidden></div>
     <div class="video-grid" id="workGrid">${items}</div>
     ${fabBtn('video')}`;
 
@@ -695,9 +702,27 @@ function renderVideoList() {
     const nr = document.getElementById('no-result');
     if (visible === 0) { fillSearchEmpty(nr, q); nr.hidden = false; }
     else { nr.hidden = true; }
+    // 筛选结果变了 → 列表回到「只显示三行」，避免沿用上一次展开的数量
+    resetPagedList(document.getElementById('workGrid'));
   };
   document.getElementById('search').addEventListener('input', applyFilter);
   bindSort('#workGrid');
+  applyPresetQuery();
+}
+
+// 地址栏预设筛选词：#/music?q=灵梦 这类链接可直达筛选结果，方便复现与分享
+function presetQuery() {
+  const m = String((window.location && window.location.hash) || '').match(/[?&]q=([^&]*)/);
+  return m ? decodeURIComponent(m[1] || '') : '';
+}
+// 列表页渲染后：把预设词填进搜索框并立刻筛一次
+function applyPresetQuery() {
+  const q = presetQuery();
+  if (!q) return;
+  const input = document.getElementById('search');
+  if (!input) return;
+  input.value = q;
+  input.dispatchEvent && input.dispatchEvent(new Event('input'));
 }
 
 // ===== 添加作品：分类选择页（首页「加入作品」FAB 入口） =====
@@ -1284,7 +1309,7 @@ function renderCircle(val) {
           ${ci.name_en ? `<p class="char-en">${esc(ci.name_en)}</p>` : ''}
           <section class="char-moe circle-moe">
             <h3>社团 · 简介</h3>
-            <p>${esc(intro)}</p>
+            <p class="clamp-3">${esc(intro)}</p>
             ${platformLine}
             ${sourceLine}
           </section>
@@ -1364,7 +1389,7 @@ function renderCharacter(key) {
           ${basic['称号'] ? `<p class="char-title">「${esc(basic['称号'])}」</p>` : ''}
           <section class="char-moe">
             <h3>萌娘百科 · 简介</h3>
-            <p>${esc(mg.intro || '（简介整理中）')}</p>
+            <p class="clamp-3">${esc(mg.intro || '（简介整理中）')}</p>
             ${basicRows ? `<h3>萌娘百科 · 基本资料</h3><table class="char-basic"><tbody>${basicRows}</tbody></table>` : ''}
             ${ch.source_url ? `<p class="char-src">资料来源：<a href="${esc(ch.source_url)}" target="_blank" rel="noopener">${esc(ch.source_url)}</a></p>` : ''}
           </section>
@@ -1392,6 +1417,101 @@ function renderCharacter(key) {
   }
 }
 
+// ===== 介绍文字折叠：超过三行只显示三行，点「展开」看剩下文字 =====
+// 用法：给介绍段落加 class="clamp-3"，路由渲染后由 applyClamp3() 统一处理：
+//   · 不足三行 → 保持原样，不加按钮；
+//   · 超过三行 → 折叠到三行，并在段落后面插入「展开 / 收起」按钮。
+// 测量时机放在 rAF 里，确保浏览器已完成布局后再判断行数。
+function applyClamp3(root) {
+  const nodes = (root || document).querySelectorAll('.clamp-3');
+  nodes.forEach(p => {
+    if (p.dataset.clamp === 'done') return;
+    p.dataset.clamp = 'done';
+    // 判定是否真超过三行：先临时解除折叠量出「完整高度」，
+    // 再回到折叠态量出「三行高度」，两者接近说明不足三行，就不加按钮。
+    // （注意：Chromium 在 -webkit-line-clamp 下 scrollHeight 会等于 clientHeight，
+    //   不能直接用 scrollHeight > clientHeight 判断溢出，故采用这种两态测量。）
+    p.classList.add('clamp-open');
+    const full = p.scrollHeight;
+    p.classList.remove('clamp-open');
+    const shown = p.clientHeight;
+    if (!full || !shown || full - shown <= 2) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'clamp-toggle';
+    btn.textContent = '展开';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', () => {
+      const open = p.classList.toggle('clamp-open');
+      btn.textContent = open ? '收起' : '展开';
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    p.insertAdjacentElement('afterend', btn);
+  });
+}
+
+// ===== 列表分页：一次只展示三行作品，点下方「展开更多」再加载三行 =====
+// 作用范围：所有作品列表容器（.work-list / .video-grid），包含各分类 Tab 面板内的列表。
+// 卡片始终渲染在 DOM 里，超出的只是被隐藏，排序/筛选/搜索不会丢数据。
+const LM_ROWS = 3;
+
+// 一行几列：把卡片临时全部显示后，按 offsetTop 分组统计第一行有几张卡
+function lmCols(cards) {
+  if (!cards.length) return 1;
+  let cols = 0;
+  const top0 = cards[0].offsetTop;
+  for (let i = 0; i < cards.length; i++) {
+    if (cards[i].offsetTop !== top0) break;
+    cols++;
+  }
+  return cols || 1;
+}
+function lmRemoveBtn(list) {
+  if (list.__lmBtn && list.__lmBtn.parentNode) list.__lmBtn.parentNode.removeChild(list.__lmBtn);
+  list.__lmBtn = null;
+}
+// 对单个列表应用分页；reset=true 时回到「只显示三行」
+function pageList(list, reset) {
+  if (!list || !list.classList || !list.children) return;
+  const cards = Array.prototype.filter.call(list.children,
+    el => el.classList && (el.classList.contains('work-item') || el.classList.contains('video-card')));
+  if (!cards.length) { lmRemoveBtn(list); return; }
+  cards.forEach(c => c.classList.remove('lm-hidden'));
+  // 容器不可见（处于未激活的分类面板中）时量不出列数，等面板切出来再处理
+  if (!list.clientWidth) return;
+  const active = cards.filter(c => c.style.display !== 'none'); // 已通过搜索/筛选的卡片
+  const size = Math.max(1, lmCols(active) * LM_ROWS);           // 三行 = 列数 × 3
+  if (reset) { delete list.dataset.lmShown; delete list.dataset.lmSize; }
+  let shown = Number(list.dataset.lmShown) || size;
+  if (shown < size) shown = size;
+  if (shown > active.length) shown = active.length;
+  active.forEach((c, i) => c.classList.toggle('lm-hidden', i >= shown));
+  list.dataset.lmShown = String(shown);
+  list.dataset.lmSize = String(size);
+
+  const remain = active.length - shown;
+  if (remain <= 0) { lmRemoveBtn(list); return; }   // 全部展示完，按钮自动消失
+  let btn = list.__lmBtn;
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'load-more-btn';
+    btn.addEventListener('click', () => {
+      list.dataset.lmShown = String((Number(list.dataset.lmShown) || 0) + (Number(list.dataset.lmSize) || LM_ROWS));
+      pageList(list);
+    });
+    if (list.parentNode) list.parentNode.insertBefore(btn, list.nextSibling);
+    list.__lmBtn = btn;
+  }
+  btn.textContent = '展开更多（还有 ' + remain + ' 部）';
+}
+// 统一入口：路由渲染后、分类 Tab 切换后、窗口尺寸变化后都要重新算一次
+function initPagedLists(root, force) {
+  const lists = (root && root.querySelectorAll) ? root.querySelectorAll('.work-list, .video-grid') : [];
+  Array.prototype.forEach.call(lists, l => pageList(l, force));
+}
+function resetPagedList(list) { pageList(list, true); }
+
 // ===== 详情页 =====
 function renderDetail(module, id) {
   const w = data[module].find(x => x.id === Number(id));
@@ -1417,7 +1537,7 @@ function renderDetail(module, id) {
         ${w.netease_url ? `<div class="work-meta">网易云试听: <a href="${esc(w.netease_url)}" target="_blank" rel="noopener">music.163.com ↗</a></div>` : ''}
         <div class="work-meta">角色: ${w.characters.map(lnkChar).join(', ')}</div>
         <div class="work-meta">原作: ${(w.tags||[]).map(lnkTag).join(' ')}</div>
-        <p style="margin-top:0;">${esc(w.description)}</p>
+        <p class="clamp-3" style="margin-top:0;">${esc(w.description)}</p>
         <p>资料来源: ${lnkSource(w.source_url)}</p>
         <button class="btn edit-btn" type="button" data-module="${esc(module)}" data-id="${esc(w.id)}">✎ 修改介绍</button>
       </div>
@@ -1451,7 +1571,7 @@ function renderVideoDetail(w) {
         ${origRow}
         <div class="work-meta">角色: ${(w.characters||[]).map(lnkChar).join(', ')}</div>
         ${(w.tags||[]).length ? `<div class="work-meta">原作: ${w.tags.map(lnkTag).join(' ')}</div>` : ''}
-        <p style="margin-top:0;">${esc(w.description)}</p>
+        <p class="clamp-3" style="margin-top:0;">${esc(w.description)}</p>
         <p><a href="${esc(w.url)}" target="_blank" rel="noopener">▶ 前往 ${esc(w.platform)} 观看 ↗</a></p>
         <p>资料来源: ${lnkSource(w.source_url)}</p>
         <button class="btn edit-btn" type="button" data-module="video" data-id="${esc(w.id)}">✎ 修改介绍</button>
@@ -1534,6 +1654,8 @@ function renderFavs() {
     ${slogan}`;
 
   bindSort('.fav-panel .work-list');
+  // 收藏页列表同样一次只展示三行（分类面板切换会整页重渲染，这里补一次分页）
+  initPagedLists($app);
   // 分类标签切换：切模块时重新渲染，保留当前排序
   if (typeof document.querySelectorAll === 'function') {
     document.querySelectorAll('.fav-tab').forEach(tab => {
@@ -1713,7 +1835,8 @@ async function routeInner() {
     renderFrozen(() => { dataPromise = null; route(); });
     return;
   }
-  const h = location.hash.slice(1) || '/';
+  // 路径与查询串分开：#/music?q=灵梦 里的 ?q= 只用于预填筛选，不参与路由匹配
+  const h = (location.hash.slice(1) || '/').split('?')[0];
   const p = h.split('/').filter(Boolean);
   // 首页才显示背景图，子页面保持干净白底
   if (document.body && document.body.classList) document.body.classList.toggle('home-bg', !p.length);
@@ -1751,6 +1874,13 @@ async function routeInner() {
     return renderFrozen(() => { location.hash = bakaReturnHash || '#/'; });
   }
   else { $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>'; }
+
+  // 介绍文字（作品简介 / 角色简介 / 社团简介）：超过三行折叠，点「展开」看剩下文字。
+  // 等一帧让布局稳定后再测量行数，避免拿到旧布局导致误判。
+  // 作品列表同样在此时分页：一次只展示三行，点「展开更多」再加载三行。
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => { applyClamp3($app); initPagedLists($app); });
+  } else { applyClamp3($app); initPagedLists($app); }
 
   // 子页面：等首屏图片就绪再揭开「少女祈祷中」遮罩；首屏由根加载页已处理好，直接揭开。
   // 图片始终在 DOM 中渲染好（仅被遮罩盖住），就绪即揭开，绝不把没加载好的页面亮给用户。
@@ -1801,3 +1931,16 @@ if (bakaBtn && bakaBtn.addEventListener) {
 
 window.addEventListener('hashchange', route);
 route();
+
+// 分类 Tab（作品分类 / 收藏分类）切换后，刚变可见的面板要补一次分页计算：
+// 面板隐藏时量不出「一行几列」，只能等它显示出来再决定三行是多少张卡。
+document.addEventListener('click', e => {
+  const t = (e.target && e.target.closest) ? e.target.closest('.og-tab, .fav-tab') : null;
+  if (t) setTimeout(() => initPagedLists(document), 0);
+});
+// 窗口尺寸变化会改变「一行几列」→ 重新按三行分页，避免展开行数错乱
+let lmResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(lmResizeTimer);
+  lmResizeTimer = setTimeout(() => initPagedLists(document, true), 200);
+});

@@ -61,8 +61,11 @@
 </head>
 <body>
   <div class="praying-text">少女祈祷中</div>
+  <!-- 少女祈祷中：文字与动图视频是整个站点最先出现、也最先加载的内容；
+       fetchpriority=high + autoplay/preload=auto 让它在 HTML 解析阶段即以最高优先级取回。
+       其余资源（首页背景、分类图、作者头像、隐藏预载 iframe）都等它就绪后再开始。 -->
   <video class="praying-img" src="./my-app/assets/praying.mp4?v=2"
-         autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+         autoplay loop muted playsinline preload="auto" fetchpriority="high" aria-label="少女祈祷中"></video>
   <p class="manual" id="manual">加载较慢？<a id="manualLink" href="./my-app/">直接进入 →</a></p>
 
   <noscript>
@@ -185,52 +188,93 @@
       if (f) {
         f.addEventListener('load', waitRendered);
         f.addEventListener('error', go);
-        f.src = baseTarget; // 预加载「即将跳转的页面」本身
+        // 注意：这里先不设置 f.src —— 要让「少女祈祷中」的动图视频最先加载，
+        // 等它就绪后再开始预载「即将跳转的页面」，见下方 startRest()。
       }
       // 兜底：3.5s 显示手动入口，15s 后无论如何进入
       setTimeout(function () { if (manual) manual.classList.add('show'); }, 3500);
       setTimeout(go, 15000);
 
+      // ===== 最先加载「少女祈祷中」的动图视频与内容 =====
+      // 文字（.praying-text）已在 HTML 里，随文档立刻可见；动图视频（.praying-img）以
+      // fetchpriority=high + autoplay + preload=auto 在解析阶段就发出最高优先级请求。
+      // 这里再做一个「闸门」：只有等这个视频真的就绪（或出错/兜底超时）后，
+      // 才去预载其它一切（隐藏 iframe 的目标页 + 首页/分类/作者头像等静态资源），
+      // 避免它们抢带宽、拖慢少女祈祷中首帧。
+      // 闸门之后的顺序与既有约定完全一致（只把祈祷页提到最前，其余不变）：
+      //   少女祈祷中 → baka冻结(出错时) → 首页背景 → 首页内容/图 → 上传作品页背景
+      //   → 即将跳转页 → 其余内容（作者头像）
+      // 因此 iframe（即将跳转页）排在核心静态资源之后才启动，避免抢在首页背景/分类图之前。
+      function startRest() {
+        if (startRest.done) return;
+        startRest.done = true;
+        buildPreloadList(function () {
+          if (f && !f.getAttribute('src')) f.src = baseTarget; // ⑤ 即将跳转页，顺序仍在上传页背景之后
+        });
+      }
+      var prayVid = document.querySelector('.praying-img');
+      if (prayVid) {
+        if (prayVid.readyState >= 2) {
+          startRest();
+        } else {
+          prayVid.addEventListener('loadeddata', startRest, { once: true });
+          prayVid.addEventListener('canplay', startRest, { once: true });
+          prayVid.addEventListener('error', startRest, { once: true });
+          setTimeout(startRest, 1500); // 兜底：视频慢/被拦截也不让后续加载无限期等待
+        }
+      } else {
+        startRest();
+      }
+
       // ===== 后台按「排列顺序」预热各页面共用的静态资源（不阻塞切换到目标页） =====
-      // 加载顺序（对应需求：少女祈祷中 → baka冻结(出错时) → 首页背景 → 首页内容/图
-      //          → 上传作品背景/内容 → 即将跳转页(由上方 iframe 渲染) → 若无跳转则依序加载全部）：
-      //   ① 首页背景图        ② 各分类图（首页内容/图）  ③ 上传作品页背景图
-      //   ④ 各作者头像（来自 circles.json，按数据排列顺序）⑤ 深链到某分类时该分类图优先
-      // 这些图绝大多数被多个页面复用，预热后返回/切换都即时显示，不再转圈。
+      // 加载顺序（保持不变）：① 首页背景 → ② 各分类图（首页内容/图）→ ③ 上传作品页背景
+      //   → ④ 即将跳转页（回调里启动 iframe）→ ⑤ 其余内容：各作者头像（作者页用，最后补）
+      // 深链到某分类时，该分类图提前（仍属「即将跳转页优先」但不越过祈祷页）。
       var MODFILE = { music: 'module-music.webp', doujin: 'module-doujin.jpg', game: 'module-game2.jpg', video: 'module-video2.jpg', art: 'module-art.jpg', original: 'module-original.jpg' };
-      function buildPreloadList() {
+      function buildPreloadList(afterCore) {
         var list = ['./my-app/assets/bg-home.jpeg'];                 // ① 首页背景
         ['module-music.webp', 'module-doujin.jpg', 'module-game2.jpg', 'module-video2.jpg', 'module-art.jpg', 'module-original.jpg']
           .forEach(function (m) { list.push('./my-app/assets/modules/' + m); }); // ② 首页/分类内容图
-        list.push('./my-app/assets/add-bg.jpg?v=7');                 // ③ 上传作品页背景
-        // 深链到某分类时，把该分类图提前，符合「即将跳转页优先」
+        list.push('./my-app/assets/add-bg.jpg?v=8');                 // ③ 上传作品页背景
         var m = targetRoute.match(/^#\/(music|doujin|game|video|art|original)/);
         if (m && MODFILE[m[1]]) list.unshift('./my-app/assets/modules/' + MODFILE[m[1]]);
-        // ④ 作者头像：读 circles.json 按数据顺序补齐（覆盖「若无跳转则依序加载全部内容」）
+        // 先依序跑完核心静态资源，再由回调启动「即将跳转页」，最后补作者头像
+        preloadInOrder(list, function () {
+          if (afterCore) afterCore();
+          loadAvatars();
+        });
+      }
+      // ⑤ 作者头像：来自 circles.json，按数据排列顺序；请求本身也排在核心资源之后，不抢带宽
+      function loadAvatars() {
+        var avatars = [];
         try {
           var xhr = new XMLHttpRequest();
           xhr.open('GET', './my-app/data/circles.json', true);
           xhr.onload = function () {
             try {
-              var data = JSON.parse(xhr.responseText);
-              data.forEach(function (c) { if (c.avatar) list.push('./my-app/' + c.avatar); });
+              JSON.parse(xhr.responseText).forEach(function (c) {
+                if (c.avatar) avatars.push('./my-app/' + c.avatar);
+              });
             } catch (e) {}
-            preloadInOrder(list);
+            preloadInOrder(avatars);
           };
-          xhr.onerror = function () { preloadInOrder(list); };
+          xhr.onerror = function () {};
           xhr.send();
-        } catch (e) { preloadInOrder(list); }
+        } catch (e) {}
       }
-      function preloadInOrder(urls) {
+      // 顺序加载：一张完成再下一张，全部完成（或为空）后回调
+      function preloadInOrder(urls, done) {
         var i = 0;
+        if (!urls || urls.length === 0) { if (done) done(); return; }
         (function next() {
-          if (i >= urls.length) return;
+          if (i >= urls.length) { if (done) done(); return; }
           var img = new Image();
           img.onload = img.onerror = next;
           img.src = urls[i++];   // 命中浏览器缓存，后续页面即时显示
         })();
       }
-      buildPreloadList();
+      // 注意：buildPreloadList() 已由上方 startRest() 在「少女祈祷中」视频就绪后调用，
+      // 这里不再直接调用，确保祈祷页动图视频最先加载。
     })();
   </script>
 </body>

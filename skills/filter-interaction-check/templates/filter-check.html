@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!-- filter-interaction-check 的实测模板：
+     与被测站点同域同端口（放在站点根目录，用 8001 打开），
+     父页通过 iframe 拿到页面 DOM → 改筛选控件值并派发事件 → 读真实可见性。
+     用法见同目录 SKILL.md；测完记得删掉站点根目录下的这份副本。 -->
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>filter check</title></head>
+<body>
+  <iframe id="f" src="http://127.0.0.1:8001/my-app/#/music" style="width:900px;height:900px;border:0"></iframe>
+  <div id="out">pending</div>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => {
+      const d = document.getElementById('f').contentDocument;
+      const cards = () => [...d.querySelectorAll('.work-item, .video-card')];
+      // 真可见：offsetParent 不为 null（同时排除 inline display:none 与 .lm-hidden）
+      const visible = () => cards().filter(el => el.offsetParent !== null).length;
+      // 被筛选隐藏的（inline display:none）
+      const filteredOut = () => cards().filter(el => el.style.display === 'none').length;
+      const emptyShown = () => { const n = d.getElementById('no-result'); return !!n && !n.hidden; };
+      const set = v => { const i = d.getElementById('search'); i.value = v; i.dispatchEvent(new Event('input')); };
+      const snap = tag => tag + ': total=' + cards().length + ' visible=' + visible() +
+                          ' filteredOut=' + filteredOut() + ' emptyShown=' + emptyShown();
+
+      const r = [];
+      r.push(snap('初始'));
+      set('灵梦'); r.push(snap('有结果(灵梦)'));
+      set('zzzz'); r.push(snap('无结果(zzzz)'));
+      set('');     r.push(snap('清空恢复'));
+
+      // 附带：下拉筛选（原曲筛选）——遍历每个选项统计命中；
+      // 若作品数据没标注该字段，所有选项都会是 0 命中，此时应看到空状态而不是白屏。
+      const sel = d.getElementById('origFilter');
+      if (sel && sel.options.length > 1) {
+        const hits = [];
+        for (const o of [...sel.options].slice(1)) {
+          sel.value = o.value; sel.dispatchEvent(new Event('change'));
+          hits.push(o.value + '=' + visible());
+        }
+        r.push('下拉筛选逐项命中: ' + hits.join(',') + '（全 0 表示数据未标注该字段）');
+        sel.value = ''; sel.dispatchEvent(new Event('change'));
+        r.push(snap('下拉清空'));
+      }
+
+      // 可访问性加练：控件有没有可被读屏识别的名字 / 空状态能否播报
+      const i = d.getElementById('search');
+      const nr = d.getElementById('no-result');
+      r.push('a11y: inputAriaLabel=' + (i && (i.getAttribute('aria-label') || i.getAttribute('placeholder') ? 'yes' : 'no')) +
+             ' emptyRole=' + (nr ? (nr.getAttribute('role') || 'none') : 'n/a') +
+             ' emptyAriaLive=' + (nr ? (nr.getAttribute('aria-live') || 'none') : 'n/a'));
+
+      document.getElementById('out').textContent = r.join(' | ');
+    }, 2500));
+  </script>
+</body>
+</html>

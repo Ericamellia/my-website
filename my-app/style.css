@@ -428,12 +428,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .add-form label { display: grid; gap: 4px; font-size: 13px; color: #333; }
 .add-form textarea.field { resize: vertical; }
 .add-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
-/* 上传/添加页背景：与首页背景同属 body 层，覆盖整个网页（头部为不透明粉色，自然遮挡，与首页一致）。
-   柔化后的八云紫图完整居中、白底填充、固定不随滚动 —— 位置与首页背景完全相同。 */
-body.add-bg {
-  /* 定位改 center bottom：竖屏时 contain 的画布高度小于视口，贴底才能让人物下缘接到网页最下方；
-     横屏时画布本就铺满视口高度，效果与居中一致。 */
-  background: #fff url('assets/add-bg.jpg?v=7') center bottom / contain no-repeat fixed;
+/* 上传/添加页背景：柔化后的八云紫图，固定不随滚动，人物下缘贴网页最底。
+   改为「独立固定图层（body::before）」实现：比在 body 上用 background-attachment:fixed
+   更稳定——避免部分浏览器/缩放/GPU 合成路径下固定背景不绘制（表现为「背景图消失」）。
+   定位 center bottom：竖屏时 contain 画布高度小于视口，贴底才能让下缘接到最下方；
+   横屏时画布本就铺满视口高度，效果与居中一致。 */
+body.add-bg { background: #fff; }
+body.add-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('assets/add-bg.jpg?v=8') center bottom / contain no-repeat;
 }
 /* 让 body 背景完整透出：内容区与页脚去掉自带的白色遮罩 */
 body.add-bg main.container,
@@ -835,4 +842,54 @@ button.fab-add { border: none; cursor: pointer; padding: 0; }
    会创建层叠上下文且 z-index 低于顶栏的属性——否则小窗会被困在顶栏之下。
    因此：#app 及其子项的入场动画一律以 transform:none 收尾；卡片 hover 抬升一律
    用 top 而非 transform。今后新增小窗请沿用 ≥2000 的 z-index。 */
+
+/* ===== 介绍文字折叠：超过三行只显示三行，点「展开」看全部 =====
+   适用：作品详情页简介、视频详情页简介、角色页萌娘百科简介、社团/作者页简介
+   等所有「介绍面」。做法：-webkit-line-clamp 截断到三行；JS 只在测量到确实
+   溢出时才插入「展开」按钮，不足三行的段落不会出现按钮，避免无意义交互。 */
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.clamp-3.clamp-open {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+.clamp-toggle {
+  margin: 6px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #b07;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.clamp-toggle:hover { color: #d96577; }
+
+/* ===== 列表分页：一次只展示三行作品，点下方「展开更多」再加载三行 =====
+   超出部分的卡片只是被隐藏（.lm-hidden），仍留在 DOM 里，所以排序 / 筛选 / 搜索
+   都不会丢数据；列表底部的「展开更多」按钮由 JS 在确实还有剩余时才插入。 */
+.lm-hidden { display: none !important; }
+.load-more-btn {
+  display: block;
+  margin: 18px auto 6px;
+  padding: 9px 24px;
+  border: 1px solid #f0c4cf;
+  border-radius: 22px;
+  background: #fff;
+  color: #b07;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.load-more-btn:hover { background: #fdf1f4; }
 
