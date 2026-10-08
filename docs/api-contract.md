@@ -83,7 +83,7 @@ Host: touhou-mock.app.workbuddy.host
 |---|---|---|
 | `ok` | boolean | 固定 `true`。**前端只认这一个字段**判断服务是否正常 |
 | `service` | string | 服务名，固定 `touhou-search` |
-| `env` | string | 环境标识：`mock`（本部署）/ `cloudbase`（云函数）/ `local` |
+| `env` | string | 环境标识：`mock`（本部署）/ CloudBase 环境 ID（云函数，本环境为 `ericamellia24-d2gk0fukc71292c5`）/ `local` |
 | `version` | string | 契约版本，与本文件顶部一致 |
 | `time` | string | 服务端当前时间，ISO 8601 UTC |
 | `uptimeSec` | number | 进程已运行秒数（云函数场景是**实例**存活秒数，冷启动后归零） |
@@ -162,7 +162,8 @@ return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=
 1. `env` 取自云函数上下文的环境 ID（不再是 `mock`）；
 2. `checks.static` 恒为 `n/a`（云函数不托管静态资源，静态站走静态托管）。
 
-HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`。
+HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`envId` 已填真实环境
+`ericamellia24-d2gk0fukc71292c5`）。
 
 ---
 
@@ -171,3 +172,4 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`。
 | 日期 | 变更 |
 |---|---|
 | 2026-10-01（Day 15） | 初版。落地 `GET /api/health`，占位 6 个业务接口，明确 501 语义 |
+| 2026-10-08（Day 15 续） | `env` 字段说明补真实环境 ID；`cloudbaserc.json` 落 `envId` 与 Nodejs18.15；记录 HTTP 网关 `INVALID_ENV` 排查与降级路径 |

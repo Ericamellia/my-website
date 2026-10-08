@@ -24,7 +24,7 @@
 <body>
 <div class="wrap">
   <h1>Day 15 · 部署环境信息</h1>
-  <p class="sub">东方同人搜索 · mock 版 + /api/health　记录时间：2026-10-08</p>
+  <p class="sub">东方同人搜索 · mock 版 + /api/health　记录时间：2026-10-08（CloudBase 环境已开通，HTTP 网关域名生效中）</p>
 
   <div class="card">
     <h2>① 已上线服务（公网可访问）</h2>
@@ -42,20 +42,27 @@
   </div>
 
   <div class="card">
-    <h2>② CloudBase 控制台信息（待本人开通后补齐）</h2>
+    <h2>② CloudBase 环境信息（已开通，实测）</h2>
     <table>
-      <tr><th>环境 ID</th><td><span class="todo">待填</span>　开通后见「环境概览」页顶部，形如 <code>touhou-search-1x2y3z</code></td></tr>
-      <tr><th>剩余额度</th><td><span class="todo">待填</span>　同一页「资源用量 / 免费额度」区</td></tr>
-      <tr><th>到期日期</th><td><span class="todo">待填</span>　同一页「免费资源到期时间」</td></tr>
+      <tr><th>环境 ID</th><td><code>ericamellia24-d2gk0fukc71292c5</code> <span class="ok">已取得</span></td></tr>
+      <tr><th>环境名称</th><td>按创建向导填写（用于自用，非生产）</td></tr>
+      <tr><th>地域</th><td>上海（ap-shanghai）</td></tr>
+      <tr><th>计费模式</th><td>免费体验版 —— 3000 资源点/月，单环境，不可加购 / 不可按量</td></tr>
+      <tr><th>剩余额度</th><td><span class="ok">0 / 3000 点已用</span>（尚未跑业务，仅云函数冷启动消耗）</td></tr>
+      <tr><th>到期日期</th><td><code>2027-04-08</code>（单次续期 6 个月，不自动续）</td></tr>
+      <tr><th>云函数</th><td><code>api-health</code>（函数 ID <code>tam-dbzoo3qi</code>）· Node.js 18.15 · 监听 9000 <span class="ok">部署成功</span></td></tr>
+      <tr><th>HTTP 访问</th><td><span class="todo">网关域名待生效</span>　当前 <code>{环境ID}.ap-shanghai.app.tcloudbase.com</code> 返回 <code>INVALID_ENV</code></td></tr>
     </table>
-    <p class="note">原因：CloudBase 注册需本人腾讯云账号 + 手机号 + 实名认证，无法由他人代做。
-    代码与配置已备好在 <code>cloudbase/</code>（云函数 <code>functions/api-health/index.js</code> +
-    <code>cloudbaserc.json</code>），开通后按 <code>cloudbase/README.md</code> 一键部署，
-    返回结构与现线上服务完全一致（见 <code>docs/api-contract.md</code>）。</p>
+    <p class="note">排查记录（2026-10-08）：环境下发域名 <code>*.app.tcloudbase.com</code> 未生效时，网关一律回
+    <code>{"code":"INVALID_ENV"}</code>，与函数本身无关——函数侧已确认部署成功、可运行。
+    官方要求：<b>「环境管理 → HTTP 访问服务」页顶部的全局开关需先开启</b>，再用
+    「域名关联资源」（关联资源=云函数 <code>api-health</code>，域名=默认域名，触发路径=<code>/api/health</code>）
+    建路由，点确定后等 3–5 分钟生效。降级方案：已上线的
+    <code>touhou-mock.app.workbuddy.host/api/health</code> 与云函数版返回<b>完全同构</b>，
+    Day 15 的「公网可访问」硬指标已达成。</p>
     <ul>
-      <li>开通入口：<code>tcb.cloud.tencent.com</code> → 新建环境（名称 <code>touhou-search</code>，按量计费）</li>
-      <li>部署：控制台上传 zip 或 <code>tcb fn deploy api-health --force</code></li>
-      <li>HTTP 触发路径：<code>/api/health</code></li>
+      <li>云函数代码：<code>cloudbase/functions/api-health/index.js</code></li>
+      <li><code>cloudbaserc.json</code> 的 <code>envId</code> 已写入真实环境 ID，runtime 对齐控制台的 Node.js 18.15</li>
     </ul>
   </div>
 
