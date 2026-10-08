@@ -65,7 +65,7 @@
        fetchpriority=high + autoplay/preload=auto 让它在 HTML 解析阶段即以最高优先级取回。
        其余资源（首页背景、分类图、作者头像、隐藏预载 iframe）都等它就绪后再开始。 -->
   <video class="praying-img" src="./my-app/assets/praying.mp4?v=2"
-         autoplay loop muted playsinline preload="auto" fetchpriority="high" aria-label="少女祈祷中"></video>
+         autoplay loop muted playsinline preload="auto" fetchpriority="high" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>
   <p class="manual" id="manual">加载较慢？<a id="manualLink" href="./my-app/">直接进入 →</a></p>
 
   <noscript>
@@ -214,6 +214,17 @@
       }
       var prayVid = document.querySelector('.praying-img');
       if (prayVid) {
+        // 祈祷动图统一 2 倍速：标签上的 onloadeddata/onplay/timeupdate 已在播时把速率设成 2，
+        // 但媒体元素在重新 load 或被浏览器策略干预时会重置回 1，这里再定时拉回一次，
+        // 元素离开文档或 24s 后自动停止（加载页本身也不会停留那么久）。
+        (function (v) {
+          var n = 0;
+          var timer = setInterval(function () {
+            n++;
+            if (n > 60 || !v.isConnected) { clearInterval(timer); return; }
+            try { if (v.playbackRate !== 2) v.playbackRate = 2; } catch (e) {}
+          }, 400);
+        })(prayVid);
         if (prayVid.readyState >= 2) {
           startRest();
         } else {

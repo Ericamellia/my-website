@@ -79,7 +79,7 @@
   <main id="app" class="container">
     <div class="loading-state">
       <div class="praying-text">少女祈祷中</div>
-      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>
     </div>
   </main>
   <footer class="site-footer">
@@ -121,6 +121,6 @@
     <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
     <span class="fab-tip">教训baka</span>
   </button>
-  <script src="app.js?v=85" defer></script>
+  <script src="app.js?v=87" defer></script>
 </body>
 </html>

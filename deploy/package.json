@@ -1,0 +1,13 @@
+{
+  "name": "touhou-search-mock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "东方同人搜索 · 前端 mock 版 + /api/health 接口（Day 15）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

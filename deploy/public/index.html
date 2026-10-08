@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>东方同人搜索 · Mock 版（Day 15）</title>
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<header class="top">
+  <h1>东方同人搜索 <span class="tag">Mock 版</span></h1>
+  <p class="sub">Day 15 部署验证页 · 数据为示例，接口仅 /api/health</p>
+</header>
+
+<main>
+  <!-- 健康状态卡：真实调用公网 /api/health，用来当场证明后端链路是通的 -->
+  <section class="card health" id="healthCard">
+    <div class="h-head">
+      <span class="dot" id="hDot"></span>
+      <strong>GET /api/health</strong>
+      <span class="badge" id="hBadge">检测中…</span>
+    </div>
+    <pre id="hJson">请求中…</pre>
+    <div class="h-meta" id="hMeta"></div>
+  </section>
+
+  <section class="filters">
+    <input id="q" class="field" placeholder="搜索作品名 / 作者 / 标签…（示例数据）" aria-label="搜索作品：可按作品名、作者、标签筛选">
+    <div class="tabs" id="tabs" role="tablist"></div>
+  </section>
+
+  <section class="grid" id="grid"></section>
+  <p class="empty" id="empty" hidden>没有匹配的示例作品，换个词试试。</p>
+
+  <footer>
+    <p>本页面所有作品数据均为前端写死的 mock 示例，不代表真实站点内容。</p>
+    <p>接口契约见仓库 <code>docs/api-contract.md</code>。</p>
+  </footer>
+</main>
+
+<script src="./app.js?v=1"></script>
+</body>
+</html>

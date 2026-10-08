@@ -1,0 +1,86 @@
+:root {
+  --pink: #e87a8c;
+  --pink-dark: #d96577;
+  --ink: #3b2b30;
+  --muted: #8b7b80;
+  --line: #f0dfe3;
+  --bg: #fffafb;
+  --ok: #3aa675;
+  --bad: #d9534f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  padding-bottom: 40px;
+}
+.top {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.top h1 { margin: 0; font-size: 20px; letter-spacing: .5px; }
+.top .tag {
+  font-size: 12px; vertical-align: middle; margin-left: 6px;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--pink); color: #fff; font-weight: 400;
+}
+.top .sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+main { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+.card {
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+}
+.health .h-head { display: flex; align-items: center; gap: 8px; }
+.health .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ccc; display: inline-block; flex: none;
+}
+.health.ok .dot { background: var(--ok); box-shadow: 0 0 0 4px rgba(58,166,117,.15); }
+.health.bad .dot { background: var(--bad); box-shadow: 0 0 0 4px rgba(217,83,79,.15); }
+.health .badge {
+  margin-left: auto; font-size: 12px; padding: 2px 10px;
+  border-radius: 999px; background: #f6eef0; color: var(--muted);
+}
+.health.ok .badge { background: rgba(58,166,117,.12); color: var(--ok); }
+.health.bad .badge { background: rgba(217,83,79,.12); color: var(--bad); }
+.health pre {
+  margin: 10px 0 0; padding: 12px; overflow-x: auto;
+  background: #2d2327; color: #ffe9ee; border-radius: 8px;
+  font-size: 12.5px; line-height: 1.55;
+}
+.health .h-meta { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+
+.filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.field {
+  width: 100%; padding: 10px 12px; font-size: 14px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+}
+.field:focus { outline: 2px solid var(--pink); outline-offset: 1px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: #fff; color: var(--muted); font-size: 13px;
+}
+.tab[aria-selected="true"] { background: var(--pink); border-color: var(--pink); color: #fff; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.work {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.work .cover { height: 96px; display: grid; place-items: center; font-size: 13px; color: #fff; }
+.work .body { padding: 10px 12px 12px; }
+.work h3 { margin: 0 0 4px; font-size: 14.5px; }
+.work .meta { margin: 0; font-size: 12.5px; color: var(--muted); }
+.work .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.work .tags span {
+  font-size: 11.5px; padding: 2px 8px; border-radius: 999px;
+  background: #f6eef0; color: var(--pink-dark);
+}
+.empty { text-align: center; color: var(--muted); padding: 24px 0; }
+footer { margin-top: 24px; font-size: 12.5px; color: var(--muted); text-align: center; }
+footer code { background: #f6eef0; padding: 1px 6px; border-radius: 4px; }

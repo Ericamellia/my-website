@@ -104,6 +104,8 @@
 2. **能下载的一律先下载到本地再引用**（避免盗链与失效），存放约定：
    - 音乐 `assets/music/coverN.jpg`　漫画 `assets/works/doujinNN.jpg`　游戏 `assets/games/gameN.jpg`　同人图 `assets/art/artN.jpg`
    - 原作封面 `assets/covers/thXX.jpg`（漫画 `mangaNN.jpg`）　社团头像 `assets/circles/<名字>.jpg`　角色绘图 `assets/characters/<id>.jpg`
+     （角色绘图已于 Day 15 全量落实 112/112：来源 THBWiki 官方图，优先游戏立绘、其次《人妖名鉴》；
+     统一压成宽 300px 白底 JPEG（质量 82，均 22KB），`twilight_art` 字段即指向该路径，勿改文件名规则）
 3. 只能外链时（如 B 站视频封面）必须带 `referrerpolicy="no-referrer"`（`workCard` 已对 video 自动加）。
 4. 找不到原图时回退板块占位图 `assets/modules/module-*.{webp,jpg}`；**不留空、不用无关图**。
 5. 图片 URL 一律 `https`。

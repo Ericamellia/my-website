@@ -1396,7 +1396,7 @@ function renderCharacter(key) {
         </div>
         <div class="char-art-box">
           <span class="char-art${ch.twilight_art ? '' : ' no-art'}">
-            <img class="zoomable" src="${esc(ch.twilight_art || '')}" alt="${esc(ch.name)} 黄昏边境绘图" loading="lazy"
+            <img class="zoomable" src="${esc(ch.twilight_art || '')}" alt="${esc(ch.name)} 角色绘图" loading="lazy"
               onerror="this.style.display='none';this.parentNode.classList.add('no-art')">
             <span class="char-art-fallback">${esc(ch.name)}<br>绘图待补</span>
           </span>
@@ -1670,12 +1670,35 @@ function renderFavs() {
 // ===== 路由 =====
 // 跳转前统一显示「少女祈祷中」加载页：所有界面（含真实加载失败时的 baka 冻结页）
 // 都先经过这一阶段，确保数据全部加载成功后才渲染目标页。
+// 祈祷页视频统一 2 倍速：video 标签上的内联属性已处理，这里再兜一层底——
+// 动态插入、属性被覆盖、或浏览器忽略内联 handler 时，仍把速率拉回 2。
+const PRAYING_RATE = 2;
+function applyPrayingRate(root) {
+  const scope = root || document;
+  if (!scope || !scope.querySelectorAll) return;
+  scope.querySelectorAll('video.praying-img').forEach(v => watchPrayingRate(v));
+}
+// 定时校正：媒体元素在重新 load、被暂停、或某些浏览器策略下会把 playbackRate 重置回 1，
+// 单靠 onloadeddata/onplay 守不住，所以每 400ms 拉回一次；元素被移出文档或 24s 后自动停止。
+function watchPrayingRate(v) {
+  if (!v || v.__rateWatched) return;
+  v.__rateWatched = true;
+  try { v.playbackRate = PRAYING_RATE; } catch (e) {}
+  let n = 0;
+  const t = setInterval(() => {
+    n++;
+    if (n > 60 || !v.isConnected) { clearInterval(t); return; }
+    try { if (v.playbackRate !== PRAYING_RATE) v.playbackRate = PRAYING_RATE; } catch (e) {}
+  }, 400);
+}
+
 function showLoading() {
   $app.innerHTML = `
     <div class="loading-state">
       <div class="praying-text">少女祈祷中</div>
-      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>
+      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>
     </div>`;
+  applyPrayingRate($app);
 }
 
 // ===== 子页面切换加载遮罩：目标子页首屏图片未就绪时，继续覆盖「少女祈祷中」 =====
@@ -1690,8 +1713,9 @@ function ensureRouteLoading() {
   routeLoadingEl.className = 'route-loading';
   routeLoadingEl.innerHTML =
     '<div class="praying-text">少女祈祷中</div>' +
-    '<video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>';
+    '<video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>';
   if (document.body) document.body.appendChild(routeLoadingEl);
+  applyPrayingRate(routeLoadingEl);
   return routeLoadingEl;
 }
 function showRouteLoading() { ensureRouteLoading().classList.add('show'); }
@@ -1788,7 +1812,7 @@ function prayingDocHtml() {
     + '@keyframes p{0%,100%{opacity:.55}50%{opacity:1}}'
     + '@keyframes praying-dots{0%,100%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}</style></head><body>'
     + '<div class="t">少女祈祷中</div>'
-    + '<video class="i" src="' + vid + '" autoplay loop muted playsinline preload="auto" aria-label="少女祈祷中"></video>'
+    + '<video class="i" src="' + vid + '" autoplay loop muted playsinline preload="auto" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>'
     + '<div class="s">正在前往幻想乡之外…</div></body></html>';
 }
 // 跳转外部网站：先显示「少女祈祷中」页，待外部站点加载完成后自然取代祈祷页
@@ -1881,6 +1905,7 @@ async function routeInner() {
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => { applyClamp3($app); initPagedLists($app); });
   } else { applyClamp3($app); initPagedLists($app); }
+  applyPrayingRate(document);
 
   // 子页面：等首屏图片就绪再揭开「少女祈祷中」遮罩；首屏由根加载页已处理好，直接揭开。
   // 图片始终在 DOM 中渲染好（仅被遮罩盖住），就绪即揭开，绝不把没加载好的页面亮给用户。

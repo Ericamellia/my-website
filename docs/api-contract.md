@@ -1,0 +1,173 @@
+# api-contract.md｜东方同人搜索 接口契约（Day 15）
+
+> 本文件是前后端之间的**唯一接口约定**。Day 15 只落地一个接口：`GET /api/health`。
+> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 16–20，不在今天做。
+
+| 项 | 值 |
+|---|---|
+| 契约版本 | `1.0.0` |
+| 更新日期 | 2026-10-01 |
+| 公网地址（mock 版） | `https://touhou-mock.app.workbuddy.host` |
+| 本地地址 | `http://127.0.0.1:3000`（`PORT` 可覆盖） |
+| 数据格式 | JSON，`Content-Type: application/json; charset=utf-8` |
+| 时间格式 | ISO 8601 UTC，例：`2026-09-30T17:31:48.704Z` |
+
+---
+
+## 0. 通用约定（所有接口都适用）
+
+1. **请求与响应一律 JSON**，字段名用 `lowerCamelCase`，字符编码 UTF-8。
+2. **成功**用 HTTP 2xx；**失败**用对应 4xx/5xx，且响应体必须包含 `ok: false`。
+3. **统一错误体**：
+
+```json
+{
+  "ok": false,
+  "error": "machine_readable_code",
+  "message": "给人看的一句话说明（可选）"
+}
+```
+
+4. **健康检查不缓存**：`/api/health` 恒带 `Cache-Control: no-store`，避免看到旧结果。
+5. **跨域**：Day 15 阶段允许所有来源（`Access-Control-Allow-Origin: *`），
+   Day 16 起改为站点域名白名单，契约会同步更新。
+6. **状态码对照**：
+
+| 状态码 | 含义 | 何时出现 |
+|---|---|---|
+| 200 | 成功 | 正常返回数据 |
+| 304 | 未修改 | 仅在启用协商缓存的接口上（health 不用） |
+| 400 | 请求参数错误 | 缺参数 / 参数格式不对 |
+| 404 | 资源不存在 | 路径或 id 找不到 |
+| 405 | 方法不允许 | 例：对 health 发 POST |
+| 501 | 尚未实现 | 契约已定义但后端还没写（Day 15 的 `/api/*` 除 health 外都走这个） |
+| 500 | 服务端错误 | 未捕获异常 |
+
+---
+
+## 1. `GET /api/health` — 健康检查（已实现 ✅）
+
+**用途**：确认「服务活着、能对外返回 JSON」。这是第一个上公网的接口，
+用来验证 DNS → 网关 → 服务进程整条链路是通的，不查数据库、不调外部依赖，保证毫秒级返回。
+
+### 请求
+
+```
+GET /api/health HTTP/1.1
+Host: touhou-mock.app.workbuddy.host
+```
+
+- 方法：`GET`（`HEAD` 也接受）
+- 参数：**无**
+- 鉴权：**无**
+
+### 响应 200
+
+```json
+{
+  "ok": true,
+  "service": "touhou-search",
+  "env": "mock",
+  "version": "1.0.0",
+  "time": "2026-09-30T17:31:48.704Z",
+  "uptimeSec": 17,
+  "node": "v22.13.1",
+  "checks": {
+    "http": "ok",
+    "static": "ok"
+  }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `ok` | boolean | 固定 `true`。**前端只认这一个字段**判断服务是否正常 |
+| `service` | string | 服务名，固定 `touhou-search` |
+| `env` | string | 环境标识：`mock`（本部署）/ `cloudbase`（云函数）/ `local` |
+| `version` | string | 契约版本，与本文件顶部一致 |
+| `time` | string | 服务端当前时间，ISO 8601 UTC |
+| `uptimeSec` | number | 进程已运行秒数（云函数场景是**实例**存活秒数，冷启动后归零） |
+| `node` | string | Node 运行时版本，排查环境问题时用 |
+| `checks` | object | 子项自检结果，见下 |
+
+`checks` 子项：
+
+| 字段 | 取值 | 说明 |
+|---|---|---|
+| `http` | `ok` | HTTP 层能正常响应 |
+| `static` | `ok` / `missing` / `n/a` | 静态目录是否就绪；云函数版不托管静态资源，恒为 `n/a` |
+
+### 响应 405（方法不对）
+
+```json
+{ "ok": false, "error": "method_not_allowed", "allow": ["GET", "HEAD"] }
+```
+
+### 前端用法
+
+```js
+fetch('/api/health', { cache: 'no-store' })
+  .then(r => r.json())
+  .then(d => console.log(d.ok ? '服务正常' : '服务异常'));
+```
+
+mock 版首页顶部那张「健康状态卡」就是这么调的，会把返回的 JSON 原样显示出来。
+
+---
+
+## 2. 尚未实现的接口（Day 16–20，占位）
+
+> 现阶段调用下面任意路径，服务端统一返回 **501**：
+> ```json
+> { "ok": false, "error": "not_implemented", "path": "/api/works" }
+> ```
+> 之所以明确回 501 而不是 404，是为了让前端一眼区分「路径写错了」和「后端还没写」。
+
+| 方法 | 路径 | 用途 | 计划 |
+|---|---|---|---|
+| GET | `/api/works` | 作品列表（分页 / 分类 / 排序） | Day 16–17 |
+| GET | `/api/works/:id` | 作品详情 | Day 17 |
+| GET | `/api/search` | 关键词搜索（作品名 / 作者 / 角色 / 标签） | Day 18 |
+| GET | `/api/circles` | 社团 / 作者列表 | Day 18 |
+| GET/POST | `/api/favorites` | 收藏读写 | Day 19 |
+| GET | `/api/originals` | ZUN 原曲列表 | Day 19 |
+
+这部分接口一旦开工，字段定义直接追加到本文件，并同步升 `契约版本`。
+
+---
+
+## 3. Mock 版说明（当前线上是什么）
+
+- 线上 `https://touhou-mock.app.workbuddy.host` 跑的是 `deploy/` 下的 Node 服务：
+  - `/api/health` → **真实接口**，返回如上 JSON；
+  - 其它路径 → 托管 `deploy/public/` 的静态页面（mock 版首页）。
+- 首页展示的作品数据是**前端写死的示例**（`deploy/public/app.js` 里的 `WORKS` 数组），
+  不调用任何业务接口，也不代表真实站点内容。
+- 切换到真实接口时，只需把 `WORKS` 换成 `fetch('/api/works')` 的结果，
+  字段沿用 `title / author / tags / category`，前端渲染代码不用改。
+
+---
+
+## 4. CloudBase 云函数版（同一份契约）
+
+目录 `cloudbase/functions/api-health/index.js` 是上面契约的云函数实现，
+返回体与 §1 **完全一致**，只是换成 CloudBase 的响应结构：
+
+```js
+return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify(payload) };
+```
+
+差异只有两点：
+
+1. `env` 取自云函数上下文的环境 ID（不再是 `mock`）；
+2. `checks.static` 恒为 `n/a`（云函数不托管静态资源，静态站走静态托管）。
+
+HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`。
+
+---
+
+## 5. 变更记录
+
+| 日期 | 变更 |
+|---|---|
+| 2026-10-01（Day 15） | 初版。落地 `GET /api/health`，占位 6 个业务接口，明确 501 语义 |

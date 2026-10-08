@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 15 部署环境信息 · 东方同人搜索</title>
+<style>
+  body{margin:0;background:#fffafb;color:#3b2b30;font:15px/1.7 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;padding:28px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#8b7b80;font-size:13px;margin:0 0 20px}
+  .card{background:#fff;border:1px solid #f0dfe3;border-radius:12px;padding:16px 20px;margin-bottom:16px}
+  .card h2{font-size:15px;margin:0 0 12px;color:#d96577}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #f6eef0;vertical-align:top}
+  th{width:150px;color:#8b7b80;font-weight:400}
+  code{background:#f6eef0;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  .ok{color:#3aa675;font-weight:600}
+  .todo{color:#b98a00;font-weight:600}
+  .note{font-size:12.5px;color:#8b7b80;margin-top:10px}
+  ul{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Day 15 · 部署环境信息</h1>
+  <p class="sub">东方同人搜索 · mock 版 + /api/health　记录时间：2026-10-08</p>
+
+  <div class="card">
+    <h2>① 已上线服务（公网可访问）</h2>
+    <table>
+      <tr><th>应用名</th><td>东方同人搜索 Mock 版</td></tr>
+      <tr><th>公网域名</th><td><code>touhou-mock.app.workbuddy.host</code></td></tr>
+      <tr><th>健康接口</th><td><code>https://touhou-mock.app.workbuddy.host/api/health</code></td></tr>
+      <tr><th>部署形态</th><td>http-service（Node 单端口服务）</td></tr>
+      <tr><th>运行时</th><td>Node <code>v22.13.1</code></td></tr>
+      <tr><th>网关</th><td>CloudStudio Gateway</td></tr>
+      <tr><th>沙箱 ID</th><td><code>e4f189fe74fe4c039a11df893dd24841</code></td></tr>
+      <tr><th>状态</th><td><span class="ok">正常</span>　2026-10-01 首验 200；2026-10-08 复测仍 200（<code>ok:true</code>）</td></tr>
+      <tr><th>管理入口</th><td>设置 — 数据管理 — 应用</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>② CloudBase 控制台信息（待本人开通后补齐）</h2>
+    <table>
+      <tr><th>环境 ID</th><td><span class="todo">待填</span>　开通后见「环境概览」页顶部，形如 <code>touhou-search-1x2y3z</code></td></tr>
+      <tr><th>剩余额度</th><td><span class="todo">待填</span>　同一页「资源用量 / 免费额度」区</td></tr>
+      <tr><th>到期日期</th><td><span class="todo">待填</span>　同一页「免费资源到期时间」</td></tr>
+    </table>
+    <p class="note">原因：CloudBase 注册需本人腾讯云账号 + 手机号 + 实名认证，无法由他人代做。
+    代码与配置已备好在 <code>cloudbase/</code>（云函数 <code>functions/api-health/index.js</code> +
+    <code>cloudbaserc.json</code>），开通后按 <code>cloudbase/README.md</code> 一键部署，
+    返回结构与现线上服务完全一致（见 <code>docs/api-contract.md</code>）。</p>
+    <ul>
+      <li>开通入口：<code>tcb.cloud.tencent.com</code> → 新建环境（名称 <code>touhou-search</code>，按量计费）</li>
+      <li>部署：控制台上传 zip 或 <code>tcb fn deploy api-health --force</code></li>
+      <li>HTTP 触发路径：<code>/api/health</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>③ 今日未完成（按清单明确排除，Day 16–20 再做）</h2>
+    <ul>
+      <li>真实业务接口（<code>/api/works</code> 等 6 个，契约已占位，现返回 501）</li>
+      <li>数据库建表</li>
+      <li>跨域白名单收紧（当前 <code>Access-Control-Allow-Origin: *</code>）</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
