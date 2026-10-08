@@ -173,3 +173,75 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 |---|---|
 | 2026-10-01（Day 15） | 初版。落地 `GET /api/health`，占位 6 个业务接口，明确 501 语义 |
 | 2026-10-08（Day 15 续） | `env` 字段说明补真实环境 ID；`cloudbaserc.json` 落 `envId` 与 Nodejs18.15；记录 HTTP 网关 `INVALID_ENV` 排查与降级路径 |
+| 2026-10-08（Day 16） | 数据层落地。新增 §6 数据库表结构（`circles` / `works`），业务接口的字段来源自此有据可依 |
+
+---
+
+## 6. 数据库表结构（Day 16 起）
+
+目标库：**CloudBase PostgreSQL**。建表脚本 `db/schema.sql`，种子数据 `db/seed.sql`。
+
+详细设计说明（含类型选择理由、索引设计、验证结果）见 `docs/day16/data-model.md`。
+
+### 6.1 两张核心表
+
+| 表 | 存什么 | 主键 | 条数 |
+|---|---|---|---|
+| `circles` | 「谁做的」——社团 / 作者档案 | `name` | 26 |
+| `works` | 「做了什么」——全部作品（五板块合并） | `work_id` | 30 |
+
+**关联**：`works.circle_name` → `circles.name`（外键，`ON UPDATE CASCADE ON DELETE SET NULL`）
+
+### 6.2 `circles` 字段
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `name` | VARCHAR(128) | 主键。社团/作者名，如 `COOL&CREATE` |
+| `name_en` | VARCHAR(128) | 英文名/罗马音 |
+| `intro` | TEXT | 社团简介 |
+| `source_url` | VARCHAR(512) | 资料源页 URL |
+| `avatar` | VARCHAR(255) | 头像路径 |
+| `top_platform` | VARCHAR(32) | 主要平台，如 `bilibili` |
+| `followers` | INTEGER | 该平台粉丝数，可空 |
+| `platform_url` | VARCHAR(512) | 平台主页 URL |
+| `created_at` | TIMESTAMPTZ | 入库时间 |
+
+### 6.3 `works` 字段
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `work_id` | VARCHAR(32) | 主键，格式 `{板块}-{原id}`，如 `music-1` |
+| `category` | VARCHAR(16) | 板块：`music` / `doujin` / `game` / `art` / `video` |
+| `name` | VARCHAR(255) | 作品名 |
+| `circle_name` | VARCHAR(128) | **外键** → `circles.name` |
+| `creator` | VARCHAR(128) | 作者/主催个人名 |
+| `year` | SMALLINT | 发行年份 |
+| `characters` | JSONB | 登场角色名数组 |
+| `tags` | JSONB | 标签数组 |
+| `popularity` | INTEGER | 热度值 |
+| `views` | INTEGER | 站点浏览量，`NOT NULL DEFAULT 0` |
+| `cover` | VARCHAR(512) | 封面路径或外链 |
+| `source_url` | VARCHAR(512) | 原发布页 URL |
+| `description` | TEXT | 简介 |
+| `netease_url` | VARCHAR(512) | [仅 music] 网易云链接 |
+| `video_type` | VARCHAR(64) | [仅 video] 视频类型 |
+| `video_platform` | VARCHAR(32) | [仅 video] 视频平台 |
+| `video_url` | VARCHAR(512) | [仅 video] 视频直链 |
+| `bvid` | VARCHAR(32) | [仅 video] B站视频号 |
+| `original_title` | VARCHAR(255) | [仅 video] 原曲名 |
+| `created_at` | TIMESTAMPTZ | 入库时间 |
+
+> **命名注意**：JSON 源数据里的 `type` / `platform` / `url` 三个字段名，在表里改成了
+> `video_type` / `video_platform` / `video_url` —— 因为它们是 video 板块专属，
+> 加前缀后语义更清晰，也避开了通用词做列名。
+
+### 6.4 各接口的字段来源（Day 17 起参照）
+
+| 接口 | 主要读哪张表 |
+|---|---|
+| `GET /api/works` | `works`（按 `category` 筛选，按 `popularity` / `year` 排序） |
+| `GET /api/works/:id` | `works` + JOIN `circles`（详情页要显示所属社团） |
+| `GET /api/search` | `works`（`name` 模糊 + `characters` / `tags` 的 JSONB 包含查询） |
+| `GET /api/circles` | `circles` |
+| `GET /api/favorites` | Day 19 再加收藏表 |
+| `GET /api/originals` | Day 19 再加原曲表（当前 ZUN 原曲数据仍在 JSON 里） |
