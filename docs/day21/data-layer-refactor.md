@@ -32,13 +32,15 @@ deploy/
 │   ├── rest.js              ← 通道①：HTTP API（PostgREST）
 │   ├── snapshot.js          ← 通道③：JSON 快照（降级）
 │   └── mappers.js           ← 形状转换 + 入参校验
+├── db.js                    ← ⚠️ 兼容转发层（不是原文件！见下方「七」）
 ├── server.js                ← 接口层（require('./db')，零改动）
 └── public/                  ← 静态前端
 ```
 
-> 注：原来的 `deploy/db.js` **已删除**。
-> Node 的模块解析规则下，`require('./db')` 会自动落到 `db/index.js`，
-> 所以 `server.js` 一行都不用改。
+> 注：本地开发时，`require('./db')` 会落到 `db/index.js`，`server.js` 一行都不用改。
+>
+> ⚠️ **但发布到线上时会踩坑**——详见第七节。`deploy/db.js` 现在是一个**一行的转发文件**，
+> 不是重构前那个 737 行的实现。
 
 ---
 
@@ -166,3 +168,67 @@ async function getFavorites(opt) {
 | 9 | `POST` 正常写入 | 201，**真库确有该行**（`id=15`，带时区 `created_at`） | ✅ |
 
 **结论**：拆分只动了「代码放哪」，**接口契约一行没改**——这正是重构该有的样子。
+
+---
+
+## 七、⚠️ 线上踩坑：为什么 `deploy/db.js` 又回来了
+
+重构完成后本地测试全绿，但**发布到公网后立即 crash**：
+
+```
+TypeError: db.hasRestApi is not a function
+```
+
+怪就怪在——**本地怎么跑都对，只有线上炸**。下面是排查全过程，这段值得记住。
+
+### 7.1 为什么本地查不出来
+
+Node 的模块解析顺序（`require('./db')`）：
+
+1. 先找 **`./db.js` 文件**
+2. 没有才找 **`./db/index.js` 目录**
+
+本地重构时我们把 737 行的 `db.js` **删掉了**，所以 `require('./db')` 自然落到 `db/index.js` —— 一切正常。
+
+### 7.2 线上发生了什么
+
+**发布平台的沙箱会保留上一次发布的文件**（不删除已上传的旧文件）。于是线上 `deploy/` 目录里同时存在：
+
+```
+deploy/
+├── db.js          ← 上一次发布留下的旧文件（737 行的老实现）
+├── db/            ← 这次新上传的目录
+│   └── index.js
+├── package-lock.json   ← 也是历史残留
+└── ...
+```
+
+`require('./db')` 优先命中 **旧的 `db.js` 文件** → 加载到的是没有 `hasRestApi` 的老实现 → 启动即 crash。
+
+```
+[DIAG] fs.readdirSync(.) = [...,"db","db.js","package-lock.json",...]
+[DIAG] resolve ./db = /workspace/db.js        ← 命中的是文件，不是目录
+[DIAG] db exports = [...没有 hasRestApi]      ← 旧版本
+```
+
+### 7.3 修复办法：加一个转发层
+
+保留 `deploy/db.js`，但内容换成**一行转发**：
+
+```js
+module.exports = require('./db/index.js');
+```
+
+这样两条查找路径都指向同一份实现：
+
+| 环境 | `require('./db')` 实际命中的 | 结果 |
+|---|---|---|
+| 本地 | `db/index.js`（无 `db.js` 时） | ✅ 正常 |
+| 线上 | `db.js` → 转发到 `db/index.js` | ✅ 正常 |
+
+### 7.4 两个可复用的经验
+
+1. **诊断线上问题时，`console.log` 不会被平台回传，必须用 `console.error`**。
+   这次就是靠注入 `console.error('[DIAG] ...')` 才看到 `resolve ./db = /workspace/db.js` 这行关键信息。
+2. **「本地全对、线上全错」时，优先怀疑环境差异**——文件残留、模块解析顺序、换行符、
+   权限位，这四类是重灾区（本项目四类全踩过）。
