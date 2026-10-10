@@ -3,40 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>东方同人搜索 · 读写接口验证（Day 18）</title>
-<link rel="stylesheet" href="./style.css?v=3">
+<title>东方同人搜索 · 公网持久化验证（Day 19）</title>
+<link rel="stylesheet" href="./style.css?v=4">
 </head>
 <body>
 <header class="top">
-  <h1>东方同人搜索 <span class="tag">Day 18 写接口</span></h1>
-  <p class="sub">POST /api/favorites 写入验证 · 防重复提交 + 防错误输入</p>
+  <h1>东方同人搜索 <span class="tag">Day 19 持久化</span></h1>
+  <p class="sub">走 HTTP API 真库：写入之后，重新打开页面数据依然在</p>
 </header>
 
 <main>
-  <!-- ★ Day 18 重点：写接口验证区（放在最前，一屏可见） -->
+  <!-- ★ Day 19 重点：写接口验证区（放在最前，一屏可见） -->
   <section class="card write">
     <div class="h-head" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <strong>POST /api/favorites</strong>
       <span class="badge" id="wBadge">待验证</span>
     </div>
     <p class="h-meta" style="margin:8px 0 0">
-      两道闸门：① 入参校验（缺字段/格式错 → 400 中文提示）② 唯一约束（重复提交 → 409）
+      Day 19：数据源已切到 <b>HTTP API 真库</b>（<code>source: rest</code>）——写进去就是真落库，不再随发布重置。
     </p>
 
     <div class="w-form">
       <label>workId
-        <input id="wWorkId" type="text" value="game-2" placeholder="如 music-1">
+        <input id="wWorkId" type="text" value="art-2" placeholder="如 music-1">
       </label>
       <label>note（可选）
-        <input id="wNote" type="text" value="Day18 页面写入验证" placeholder="一句话备注">
+        <input id="wNote" type="text" value="Day19 持久化验证" placeholder="一句话备注">
       </label>
       <button class="tab primary" id="btnWrite" type="button">发起 POST 写入</button>
     </div>
 
     <div class="w-actions">
-      <button class="tab" id="btnDup" type="button">再点一次（测重复提交）</button>
-      <button class="tab" id="btnMissing" type="button">发空对象（测缺必填字段）</button>
-      <button class="tab" id="btnBadFmt" type="button">发错格式（测格式校验）</button>
+      <button class="tab" id="btnDup" type="button">再点一次（测重复提交 → 409）</button>
+      <button class="tab" id="btnMissing" type="button">发空对象（测缺必填字段 → 400）</button>
+      <button class="tab" id="btnBadFmt" type="button">发错格式（测格式校验 → 400）</button>
     </div>
 
     <div class="w-result">
@@ -93,6 +93,6 @@
   </footer>
 </main>
 
-<script src="./app.js?v=3"></script>
+<script src="./app.js?v=4"></script>
 </body>
 </html>

@@ -78,6 +78,101 @@ async function query(sql, params) {
   return res.rows;
 }
 
+// ===========================================================================
+// HTTP API（PostgREST）通道 —— Day 19 新增
+// ---------------------------------------------------------------------------
+// 为什么需要它：
+//   CloudBase PostgreSQL 有两套访问方式：
+//     ① pg 协议直连（上面那套）—— 需要装 pg 驱动，发布平台 pre-check 不放过；
+//     ② HTTP API（PostgREST 规范）—— 只要环境 ID + API Key，**不需要任何依赖**。
+//   公网版走 ②，就能真正写进真库，而不是写进打包的快照文件（一发布就重置）。
+//
+// 需要的环境变量：
+//   CLOUDBASE_ENV_ID   —— 环境 ID（必须从控制台「复制」取得，别手打）
+//   CLOUDBASE_API_KEY  —— 服务端 API Key（service_role，**严禁进前端/仓库**）
+//
+// 启用顺序：HTTP API > pg 直连 > 快照。
+//   本地开发没配 API Key 时自动退回 pg/快照，互不影响。
+// ===========================================================================
+
+/** CloudBase 环境变量。 */
+function getRestEnvId() {
+  return process.env.CLOUDBASE_ENV_ID || '';
+}
+
+/** CloudBase 服务端 API Key（service_role，绕过 RLS）。 */
+function getRestApiKey() {
+  return process.env.CLOUDBASE_API_KEY || '';
+}
+
+/** 是否具备走 HTTP API 的条件（环境 ID + API Key 都在）。 */
+function hasRestApi() {
+  return !!(getRestEnvId() && getRestApiKey());
+}
+
+/**
+ * 发一个 PostgREST 请求。
+ *
+ * @param {string} method   GET / POST / PATCH / DELETE
+ * @param {string} table    表名（必须在 public schema）
+ * @param {object} opt
+ *   - query: {select, order, limit, ...} → 拼成 PostgREST 查询串
+ *   - body:  写入的 JSON（POST/PATCH 用）
+ *   - prefer: Prefer 头的值，如 'return=representation'
+ * @returns {Promise<{status:number, headers:Headers, data:any}>}
+ */
+async function restRequest(method, table, opt) {
+  const opts = opt || {};
+  const base = 'https://' + getRestEnvId() + '.api.tcloudbasegateway.com/v1/rdb/rest/' + table;
+
+  // 查询参数：PostgREST 用 query string 表达 select/order/limit 等
+  const params = [];
+  if (opts.query) {
+    Object.keys(opts.query).forEach(function (k) {
+      const v = opts.query[k];
+      if (v === undefined || v === null || v === '') return;
+      params.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+    });
+  }
+  const url = params.length ? base + '?' + params.join('&') : base;
+
+  const headers = {
+    Authorization: 'Bearer ' + getRestApiKey(),
+    'Content-Type': 'application/json'
+  };
+  if (opts.prefer) headers.Prefer = opts.prefer;
+
+  const init = { method: method, headers: headers };
+  if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
+
+  const res = await fetch(url, init);
+
+  // 204 无内容（DELETE 成功）没有 body
+  let data = null;
+  const text = await res.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = text;
+    }
+  }
+  return { status: res.status, headers: res.headers, data: data };
+}
+
+/**
+ * 判断一个 PostgREST 错误是不是「撞唯一约束」。
+ *
+ * CloudBase 的实现不认 resolution=ignore-duplicates，而是直接回 409 +
+ * DATABASE_23505（PostgreSQL 的 unique_violation 错误码）。
+ * 所以我们按这个错误码来认定「重复提交」，比看 content-range 可靠。
+ */
+function isUniqueViolation(status, data) {
+  if (status === 409) return true;
+  if (data && typeof data === 'object' && String(data.code || '').indexOf('23505') !== -1) return true;
+  return false;
+}
+
 /** 读 JSON 快照文件。文件不存在返回 null。 */
 function readSnapshot(name) {
   const p = path.join(DATA_DIR, name);
@@ -108,6 +203,32 @@ async function getHot(opt) {
   let limit = parseInt((opt && opt.limit) || '20', 10);
   if (!Number.isFinite(limit) || limit <= 0) limit = 20;
   if (limit > 100) limit = 100;                 // 上限兜底，防止被拉爆
+
+  if (hasRestApi()) {
+    // ---- HTTP API 路径（Day 19 新增）：公网版走这条，读的是真库 ----
+    const q = {
+      select: 'bvid,board,title,author,mid,play,danmaku,favorites,duration,typename,pubdate,cover,description,source,rank_no',
+      order: board === 'all' ? 'board.asc,rank_no.asc' : 'rank_no.asc',
+      limit: String(board === 'all' ? limit * 2 : limit)
+    };
+    if (board !== 'all') q.board = 'eq.' + board;
+
+    const res = await restRequest('GET', 'hot_videos', { query: q });
+    if (res.status !== 200) {
+      const e = new Error('rest_hot_failed');
+      e.code = 'REST_FAILED';
+      e.detail = res.data;
+      throw e;
+    }
+    const restItems = (res.data || []).map(toHotItem);
+    return {
+      source: 'rest',
+      board,
+      limit,
+      counts: countByBoard(restItems, limit),
+      items: restItems
+    };
+  }
 
   if (hasDatabase()) {
     // ---- 真库路径 ----
@@ -212,6 +333,41 @@ async function getFavorites(opt) {
   let limit = parseInt((opt && opt.limit) || '50', 10);
   if (!Number.isFinite(limit) || limit <= 0) limit = 50;
   if (limit > 200) limit = 200;
+
+  if (hasRestApi()) {
+    // ---- HTTP API 路径（Day 19 新增）----
+    // PostgREST 的 JOIN 靠「嵌套 select」表达：
+    //   select=id,user_id,...,works(category,name,...)
+    // 返回时 works 会是一个对象（外键是单条），要把它拍平回 GET 的形状。
+    const res = await restRequest('GET', 'favorites', {
+      query: {
+        select: 'id,user_id,work_id,note,created_at,' +
+                'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
+        user_id: 'eq.' + userId,
+        order: 'created_at.desc,id.desc',
+        limit: String(limit)
+      }
+    });
+    if (res.status !== 200) {
+      const e = new Error('rest_favorites_failed');
+      e.code = 'REST_FAILED';
+      e.detail = res.data;
+      throw e;
+    }
+    const restItems = (res.data || []).map(function (r) {
+      // 把嵌套的 works 拍平到顶层，保持与 pg 路径、快照路径同一形状
+      const w = r.works || {};
+      return toFavItem({
+        id: r.id, user_id: r.user_id, work_id: r.work_id,
+        note: r.note, created_at: r.created_at,
+        category: w.category, name: w.name, circle_name: w.circle_name,
+        creator: w.creator, year: w.year, cover: w.cover,
+        tags: w.tags, characters: w.characters,
+        description: w.description, source_url: w.source_url
+      });
+    });
+    return { source: 'rest', userId: userId, limit: limit, count: restItems.length, items: restItems };
+  }
 
   if (hasDatabase()) {
     // JOIN works 把作品名/社团/封面一起带出来，前端不用再发一次请求
@@ -342,6 +498,68 @@ function validateFavoriteInput(body) {
 async function addFavorite(input) {
   const { userId, workId, note } = input;
 
+  if (hasRestApi()) {
+    // ---- HTTP API 路径（Day 19 新增）：真正写进真库，持久化 ----
+    // POST /v1/rdb/rest/favorites + Prefer: return=representation
+    //   → 201 返回插入后的整行（含数据库生成的 id、created_at）
+    //   → 409 + DATABASE_23505 撞 UNIQUE (user_id, work_id)，即「已收藏过」
+    const res = await restRequest('POST', 'favorites', {
+      query: { select: 'id,user_id,work_id,note,created_at' },
+      prefer: 'return=representation',
+      body: { user_id: userId, work_id: workId, note: note }
+    });
+
+    if (isUniqueViolation(res.status, res.data)) {
+      // 撞唯一约束：去把已有那条读回来，告诉调用方「已收藏过」而不是报错
+      const exist = await restRequest('GET', 'favorites', {
+        query: {
+          select: 'id,user_id,work_id,note,created_at',
+          user_id: 'eq.' + userId,
+          work_id: 'eq.' + workId,
+          limit: '1'
+        }
+      });
+      const row = (exist.data && exist.data[0]) || {};
+      return { source: 'rest', created: false, duplicate: true, item: toFavItem(row) };
+    }
+
+    if (res.status !== 201) {
+      const e = new Error('rest_insert_failed');
+      e.code = 'REST_FAILED';
+      e.detail = res.data;
+      throw e;
+    }
+
+    // 插入成功：再查一次（带 JOIN）把作品详情补全，让返回体与 GET 条目同形状
+    const inserted = (res.data && res.data[0]) || {};
+    const full = await restRequest('GET', 'favorites', {
+      query: {
+        select: 'id,user_id,work_id,note,created_at,' +
+                'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
+        id: 'eq.' + inserted.id,
+        limit: '1'
+      }
+    });
+    const r0 = (full.data && full.data[0]) || {};
+    const w = r0.works || {};
+    return {
+      source: 'rest',
+      created: true,
+      duplicate: false,
+      item: toFavItem({
+        id: r0.id !== undefined ? r0.id : inserted.id,
+        user_id: r0.user_id || inserted.user_id,
+        work_id: r0.work_id || inserted.work_id,
+        note: r0.note !== undefined ? r0.note : inserted.note,
+        created_at: r0.created_at || inserted.created_at,
+        category: w.category, name: w.name, circle_name: w.circle_name,
+        creator: w.creator, year: w.year, cover: w.cover,
+        tags: w.tags, characters: w.characters,
+        description: w.description, source_url: w.source_url
+      })
+    };
+  }
+
   if (hasDatabase()) {
     // RETURNING 让 INSERT 一次性把插入后的整行带回，不用再查一次
     const sql = `INSERT INTO favorites (user_id, work_id, note)
@@ -439,6 +657,13 @@ async function addFavorite(input) {
 
 /** 判断作品是否存在（写收藏前的前置检查，用来给出更友好的中文提示）。 */
 async function workExists(workId) {
+  if (hasRestApi()) {
+    const res = await restRequest('GET', 'works', {
+      query: { select: 'work_id', work_id: 'eq.' + workId, limit: '1' }
+    });
+    if (res.status !== 200) return null;  // 查询异常 → 不阻断，放行交给外键兜底
+    return Array.isArray(res.data) && res.data.length > 0;
+  }
   if (hasDatabase()) {
     const rows = await query('SELECT 1 FROM works WHERE work_id = $1', [workId]);
     return rows.length > 0;
@@ -507,5 +732,6 @@ module.exports = {
   addFavorite: addFavorite,
   validateFavoriteInput: validateFavoriteInput,
   workExists: workExists,
-  hasDatabase: hasDatabase
+  hasDatabase: hasDatabase,
+  hasRestApi: hasRestApi
 };

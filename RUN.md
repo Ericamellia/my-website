@@ -115,8 +115,35 @@ curl -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/my-app/   # 期望 200
 PORT=3000 node server.js
 ```
 
-- 有数据库连接串（`PG_URL` / `DATABASE_URL`）且装了 `pg` → 直连真库
-- 否则 → 读 `deploy/data/*.json` 快照（公网版就是这个模式）
+**数据源优先级（Day 19 起三态）**：
+
+| 优先级 | 条件 | 数据源 | 写入持久？ | `source` 字段 |
+|---|---|---|---|---|
+| ① | 配了 `CLOUDBASE_ENV_ID` + `CLOUDBASE_API_KEY` | **HTTP API（PostgREST）真库** | ✅ **持久** | `rest` |
+| ② | 配了 `PG_URL` / `DATABASE_URL` 且装了 `pg` | pg 直连真库 | ✅ 持久 | `database` |
+| ③ | 以上都没有 | `deploy/data/*.json` 快照 | ❌ 不持久 | `snapshot` |
+
+- **本地开发**：没有 ① 的 Key 时自动走 ② 或 ③，互不影响。
+- **公网版**：配 ① 走 HTTP API，**不需要装 `pg`**（发布平台 pre-check 会拒绝含 `pg` 的项目）。
+- 凭证放在**项目根 `.env`**（已被 `.gitignore` 忽略），`server.js` 内置零依赖加载器读取。
+
+### 配置 HTTP API（Day 19）
+
+1. 控制台 → 环境管理 → **API Key 配置** → 「服务端 API Key」→ 创建
+2. 把 **环境 ID** 和 **API Key** 写进项目根 `.env`：
+
+```env
+CLOUDBASE_ENV_ID=ericamellia24-d2gk0ftukc71292c5
+CLOUDBASE_API_KEY=eyJhbGciOi...
+```
+
+> ⚠️ **环境 ID 必须从控制台「复制」取得**，不要手打、不要从截图读。
+> 曾因少写一个 `t`（`d2gk0fu…` vs `d2gk0ftu…`）导致整条通道报 `INVALID_ENV`，
+> 排查了很久——这类 23 字符随机串肉眼极易看错。
+
+> ⚠️ `API Key` 是 `service_role` 权限（绕过 RLS），**只能放服务端环境变量**，
+> 严禁写进前端代码、严禁提交到仓库。
+
 - 启动日志会打印当前数据源，一眼可见
 - 共 4 个接口：`GET /api/health`、`GET /api/hot`、`GET /api/favorites`、`POST /api/favorites`
 

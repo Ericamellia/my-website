@@ -1,8 +1,9 @@
-# api-contract.md｜东方同人搜索 接口契约（Day 18）
+# api-contract.md｜东方同人搜索 接口契约（Day 19）
 
 > 本文件是前后端之间的**唯一接口约定**。已落地：`GET /api/health`（Day 15）、
 > `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）。
-> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 19–20。
+> Day 19 打通 **HTTP API 真库数据源**（写入持久化），接口形状**未变**。
+> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 20+。
 
 | 项 | 值 |
 |---|---|
@@ -91,7 +92,7 @@ Host: touhou-mock.app.workbuddy.host
 |---|---|---|
 | `ok` | boolean | 固定 `true`。**前端只认这一个字段**判断服务是否正常 |
 | `service` | string | 服务名，固定 `touhou-search` |
-| `env` | string | 环境标识：`mock`（本部署）/ CloudBase 环境 ID（云函数，本环境为 `ericamellia24-d2gk0fukc71292c5`）/ `local` |
+| `env` | string | 环境标识：`mock`（本部署）/ CloudBase 环境 ID（云函数，本环境为 `ericamellia24-d2gk0ftukc71292c5`）/ `local` |
 | `version` | string | 契约版本，与本文件顶部一致 |
 | `time` | string | 服务端当前时间，ISO 8601 UTC |
 | `uptimeSec` | number | 进程已运行秒数（云函数场景是**实例**存活秒数，冷启动后归零） |
@@ -176,7 +177,7 @@ GET /api/hot?board=fresh&limit=20
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `ok` | boolean | 固定 `true` |
-| `source` | string | `database` = 直连真库；`snapshot` = 读 `deploy/data/hot.json` 快照 |
+| `source` | string | 数据来源，三态：`rest` = HTTP API 真库（Day 19 起，**写入持久**）；`database` = pg 直连真库；`snapshot` = 读 `deploy/data/hot.json` 快照（写入不持久） |
 | `counts` | object | 本次返回的各榜条数 |
 | `data[].rank` | number | 榜内名次（1 开始） |
 | `data[].publishedAt` | string | 由 `pubdate` 换算出的 ISO 8601 时间 |
@@ -388,7 +389,7 @@ return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=
 2. `checks.static` 恒为 `n/a`（云函数不托管静态资源，静态站走静态托管）。
 
 HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`envId` 已填真实环境
-`ericamellia24-d2gk0fukc71292c5`）。
+`ericamellia24-d2gk0ftukc71292c5`）。
 
 ---
 
@@ -401,6 +402,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | 2026-10-08（Day 16） | 数据层落地。新增 §9 数据库表结构（`circles` / `works`），业务接口的字段来源自此有据可依 |
 | 2026-10-10（Day 17） | 补 §2 `GET /api/hot`、§3 `GET /api/favorites` 完整定义；契约版本升 `1.1.0`；新增 `favorites` / `hot_videos` 两张表说明 |
 | 2026-10-10（Day 18） | 新增 §4 `POST /api/favorites`（第一个写接口）。明确两道闸门（入参校验 + 唯一约束）、错误码全表、校验顺序；状态码表补 `201` / `409` / `413` 及 409 与 400 的语义区别 |
+| 2026-10-10（Day 19） | **接口形状未变**，只扩展数据源：`source` 字段增补 `rest`（HTTP API 真库，写入持久）。Day 15 起悬而未决的 `INVALID_ENV` 定位为**环境 ID 少写一个 `t`**，修正 `cloudbaserc.json` / README / 本文档等 12 处；§7 部署与数据源说明改写为三态优先级 |
 
 ---
 

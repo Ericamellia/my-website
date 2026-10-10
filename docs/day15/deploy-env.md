@@ -30,7 +30,7 @@
 
 | 项 | 值 |
 |---|---|
-| 环境 ID | `ericamellia24-d2gk0fukc71292c5` |
+| 环境 ID | `ericamellia24-d2gk0ftukc71292c5` |
 | 地域 | 上海（ap-shanghai） |
 | 计费模式 | 免费体验版（3000 资源点/月，单环境，不可加购/按量） |
 | 剩余额度 | 0 / 3000 点已用（仅冷启动消耗） |
@@ -45,9 +45,9 @@
 云函数部署成功后，访问默认域名仍返回错误，实测三条 URL 结果一致：
 
 ```
-https://ericamellia24-d2gk0fukc71292c5.ap-shanghai.app.tcloudbase.com/api/health
-https://ericamellia24-d2gk0fukc71292c5.ap-shanghai.app.tcloudbase.com/
-https://ericamellia24-d2gk0fukc71292c5-1499738190.ap-shanghai.app.tcloudbase.com/api/health
+https://ericamellia24-d2gk0ftukc71292c5.ap-shanghai.app.tcloudbase.com/api/health
+https://ericamellia24-d2gk0ftukc71292c5.ap-shanghai.app.tcloudbase.com/
+https://ericamellia24-d2gk0ftukc71292c5-1499738190.ap-shanghai.app.tcloudbase.com/api/health
   → HTTP 404，{"code":"INVALID_ENV","message":"Env invalid. ..."}
 ```
 

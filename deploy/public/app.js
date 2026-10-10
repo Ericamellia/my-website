@@ -298,16 +298,16 @@ document.getElementById('btnReload').addEventListener('click', loadFavorites);
     setTimeout(function () {
       var el = document.getElementById('favGrid');
       if (!el) return;
-      // 滚到列表底部，保证「最新那条」（排在最后）完整可见
-      var y = el.getBoundingClientRect().top + window.pageYOffset + el.offsetHeight;
-      window.scrollTo(0, Math.max(0, y - window.innerHeight + 40));
-    }, 1500);
+      // 滚到收藏列表区域：让卡片区完整进入视口（新增那条第 1 张带绿框高亮）
+      var top = el.getBoundingClientRect().top + window.pageYOffset;
+      window.scrollTo(0, Math.max(0, top - 90));
+    }, 1800);
   }
 
   if (!auto) return;
   if (auto === 'dup') {
     // 连发两次相同请求：第一发应该 201，第二发应该 409
-    doPost({ workId: 'game-2', note: 'Day18 页面写入验证' });
+    doPost({ workId: 'art-2', note: 'Day19 持久化验证' });
     setTimeout(postFromForm, 1200);
   } else if (auto === 'missing') {
     setTimeout(function () { doPost({}); }, 400);

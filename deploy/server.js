@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 东方同人搜索 · Node 服务（Day 15 起，Day 17 扩展读接口，Day 18 加写接口）
+ * 东方同人搜索 · Node 服务（Day 15 起，Day 17 扩展读接口，Day 18 加写接口，Day 19 加 HTTP API 数据源）
  * ------------------------------------------------------------------
  * 一个单端口 HTTP 服务，做四件事：
  *   1) GET  /api/health     → JSON 健康信息（验证链路通不通）
@@ -10,13 +10,48 @@
  *   5) 其它路径             → 托管 public/ 下的静态页面
  *
  * 刻意不使用任何第三方依赖（不装 express），只用 Node 内置 http/fs/path。
- * 数据库驱动（pg）也是**按需加载**：装了就连真库，没装就降级读 JSON 快照，
- * 详见 deploy/db.js。
+ * 数据源优先级（详见 deploy/db.js）：
+ *   ① HTTP API（CLOUDBASE_ENV_ID + CLOUDBASE_API_KEY）→ 真库，写入持久 ← Day 19
+ *   ② pg 直连（PG_URL / DATABASE_URL + 装了 pg）      → 真库
+ *   ③ 快照（deploy/data/*.json）                      → 兜底，写入不持久
  */
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+
+// ---------------------------------------------------------------------------
+// 零依赖 .env 加载器（Day 19）
+// ---------------------------------------------------------------------------
+// 为什么自己写：项目刻意不装第三方依赖（发布平台 pre-check 会挑刺），
+// dotenv 虽然轻但也是依赖。.env 格式很简单，二十行足够。
+// 规则：KEY=VALUE，忽略空行与 # 开头的注释；**已存在的环境变量优先**（云端注入的不被覆盖）。
+(function loadDotEnv() {
+  const candidates = [
+    path.join(__dirname, '.env'),           // deploy/.env
+    path.join(__dirname, '..', '.env')      // 项目根 .env
+  ];
+  for (const file of candidates) {
+    if (!fs.existsSync(file)) continue;
+    let text;
+    try { text = fs.readFileSync(file, 'utf8'); } catch (e) { continue; }
+    text.split(/\r?\n/).forEach(function (line) {
+      const s = line.trim();
+      if (!s || s.charAt(0) === '#') return;
+      const eq = s.indexOf('=');
+      if (eq <= 0) return;
+      const key = s.slice(0, eq).trim();
+      let val = s.slice(eq + 1).trim();
+      // 去掉可能的包裹引号
+      if ((val.charAt(0) === '"' && val.slice(-1) === '"') ||
+          (val.charAt(0) === "'" && val.slice(-1) === "'")) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = val;
+    });
+  }
+})();
+
 const db = require('./db');
 
 /** ① 端口：云平台会注入 PORT 环境变量，本地没给就用 3000。必须绑定 0.0.0.0。 */
@@ -143,6 +178,20 @@ function guardMethod(req, res, allow) {
   return true;
 }
 
+/**
+ * 当前生效的数据源名字。
+ *
+ * 三种可能（按优先级）：
+ *   rest     —— HTTP API（PostgREST）＋ API Key。公网版走这条，**写入真库、持久**。
+ *   database —— pg 协议直连真库（本地开发用，发布平台不带 pg）。
+ *   snapshot —— 读 deploy/data/*.json 快照（兜底，写不持久）。
+ */
+function dataSourceName() {
+  if (db.hasRestApi()) return 'rest';
+  if (db.hasDatabase()) return 'database';
+  return 'snapshot';
+}
+
 /** ⑦ /api/health 的处理逻辑：只回答「我还活着吗」，不查库、不调外部服务，保证永远快。 */
 function handleHealth(req, res) {
   if (!guardMethod(req, res)) return;
@@ -157,10 +206,11 @@ function handleHealth(req, res) {
     checks: {
       http: 'ok',
       static: fs.existsSync(path.join(ROOT, 'index.html')) ? 'ok' : 'missing',
-      // Day 17 起：数据源探针。database = 直连真库；snapshot = 读 JSON 快照。
+      // Day 17 起：数据源探针。Day 19 扩展为三态：
+      //   rest = HTTP API 真库（可写可持久）、database = pg 直连真库、snapshot = JSON 快照。
       // 注意这里**不真的去连库**（健康检查不能因为数据库慢而变慢），
-      // 只是如实报告「配置上有没有连接串、驱动在不在」。
-      dataSource: db.hasDatabase() ? 'database' : 'snapshot'
+      // 只是如实报告「配置上有没有凭证」。
+      dataSource: dataSourceName()
     }
   });
 }
@@ -373,7 +423,12 @@ const server = http.createServer((req, res) => {
 /** ⑩ 启动：监听 PORT，绑定所有网卡（0.0.0.0）才能被外部访问。 */
 server.listen(PORT, '0.0.0.0', () => {
   console.log('[server] listening on 0.0.0.0:' + PORT + '  env=' + ENV);
-  console.log('[server] data source: ' + (db.hasDatabase() ? 'database (PG_URL 已配置)' : 'snapshot (deploy/data/*.json)'));
+  console.log('[server] data source: ' + (function () {
+    var s = dataSourceName();
+    if (s === 'rest') return 'rest (CLOUDBASE_API_KEY 已配置 → HTTP API 真库，写入持久)';
+    if (s === 'database') return 'database (PG_URL 已配置 → pg 直连真库)';
+    return 'snapshot (deploy/data/*.json，写入不持久)';
+  })());
   console.log('[server] health:    /api/health');
   console.log('[server] hot:       /api/hot?board=fresh|hot|all&limit=20');
   console.log('[server] favorites: /api/favorites?userId=local&limit=50   (GET)');

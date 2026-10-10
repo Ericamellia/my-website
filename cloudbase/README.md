@@ -1,7 +1,7 @@
 # CloudBase 开通与云函数部署说明（Day 15 · 板块①）
 
 > 这份文档对应 Day 15 板块①「注册并开通 CloudBase」。
-> **状态：已完成（2026-10-08）** —— 环境 `ericamellia24-d2gk0fukc71292c5` 已开通，
+> **状态：已完成（2026-10-08）** —— 环境 `ericamellia24-d2gk0ftukc71292c5` 已开通，
 > 云函数 `api-health` 已在控制台部署成功；仅 HTTP 网关默认域名处于生效窗口期
 > （访问返回 `INVALID_ENV`，排查记录见 `docs/day15/deploy-env.md` §二·补）。
 > 下文步骤保留作存档，重装/换环境时照做即可。
@@ -10,7 +10,7 @@
 
 | 项 | 值 |
 |---|---|
-| 环境 ID | `ericamellia24-d2gk0fukc71292c5` |
+| 环境 ID | `ericamellia24-d2gk0ftukc71292c5` |
 | 地域 | 上海（ap-shanghai） |
 | 计费 | 免费体验版（3000 资源点/月，单环境，不可加购） |
 | 到期 | `2027-04-08`（单次续期 6 个月，不自动续） |
@@ -25,7 +25,7 @@
    - 计费方式选 **免费体验版**（3000 资源点/月，1 个环境，学习阶段够用）
    - 地域选离你最近的（本环境为上海 `ap-shanghai`）
 4. 创建完成后，在**环境概览**页能看到三样东西，Day 15 截图要用：
-   - **环境 ID**（本环境：`ericamellia24-d2gk0fukc71292c5`）
+   - **环境 ID**（本环境：`ericamellia24-d2gk0ftukc71292c5`）
    - **剩余额度**（免费资源用量）
    - **到期日期**（免费资源到期时间：`2027-04-08`）
 5. 环境 ID 已写入本目录 `cloudbaserc.json` 的 `envId` 字段。
@@ -44,7 +44,7 @@
 {
   "ok": true,
   "service": "touhou-search",
-  "env": "ericamellia24-d2gk0fukc71292c5",
+  "env": "ericamellia24-d2gk0ftukc71292c5",
   "version": "1.0.0",
   "time": "2026-10-08T00:00:00.000Z",
   "uptimeSec": 0,
