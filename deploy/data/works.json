@@ -1,0 +1,547 @@
+{
+  "_origin": "works 表快照（由 my-app/data/*.json 生成，字段口径与 works 表一致）",
+  "_note": "Day 18 的 POST /api/favorites 用它校验「作品是否存在」并带出作品详情。",
+  "count": 30,
+  "items": [
+    {
+      "workId": "art-1",
+      "category": "art",
+      "name": "LAST WORDS",
+      "circle": "Miv4t",
+      "creator": "Miv4t",
+      "year": 2016,
+      "cover": "assets/art/art1.jpg",
+      "tags": [
+        "妖妖梦",
+        "东方Project"
+      ],
+      "characters": [
+        "西行寺幽幽子"
+      ],
+      "description": "Miv4t 绘制的西行寺幽幽子同人插画，标题为 LAST WORDS。",
+      "sourceUrl": "https://www.pixiv.net/artworks/60181142"
+    },
+    {
+      "workId": "art-2",
+      "category": "art",
+      "name": "やくも ゆかり",
+      "circle": "wukloo",
+      "creator": "wukloo",
+      "year": 2016,
+      "cover": "assets/art/art2.jpg",
+      "tags": [
+        "东方Project"
+      ],
+      "characters": [
+        "八云紫"
+      ],
+      "description": "wukloo 绘制的八云紫同人插画。",
+      "sourceUrl": "https://www.pixiv.net/artworks/59572603"
+    },
+    {
+      "workId": "art-3",
+      "category": "art",
+      "name": "ice",
+      "circle": "大魔王るあえる",
+      "creator": "大魔王るあえる",
+      "year": 2018,
+      "cover": "assets/art/art3.jpg",
+      "tags": [
+        "妖精大战争",
+        "东方Project"
+      ],
+      "characters": [
+        "琪露诺"
+      ],
+      "description": "大魔王るあえる 绘制的琪露诺主题同人插画，主题为冰与清凉。",
+      "sourceUrl": "https://www.pixiv.net/artworks/67170050"
+    },
+    {
+      "workId": "art-4",
+      "category": "art",
+      "name": "☆",
+      "circle": "Lota",
+      "creator": "Lota",
+      "year": 2017,
+      "cover": "assets/art/art4.jpg",
+      "tags": [
+        "妖妖梦",
+        "东方Project"
+      ],
+      "characters": [
+        "魂魄妖梦"
+      ],
+      "description": "Lota 绘制的魂魄妖梦同人插画。",
+      "sourceUrl": "https://www.pixiv.net/artworks/65002165"
+    },
+    {
+      "workId": "art-5",
+      "category": "art",
+      "name": "紅魔館へようこそ♪",
+      "circle": "九十九",
+      "creator": "九十九",
+      "year": 2010,
+      "cover": "assets/art/art5.jpg",
+      "tags": [
+        "红魔乡",
+        "东方Project"
+      ],
+      "characters": [
+        "帕秋莉·诺蕾姬",
+        "芙兰朵露·斯卡雷特",
+        "蕾米莉亚·斯卡雷特",
+        "十六夜咲夜",
+        "小恶魔",
+        "红美铃"
+      ],
+      "description": "九十九 绘制的红魔馆全员欢迎主题同人插画。",
+      "sourceUrl": "https://www.pixiv.net/artworks/9780427"
+    },
+    {
+      "workId": "art-6",
+      "category": "art",
+      "name": "妹紅",
+      "circle": "bob",
+      "creator": "bob",
+      "year": 2014,
+      "cover": "assets/art/art6.jpg",
+      "tags": [
+        "永夜抄",
+        "东方Project"
+      ],
+      "characters": [
+        "藤原妹红"
+      ],
+      "description": "bob 绘制的藤原妹红同人插画。",
+      "sourceUrl": "https://www.pixiv.net/artworks/45350924"
+    },
+    {
+      "workId": "art-7",
+      "category": "art",
+      "name": "紅魔館の魔女",
+      "circle": "久蒼穹",
+      "creator": "久蒼穹",
+      "year": 2026,
+      "cover": "assets/art/art7.jpg",
+      "tags": [
+        "红魔乡",
+        "东方Project"
+      ],
+      "characters": [
+        "帕秋莉·诺蕾姬"
+      ],
+      "description": "久蒼穹 绘制的帕秋莉·诺蕾姬同人插画，红魔馆魔女主题。",
+      "sourceUrl": "https://www.pixiv.net/artworks/149552832"
+    },
+    {
+      "workId": "doujin-1",
+      "category": "doujin",
+      "name": "- Bibliotheca - 劇毒少女 publication number V",
+      "circle": "劇毒少女",
+      "creator": "劇毒少女",
+      "year": 2010,
+      "cover": "assets/works/doujin01.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "雾雨魔理沙",
+        "帕秋莉",
+        "琪露诺"
+      ],
+      "description": "以红魔馆大图书馆为舞台的东方同人漫画，帕秋莉、魔理沙与琪露诺登场。",
+      "sourceUrl": "https://thwiki.cc/-_Bibliotheca_-_%E5%8A%87%E6%AF%92%E5%B0%91%E5%A5%B3_publication_number_V"
+    },
+    {
+      "workId": "doujin-2",
+      "category": "doujin",
+      "name": "'R' exception - キオクトキロク -",
+      "circle": "桜花月間",
+      "creator": "桜花月間",
+      "year": 2009,
+      "cover": "assets/works/doujin02.jpg",
+      "tags": [
+        "永夜抄"
+      ],
+      "characters": [
+        "上白泽慧音",
+        "稗田阿求"
+      ],
+      "description": "桜花月間的东方同人小说，以上白泽慧音与稗田阿求为主角，在东方幻乐祭2 发布。",
+      "sourceUrl": "https://thwiki.cc/%27R%27_exception_-_%E3%82%AD%E3%82%AA%E3%82%AF%E3%83%88%E3%82%AD%E3%83%AD%E3%82%AF_-"
+    },
+    {
+      "workId": "doujin-3",
+      "category": "doujin",
+      "name": "+alpha",
+      "circle": "幻想夜桜",
+      "creator": "幻想夜桜",
+      "year": 2011,
+      "cover": "assets/works/doujin03.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "博丽灵梦"
+      ],
+      "description": "幻想夜桜在红楼梦7 发布的东方合同画集，以博丽灵梦为主题。",
+      "sourceUrl": "https://thwiki.cc/%2Balpha"
+    },
+    {
+      "workId": "doujin-4",
+      "category": "doujin",
+      "name": "- 春 -",
+      "circle": "Tiny Feather",
+      "creator": "Tiny Feather",
+      "year": 2007,
+      "cover": "assets/works/doujin04.jpg",
+      "tags": [
+        "妖妖梦"
+      ],
+      "characters": [
+        "博丽灵梦"
+      ],
+      "description": "Tiny Feather 在例大祭4 发布的春主题东方同人漫画，博丽灵梦登场。",
+      "sourceUrl": "https://thwiki.cc/-_%E6%98%A5_-"
+    },
+    {
+      "workId": "doujin-5",
+      "category": "doujin",
+      "name": "- All of the Fantasies -",
+      "circle": "BlackEditionFX",
+      "creator": "BlackEditionFX",
+      "year": 2016,
+      "cover": "assets/works/doujin05.jpg",
+      "tags": [
+        "地灵殿"
+      ],
+      "characters": [
+        "灵乌路空"
+      ],
+      "description": "BlackEditionFX 在 C91 发布的灵乌路空主题东方画集总集篇。",
+      "sourceUrl": "https://thwiki.cc/-_All_of_the_Fantasies_-"
+    },
+    {
+      "workId": "doujin-6",
+      "category": "doujin",
+      "name": "- Dress -",
+      "circle": "BlackEditionFX",
+      "creator": "BlackEditionFX",
+      "year": 2014,
+      "cover": "assets/works/doujin06.jpg",
+      "tags": [
+        "地灵殿",
+        "文花帖",
+        "星莲船"
+      ],
+      "characters": [
+        "博丽灵梦",
+        "灵乌路空",
+        "射命丸文",
+        "圣白莲"
+      ],
+      "description": "BlackEditionFX 的东方画集，描绘灵梦、空、文、白莲等角色的服饰装束。",
+      "sourceUrl": "https://thwiki.cc/-_Dress_-"
+    },
+    {
+      "workId": "game-1",
+      "category": "game",
+      "name": "东方月神夜（Touhou Luna Nights）",
+      "circle": "Team Ladybug",
+      "creator": "Team Ladybug",
+      "year": 2019,
+      "cover": "assets/games/game1.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "十六夜咲夜",
+        "蕾米莉亚",
+        "帕秋莉",
+        "红美铃"
+      ],
+      "description": "Team Ladybug 开发、WSS playground 发行的类银河城动作游戏，操纵十六夜咲夜运用时间停止在平行世界的红魔馆中探索脱出。",
+      "sourceUrl": "https://store.steampowered.com/app/851100/Touhou_Luna_Nights/"
+    },
+    {
+      "workId": "game-2",
+      "category": "game",
+      "name": "东方夜雀食堂（Touhou Mystia's Izakaya）",
+      "circle": "二色幽紫蝶 · Re零同人社",
+      "creator": "二色幽紫蝶",
+      "year": 2021,
+      "cover": "assets/games/game2.jpg",
+      "tags": [
+        "永夜抄"
+      ],
+      "characters": [
+        "米斯蒂娅"
+      ],
+      "description": "二色幽紫蝶 · Re零同人社开发的像素风居酒屋经营模拟游戏，米斯蒂娅白天采集食材、学习食谱，夜晚招待幻想乡的客人们。",
+      "sourceUrl": "https://store.steampowered.com/app/1584090/"
+    },
+    {
+      "workId": "game-3",
+      "category": "game",
+      "name": "不可思议的幻想乡TOD -RELOADED-",
+      "circle": "AQUA STYLE",
+      "creator": "AQUA STYLE",
+      "year": 2018,
+      "cover": "assets/games/game3.jpg",
+      "tags": [
+        "红魔乡",
+        "星莲船"
+      ],
+      "characters": [
+        "博丽灵梦",
+        "森近霖之助"
+      ],
+      "description": "AQUA STYLE 开发的 Roguelike RPG，博丽灵梦深入随机生成的迷宫，调查香霖町突然出现的高塔异变。",
+      "sourceUrl": "https://store.steampowered.com/app/931500/Touhou_Genso_Wanderer_Reloaded/"
+    },
+    {
+      "workId": "game-4",
+      "category": "game",
+      "name": "東方実在相 ～ Dream Logical World",
+      "circle": "Analogue Reverie",
+      "creator": "Analogue Reverie",
+      "year": 2022,
+      "cover": "assets/games/game4.jpg",
+      "tags": [],
+      "characters": [
+        "灯笼坂爱美"
+      ],
+      "description": "Analogue Reverie 开发的免费同人弹幕游戏，以原创角色灯笼坂爱美为主角，关卡设计广受好评。",
+      "sourceUrl": "https://store.steampowered.com/app/1664410/"
+    },
+    {
+      "workId": "game-5",
+      "category": "game",
+      "name": "无首拾忆录（Kubinashi Recollection）",
+      "circle": "給食頭蛮",
+      "creator": "給食頭蛮",
+      "year": 2021,
+      "cover": "assets/games/game5.jpg",
+      "tags": [
+        "神灵庙"
+      ],
+      "characters": [
+        "赤蛮奇"
+      ],
+      "description": "給食頭蛮开发、Phoenixx 发行的解谜平台跳跃游戏，以赤蛮奇为主角，通过投掷头颅解开重重关卡。",
+      "sourceUrl": "https://store.steampowered.com/app/1635980/"
+    },
+    {
+      "workId": "music-1",
+      "category": "music",
+      "name": "ハルトマンの妖怪少女",
+      "circle": "COOL&CREATE",
+      "creator": "有泉",
+      "year": 2007,
+      "cover": "assets/music/cover1.jpg",
+      "tags": [
+        "妖妖梦"
+      ],
+      "characters": [
+        "西行寺幽幽子",
+        "魂魄妖梦"
+      ],
+      "description": "COOL&CREATE 于 C72 发布的东方同人声乐专辑，以妖妖梦主题曲改编的人声曲目最为知名。",
+      "sourceUrl": "https://thwiki.cc/ハルトマンの妖怪少女"
+    },
+    {
+      "workId": "music-2",
+      "category": "music",
+      "name": "チルノのパーフェクトさんすう教室",
+      "circle": "IOSYS",
+      "creator": "ARM",
+      "year": 2009,
+      "cover": "assets/music/cover2.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "琪露诺"
+      ],
+      "description": "IOSYS 于 C76 发布的琪露诺主题同人专辑，多首人声改编曲在网络上广为流传。",
+      "sourceUrl": "https://thwiki.cc/チルノのパーフェクトさんすう教室"
+    },
+    {
+      "workId": "music-3",
+      "category": "music",
+      "name": "東方我楽多叢書",
+      "circle": "凋叶棕",
+      "creator": "RD-Sounds",
+      "year": 2010,
+      "cover": "assets/music/cover3.jpg",
+      "tags": [
+        "旧作",
+        "Mystic Square"
+      ],
+      "characters": [
+        "稗田阿求",
+        "博丽灵梦",
+        "雾雨魔理沙"
+      ],
+      "description": "凋叶棕（RD-Sounds）以东方旧作（含 Mystic Square）为题材的叙事性同人音乐专辑。",
+      "sourceUrl": "https://thwiki.cc/東方我楽多叢書"
+    },
+    {
+      "workId": "music-4",
+      "category": "music",
+      "name": "アルティメットトゥルース",
+      "circle": "暁Records",
+      "creator": "ねじ式",
+      "year": 2014,
+      "cover": "assets/music/cover4.jpg",
+      "tags": [
+        "地霊殿"
+      ],
+      "characters": [
+        "古明地さとり"
+      ],
+      "description": "暁Records 于 C86 发布的地霊殿主题同人声乐专辑，古明地さとり相关曲目人气很高。",
+      "sourceUrl": "https://thwiki.cc/アルティメットトゥルース"
+    },
+    {
+      "workId": "music-5",
+      "category": "music",
+      "name": "月まで届け、不死の煙",
+      "circle": "豚乙女",
+      "creator": "コバヤシユウ",
+      "year": 2011,
+      "cover": "assets/music/cover5.jpg",
+      "tags": [
+        "永夜抄"
+      ],
+      "characters": [
+        "蓬莱山輝夜"
+      ],
+      "description": "豚乙女于 C80 发布的蓬莱山輝夜主题同人声乐专辑，永夜抄改编曲目氛围独特。",
+      "sourceUrl": "https://thwiki.cc/月まで届け、不死の煙"
+    },
+    {
+      "workId": "music-6",
+      "category": "music",
+      "name": "サンセットカフェ",
+      "circle": "ShibayanRecords",
+      "creator": "Shibayan",
+      "year": 2008,
+      "cover": "assets/music/cover6.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "蕾米莉亚",
+        "帕秋莉"
+      ],
+      "description": "ShibayanRecords 于 C74 发布的 Bossa Nova 风格东方同人专辑，红魔乡主题曲改编轻盈舒缓。",
+      "sourceUrl": "https://thwiki.cc/サンセットカフェ"
+    },
+    {
+      "workId": "video-1",
+      "category": "video",
+      "name": "Bad Apple!! feat. nomico（影绘PV）",
+      "circle": "Alstroemeria Records",
+      "creator": "あにら",
+      "year": 2009,
+      "cover": "https://i1.hdslb.com/bfs/archive/753453a776fca838165a52c7511e8557857b61ea.jpg",
+      "tags": [
+        "幻想乡"
+      ],
+      "characters": [
+        "博丽灵梦",
+        "雾雨魔理沙"
+      ],
+      "description": "东方同人圈传播度最高的影绘 PV，由 あにら 制作，配乐是 Alstroemeria Records 的 arrange 曲「Bad Apple!!」",
+      "sourceUrl": "https://thwiki.cc/Bad_Apple!!"
+    },
+    {
+      "workId": "video-2",
+      "category": "video",
+      "name": "魔理沙は大変なものを盗んでいきました",
+      "circle": "IOSYS",
+      "creator": "IOSYS",
+      "year": 2006,
+      "cover": "https://i1.hdslb.com/bfs/archive/848a0cefead5a1be6123ed37c8b1d75d4129e5e9.png",
+      "tags": [
+        "妖妖梦",
+        "怪绮谈"
+      ],
+      "characters": [
+        "雾雨魔理沙",
+        "爱丽丝·玛格特罗伊德"
+      ],
+      "description": "IOSYS 2006 年发布的 Flash 音乐 PV，是东方二创史上播放量最高的作品之一",
+      "sourceUrl": "https://thwiki.cc/%E9%AD%94%E7%90%86%E6%B2%99%E3%81%AF%E5%A4%A7%E5%A4%89%E3%81%AA%E3%82%82%E3%81%AE%E3%82%92%E7%9B%97%E3%82%93%E3%81%A7%E3%81%84%E3%81%8D%E3%81%BE%E3%81%97%E3%81%9F"
+    },
+    {
+      "workId": "video-3",
+      "category": "video",
+      "name": "チルノのパーフェクトさんすう教室",
+      "circle": "IOSYS",
+      "creator": "IOSYS",
+      "year": 2007,
+      "cover": "https://i2.hdslb.com/bfs/archive/634cb047af906b014aee4ac6e1193eb7877c0288.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "琪露诺"
+      ],
+      "description": "IOSYS 以琪露诺为主角的洗脑音乐 PV，中文圈「⑨」梗的源头之一",
+      "sourceUrl": "https://thwiki.cc/%E3%83%81%E3%83%AB%E3%83%8E%E3%81%AE%E3%83%91%E3%83%BC%E3%83%95%E3%82%A7%E3%82%AF%E3%83%88%E3%81%95%E3%82%93%E3%81%99%E3%81%86%E6%95%99%E5%AE%A4"
+    },
+    {
+      "workId": "video-4",
+      "category": "video",
+      "name": "ナイト・オブ・ナイツ",
+      "circle": "COOL&CREATE",
+      "creator": "beatMARIO",
+      "year": 2007,
+      "cover": "https://i1.hdslb.com/bfs/archive/159f9856b02b1f2b619285898e75bb527db2a482.jpg",
+      "tags": [
+        "花映塚"
+      ],
+      "characters": [
+        "风见幽香"
+      ],
+      "description": "COOL&CREATE 的经典 arrange 曲，因手书与「踊ってみた」二创而广为流传",
+      "sourceUrl": "https://thwiki.cc/%E3%83%8A%E3%82%A4%E3%83%88%E3%83%BB%E3%82%AA%E3%83%96%E3%83%BB%E3%83%8A%E3%82%A4%E3%83%84"
+    },
+    {
+      "workId": "video-5",
+      "category": "video",
+      "name": "東方夢想夏郷 第一話",
+      "circle": "舞风（MAIKAZE）",
+      "creator": "舞风（MAIKAZE）",
+      "year": 2008,
+      "cover": "https://i2.hdslb.com/bfs/archive/8edfb8240319d4fb304843b1866c2cf083f8a537.jpg",
+      "tags": [],
+      "characters": [
+        "博丽灵梦",
+        "雾雨魔理沙",
+        "八云紫"
+      ],
+      "description": "舞风制作的东方同人动画系列第一话，被视为东方同人动画的代表作之一",
+      "sourceUrl": "https://thwiki.cc/%E6%9D%B1%E6%96%B9%E5%A4%A2%E6%83%B3%E5%A4%8F%E9%83%B7"
+    },
+    {
+      "workId": "video-6",
+      "category": "video",
+      "name": "U.N. Owen Was Her? feat. HIKO（官方 MV）",
+      "circle": "A-One",
+      "creator": "A-One-JPN",
+      "year": 2023,
+      "cover": "https://i0.hdslb.com/bfs/archive/eb10699d4b0b493e1e4d1394f0a615b1faffd48e.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "芙兰朵露·斯卡雷特"
+      ],
+      "description": "A-One 官方发布的 Eurobeat 改编 MV，原曲为红魔乡 EX 关主题曲、芙兰朵露·斯卡雷特的主题曲「U.N.オーエンは彼女なのか？」",
+      "sourceUrl": "https://thwiki.cc/U.N.%E3%82%AA%E3%83%BC%E3%82%A8%E3%83%B3%E3%81%AF%E5%BD%BC%E5%A5%B3%E3%81%AA%E3%81%AE%E3%81%8B%EF%BC%9F"
+    }
+  ]
+}

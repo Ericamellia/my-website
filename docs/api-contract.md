@@ -1,12 +1,13 @@
-# api-contract.md｜东方同人搜索 接口契约（Day 15）
+# api-contract.md｜东方同人搜索 接口契约（Day 18）
 
-> 本文件是前后端之间的**唯一接口约定**。Day 15 只落地一个接口：`GET /api/health`。
-> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 16–20，不在今天做。
+> 本文件是前后端之间的**唯一接口约定**。已落地：`GET /api/health`（Day 15）、
+> `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）。
+> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 19–20。
 
 | 项 | 值 |
 |---|---|
-| 契约版本 | `1.0.0` |
-| 更新日期 | 2026-10-01 |
+| 契约版本 | `1.1.0` |
+| 更新日期 | 2026-10-10 |
 | 公网地址（mock 版） | `https://touhou-mock.app.workbuddy.host` |
 | 本地地址 | `http://127.0.0.1:3000`（`PORT` 可覆盖） |
 | 数据格式 | JSON，`Content-Type: application/json; charset=utf-8` |
@@ -35,13 +36,20 @@
 
 | 状态码 | 含义 | 何时出现 |
 |---|---|---|
-| 200 | 成功 | 正常返回数据 |
+| 200 | 成功 | 正常返回数据（读接口） |
+| 201 | 已创建 | **写接口成功新建了一条记录**（Day 18 起） |
 | 304 | 未修改 | 仅在启用协商缓存的接口上（health 不用） |
-| 400 | 请求参数错误 | 缺参数 / 参数格式不对 |
+| 400 | 请求参数错误 | 缺参数 / 参数格式不对 / body 不是合法 JSON |
 | 404 | 资源不存在 | 路径或 id 找不到 |
-| 405 | 方法不允许 | 例：对 health 发 POST |
-| 501 | 尚未实现 | 契约已定义但后端还没写（Day 15 的 `/api/*` 除 health 外都走这个） |
+| 405 | 方法不允许 | 例：对 health 发 POST；响应体会带 `allow` 列出该路径支持的方法 |
+| 409 | 冲突 | **重复提交**（同一用户重复收藏同一作品，Day 18 起） |
+| 413 | 请求体过大 | body 超过 64KB 上限（Day 18 起） |
+| 501 | 尚未实现 | 契约已定义但后端还没写 |
 | 500 | 服务端错误 | 未捕获异常 |
+
+> **为什么 409 不复用 400**：400 的意思是「你这条请求本身写错了，改一改再来」；
+> 409 的意思是「请求没写错，但它和现有数据冲突了」。前端据此刻画不同提示 ——
+> 400 引导用户改输入，409 提示「已收藏过」并把已有记录展示出来。
 
 ---
 
@@ -115,7 +123,223 @@ mock 版首页顶部那张「健康状态卡」就是这么调的，会把返回
 
 ---
 
-## 2. 尚未实现的接口（Day 16–20，占位）
+## 2. `GET /api/hot` — 热搜榜（已实现 ✅ Day 17）
+
+**用途**：返回 B 站东方同人视频的两个榜单 —— 当日新发布（`fresh`）与历史热门（`hot`）。
+
+### 请求
+
+```
+GET /api/hot?board=fresh&limit=20
+```
+
+| 参数 | 必填 | 默认 | 说明 |
+|---|---|---|---|
+| `board` | 否 | `all` | `fresh` 当日新发布 / `hot` 历史热门 / `all` 两榜都要 |
+| `limit` | 否 | `20` | 每榜返回条数，上限 100（超过按 100 处理） |
+
+### 响应 200
+
+```json
+{
+  "ok": true,
+  "endpoint": "/api/hot",
+  "source": "snapshot",
+  "board": "fresh",
+  "limit": 2,
+  "syncedAt": "2026-10-10T11:29:49+08:00",
+  "syncedDate": "2026-10-10",
+  "counts": { "fresh": 2, "hot": 0, "total": 2, "limit": 2 },
+  "data": [
+    {
+      "bvid": "BV1Lvpt6YEex",
+      "board": "fresh",
+      "rank": 1,
+      "title": "成都THO11 大地に咲く旋律 一场幻想乡的梦",
+      "author": "雷电灵风RaidenWind",
+      "mid": 12345678,
+      "play": 35,
+      "danmaku": 0,
+      "favorites": 2,
+      "duration": "3:22",
+      "category": "日常",
+      "pubdate": 1791602220,
+      "publishedAt": "2026-10-09T14:37:00.000Z",
+      "cover": "https://i1.hdslb.com/bfs/archive/xxx.jpg",
+      "description": "……",
+      "url": "https://www.bilibili.com/video/BV1Lvpt6YEex"
+    }
+  ]
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `ok` | boolean | 固定 `true` |
+| `source` | string | `database` = 直连真库；`snapshot` = 读 `deploy/data/hot.json` 快照 |
+| `counts` | object | 本次返回的各榜条数 |
+| `data[].rank` | number | 榜内名次（1 开始） |
+| `data[].publishedAt` | string | 由 `pubdate` 换算出的 ISO 8601 时间 |
+| `data[].url` | string | B 站播放页地址 |
+
+---
+
+## 3. `GET /api/favorites` — 收藏列表（已实现 ✅ Day 17）
+
+**用途**：返回某个用户的收藏，**JOIN `works` 表**把作品名/社团/封面一并带出，前端不用再发第二次请求。
+
+### 请求
+
+```
+GET /api/favorites?userId=local&limit=50
+```
+
+| 参数 | 必填 | 默认 | 说明 |
+|---|---|---|---|
+| `userId` | 否 | `local` | 用户标识（Day 18 还没有登录体系，固定 `local`） |
+| `limit` | 否 | `50` | 返回条数上限 200 |
+
+### 响应 200
+
+```json
+{
+  "ok": true,
+  "endpoint": "/api/favorites",
+  "source": "snapshot",
+  "userId": "local",
+  "limit": 50,
+  "count": 8,
+  "data": [
+    {
+      "id": 8,
+      "userId": "local",
+      "workId": "art-2",
+      "note": "Day18 写入验证",
+      "createdAt": "2026-10-10T04:15:40.726Z",
+      "category": "art",
+      "name": "やくも ゆかり",
+      "circle": "wukloo",
+      "creator": "wukloo",
+      "year": 2016,
+      "cover": "assets/art/art2.jpg",
+      "tags": ["东方Project"],
+      "characters": ["八云紫"],
+      "description": "……",
+      "sourceUrl": "https://www.pixiv.net/artworks/59572603"
+    }
+  ]
+}
+```
+
+---
+
+## 4. `POST /api/favorites` — 新增一条收藏（已实现 ✅ Day 18）
+
+**用途**：给某个作品加一条收藏。这是本站**第一个写接口**，所以它必须自带两道闸门：
+
+| 闸门 | 防什么 | 怎么做 | 失败返回 |
+|---|---|---|---|
+| ① 入参校验 | 错误输入 | 入库**之前**逐字段检查（必填/类型/格式/长度） | `400` + 中文提示 |
+| ② 唯一约束 | 重复提交 | 数据库 `UNIQUE (user_id, work_id)` + `ON CONFLICT DO NOTHING` | `409 already_favorited` |
+
+> **为什么防重复必须靠数据库，不能只靠前端**：
+> 前端禁用按钮挡不住网络自动重试、脚本直调、双开页面。
+> 数据库唯一约束是最后一道、也是**原子**的一道 ——
+> 实测 8 个请求并发提交同一条，结果恰好 1 个 `201` + 7 个 `409`，库里只有 1 行。
+
+### 请求
+
+```
+POST /api/favorites
+Content-Type: application/json
+
+{ "workId": "art-2", "note": "画风对味" }
+```
+
+| 字段 | 必填 | 类型 | 说明 |
+|---|---|---|---|
+| `workId` | **是** | string | 作品编号，格式 `{板块}-{编号}`，如 `music-1`；长度 ≤ 32 |
+| `userId` | 否 | string | 用户标识，默认 `local`；长度 1–64 |
+| `note` | 否 | string | 收藏备注；长度 ≤ 255（与表定义 `VARCHAR(255)` 一致） |
+
+### 响应 201（新建成功）
+
+```json
+{
+  "ok": true,
+  "endpoint": "/api/favorites",
+  "action": "created",
+  "source": "snapshot",
+  "message": "收藏成功",
+  "data": {
+    "id": 8,
+    "userId": "local",
+    "workId": "art-2",
+    "note": "Day18 写入验证",
+    "createdAt": "2026-10-10T04:15:40.726Z",
+    "category": "art",
+    "name": "やくも ゆかり",
+    "circle": "wukloo",
+    "creator": "wukloo",
+    "year": 2016,
+    "cover": "assets/art/art2.jpg",
+    "tags": ["东方Project"],
+    "characters": ["八云紫"],
+    "description": "……",
+    "sourceUrl": "https://www.pixiv.net/artworks/59572603"
+  }
+}
+```
+
+**`data` 的形状与 `GET /api/favorites` 的 `data[]` 完全一致** ——
+这样前端「新增成功后」可以直接把这条推进本地列表，不用再拉一次全量。
+
+### 响应 409（重复提交）
+
+```json
+{
+  "ok": false,
+  "error": "already_favorited",
+  "message": "你已经收藏过 art-2 了，不用重复提交",
+  "data": { "id": 8, "workId": "art-2", "..." : "……（已有那条的完整内容）" }
+}
+```
+
+`data` 里带上**已存在的那条**，前端可以据此直接高亮「这条你已经收藏过了」。
+
+### 错误码一览
+
+| 状态码 | `error` | 触发条件 | `message`（中文，直接给用户看） |
+|---|---|---|---|
+| 400 | `invalid_json` | body 不是合法 JSON | 请求体不是合法的 JSON，请检查格式（引号、逗号、括号） |
+| 400 | `invalid_body` | body 不是对象（如传了数组或字符串） | 请求体必须是一个 JSON 对象 |
+| 400 | `missing_work_id` | 缺 `workId` 或为空 | 缺少必填字段 workId（要收藏的作品编号，例如 music-1） |
+| 400 | `invalid_work_id` | `workId` 不是字符串 / 超长 | workId 必须是字符串，例如 music-1 |
+| 400 | `invalid_work_id_format` | `workId` 不符合 `{板块}-{编号}` | workId 格式不对，应形如「板块-编号」，例如 music-1、video-2 |
+| 400 | `invalid_user_id` | `userId` 类型/长度不对 | userId 必须是字符串 / 长度需在 1–64 个字符之间 |
+| 400 | `invalid_note` | `note` 类型不对 / 超 255 字 | note 必须是字符串 / note 长度不能超过 255 个字符 |
+| 404 | `work_not_found` | `workId` 在本站不存在 | 作品 music-999 不存在，请先确认 workId 是否正确 |
+| 405 | `method_not_allowed` | 用了 GET/HEAD/POST 以外的方法 | 响应体带 `allow: ["GET","HEAD","POST"]` |
+| 409 | `already_favorited` | 该用户已收藏过该作品 | 你已经收藏过 art-2 了，不用重复提交 |
+| 413 | `body_too_large` | body 超过 64KB | 请求体过大，不能超过 64KB |
+| 500 | `write_failed` / `insert_failed` | 落库异常 | 写入失败：…… |
+
+### 校验顺序（为什么这样排）
+
+```
+1. 方法对不对            → 405   （最便宜，先挡）
+2. body 能否解析成 JSON   → 400   （不碰数据库）
+3. 字段齐不齐、格式对不对  → 400   （不碰数据库）
+4. 作品存不存在           → 404   （查一次 works）
+5. 落库；撞唯一约束       → 409   （最贵，最后做）
+```
+
+前三步都是**纯计算、不碰数据库**，所以脏请求根本打不到库上 ——
+这是写接口的基本功：**把便宜的检查放在前面，把昂贵的操作放在最后。**
+
+---
+
+## 5. 尚未实现的接口（Day 19–20，占位）
 
 > 现阶段调用下面任意路径，服务端统一返回 **501**：
 > ```json
@@ -125,18 +349,19 @@ mock 版首页顶部那张「健康状态卡」就是这么调的，会把返回
 
 | 方法 | 路径 | 用途 | 计划 |
 |---|---|---|---|
-| GET | `/api/works` | 作品列表（分页 / 分类 / 排序） | Day 16–17 |
-| GET | `/api/works/:id` | 作品详情 | Day 17 |
-| GET | `/api/search` | 关键词搜索（作品名 / 作者 / 角色 / 标签） | Day 18 |
-| GET | `/api/circles` | 社团 / 作者列表 | Day 18 |
-| GET/POST | `/api/favorites` | 收藏读写 | Day 19 |
-| GET | `/api/originals` | ZUN 原曲列表 | Day 19 |
+| GET | `/api/works` | 作品列表（分页 / 分类 / 排序） | Day 19 |
+| GET | `/api/works/:id` | 作品详情 | Day 19 |
+| GET | `/api/search` | 关键词搜索（作品名 / 作者 / 角色 / 标签） | Day 19 |
+| GET | `/api/circles` | 社团 / 作者列表 | Day 20 |
+| GET | `/api/originals` | ZUN 原曲列表 | Day 20 |
+| PATCH | `/api/favorites/:id` | 改收藏备注 | 第 4 周 |
+| DELETE | `/api/favorites/:id` | 取消收藏 | 第 4 周 |
 
 这部分接口一旦开工，字段定义直接追加到本文件，并同步升 `契约版本`。
 
 ---
 
-## 3. Mock 版说明（当前线上是什么）
+## 6. Mock 版说明（当前线上是什么）
 
 - 线上 `https://touhou-mock.app.workbuddy.host` 跑的是 `deploy/` 下的 Node 服务：
   - `/api/health` → **真实接口**，返回如上 JSON；
@@ -148,7 +373,7 @@ mock 版首页顶部那张「健康状态卡」就是这么调的，会把返回
 
 ---
 
-## 4. CloudBase 云函数版（同一份契约）
+## 7. CloudBase 云函数版（同一份契约）
 
 目录 `cloudbase/functions/api-health/index.js` 是上面契约的云函数实现，
 返回体与 §1 **完全一致**，只是换成 CloudBase 的响应结构：
@@ -167,17 +392,19 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 
 ---
 
-## 5. 变更记录
+## 8. 变更记录
 
 | 日期 | 变更 |
 |---|---|
 | 2026-10-01（Day 15） | 初版。落地 `GET /api/health`，占位 6 个业务接口，明确 501 语义 |
 | 2026-10-08（Day 15 续） | `env` 字段说明补真实环境 ID；`cloudbaserc.json` 落 `envId` 与 Nodejs18.15；记录 HTTP 网关 `INVALID_ENV` 排查与降级路径 |
-| 2026-10-08（Day 16） | 数据层落地。新增 §6 数据库表结构（`circles` / `works`），业务接口的字段来源自此有据可依 |
+| 2026-10-08（Day 16） | 数据层落地。新增 §9 数据库表结构（`circles` / `works`），业务接口的字段来源自此有据可依 |
+| 2026-10-10（Day 17） | 补 §2 `GET /api/hot`、§3 `GET /api/favorites` 完整定义；契约版本升 `1.1.0`；新增 `favorites` / `hot_videos` 两张表说明 |
+| 2026-10-10（Day 18） | 新增 §4 `POST /api/favorites`（第一个写接口）。明确两道闸门（入参校验 + 唯一约束）、错误码全表、校验顺序；状态码表补 `201` / `409` / `413` 及 409 与 400 的语义区别 |
 
 ---
 
-## 6. 数据库表结构（Day 16 起）
+## 9. 数据库表结构（Day 16 起）
 
 目标库：**CloudBase PostgreSQL**。建表脚本 `db/schema.sql`，种子数据 `db/seed.sql`。
 
@@ -235,13 +462,32 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 > `video_type` / `video_platform` / `video_url` —— 因为它们是 video 板块专属，
 > 加前缀后语义更清晰，也避开了通用词做列名。
 
-### 6.4 各接口的字段来源（Day 17 起参照）
+### 9.4 各接口的字段来源
 
-| 接口 | 主要读哪张表 |
-|---|---|
-| `GET /api/works` | `works`（按 `category` 筛选，按 `popularity` / `year` 排序） |
-| `GET /api/works/:id` | `works` + JOIN `circles`（详情页要显示所属社团） |
-| `GET /api/search` | `works`（`name` 模糊 + `characters` / `tags` 的 JSONB 包含查询） |
-| `GET /api/circles` | `circles` |
-| `GET /api/favorites` | Day 19 再加收藏表 |
-| `GET /api/originals` | Day 19 再加原曲表（当前 ZUN 原曲数据仍在 JSON 里） |
+| 接口 | 主要读哪张表 | 状态 |
+|---|---|---|
+| `GET /api/health` | 不查库 | ✅ Day 15 |
+| `GET /api/hot` | `hot_videos`（按 `board` 分组、`rank_no` 排序） | ✅ Day 17 |
+| `GET /api/favorites` | `favorites` **LEFT JOIN** `works` | ✅ Day 17 |
+| `POST /api/favorites` | `favorites`（INSERT，冲突检测靠 `uq_favorites_user_work`） | ✅ Day 18 |
+| `GET /api/works` | `works`（按 `category` 筛选，按 `popularity` / `year` 排序） | Day 19 |
+| `GET /api/works/:id` | `works` + JOIN `circles`（详情页要显示所属社团） | Day 19 |
+| `GET /api/search` | `works`（`name` 模糊 + `characters` / `tags` 的 JSONB 包含查询） | Day 19 |
+| `GET /api/circles` | `circles` | Day 20 |
+| `GET /api/originals` | 原曲表（待建） | Day 20 |
+
+### 9.5 `favorites` 表为什么能防重复（Day 18 的依赖）
+
+Day 18 的 `POST /api/favorites` 之所以能做到「重复提交被拒」，靠的是 Day 17 建表时就埋好的这条约束：
+
+```sql
+CONSTRAINT uq_favorites_user_work UNIQUE (user_id, work_id)
+```
+
+写入语句配合 `ON CONFLICT (user_id, work_id) DO NOTHING`：
+- 没冲突 → 插入成功，`RETURNING` 带回新行 → 接口返回 `201`
+- 有冲突 → 插入 0 行（**不报错**）→ 接口查出已有那条，返回 `409 already_favorited`
+
+**这就是「昨天设计的表结构，今天变成了接口能力」** ——
+如果 Day 17 没加唯一约束，今天防重复就只能靠「先 SELECT 再 INSERT」，
+而那样在并发下会漏（两个请求同时查到「不存在」，然后都插入）。

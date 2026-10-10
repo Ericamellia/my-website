@@ -82,17 +82,43 @@ curl -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/my-app/   # 期望 200
 
 | 文件 | 用途 |
 |---|---|
-| `db/schema.sql` | 建表（2 张表：`circles` / `works`），幂等，可重复执行 |
+| `db/schema.sql` | 建表（**4 张表**：`circles` / `works` / `favorites` / `hot_videos`），幂等，可重复执行 |
+| `db/schema-favorites.sql` | 只建 `favorites` 表（Day 17 单独执行用；跑过整份 schema.sql 就不用跑） |
+| `db/schema-hot.sql` | 只建 `hot_videos` 表（Day 17） |
 | `db/seed.sql` | 种子数据全文（26 社团 + 30 作品），幂等 |
 | `db/seed-part1-circles.sql` | 仅社团 26 条（分批导入用，控制台单次粘贴量有限） |
 | `db/seed-part2-works.sql` | 仅作品 30 条（**必须在 part1 之后执行**，有外键依赖） |
+| `db/seed-favorites.sql` | 收藏示例数据 7 条（Day 17 新增，**依赖 works 已存在**） |
+| `db/sync_hot.py` | 拉 B 站真实东方视频，生成 `db/seed-hot.sql`（Day 17 热搜同步） |
+| `db/seed-hot.sql` | 热搜同步产物：当日真实 B 站数据 40 条，幂等 |
+| `db/fresh-part1~4.sql` / `db/hot-part1~4.sql` | 上者的切块版（每块 5 条，给控制台分段粘贴用） |
 | `db/gen_seed.py` | 从 `my-app/data/*.json` 重新生成 `seed.sql`（改了 JSON 就重跑这个） |
+| `db/gen_favorites_snapshot.py` | 生成 `deploy/data/favorites.json`（Day 17，收藏快照） |
+| `db/gen_works_snapshot.py` | 生成 `deploy/data/works.json`（Day 18，作品快照，写接口校验用） |
 
-**导入顺序**：`schema.sql` → `seed-part1-circles.sql` → `seed-part2-works.sql`
+**导入顺序（全新环境）**：
+`schema.sql` → `seed-part1-circles.sql` → `seed-part2-works.sql` → `seed-favorites.sql` → `seed-hot.sql`
+
+**增量场景（Day 16 已建好 circles/works）**：
+`schema-favorites.sql` → `seed-favorites.sql` → `schema-hot.sql` → `seed-hot.sql`
 
 **执行位置**：CloudBase 控制台 → SQL 数据库 → SQL 编辑器。
+⚠️ 单个文件建议 < 5KB，否则控制台粘贴可能被静默截断（见 `db/*-part*.sql` 的分块做法）。
 
-详细设计说明见 `docs/day16/data-model.md`。
+详细设计说明见 `docs/day16/data-model.md`（数据模型）、`docs/day17/read-api.md`（读接口）、
+`docs/api-contract.md`（接口契约，含 Day 18 的 `POST /api/favorites`）。
+
+## 5·补2 本地起服务（Day 17 起）
+
+```bash
+# 在项目根的 deploy/ 目录执行
+PORT=3000 node server.js
+```
+
+- 有数据库连接串（`PG_URL` / `DATABASE_URL`）且装了 `pg` → 直连真库
+- 否则 → 读 `deploy/data/*.json` 快照（公网版就是这个模式）
+- 启动日志会打印当前数据源，一眼可见
+- 共 4 个接口：`GET /api/health`、`GET /api/hot`、`GET /api/favorites`、`POST /api/favorites`
 
 ## 6. 未来部署（GitHub Pages）
 

@@ -3,41 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>东方同人搜索 · Mock 版（Day 15）</title>
-<link rel="stylesheet" href="./style.css?v=1">
+<title>东方同人搜索 · 读写接口验证（Day 18）</title>
+<link rel="stylesheet" href="./style.css?v=3">
 </head>
 <body>
 <header class="top">
-  <h1>东方同人搜索 <span class="tag">Mock 版</span></h1>
-  <p class="sub">Day 15 部署验证页 · 数据为示例，接口仅 /api/health</p>
+  <h1>东方同人搜索 <span class="tag">Day 18 写接口</span></h1>
+  <p class="sub">POST /api/favorites 写入验证 · 防重复提交 + 防错误输入</p>
 </header>
 
 <main>
-  <!-- 健康状态卡：真实调用公网 /api/health，用来当场证明后端链路是通的 -->
+  <!-- ★ Day 18 重点：写接口验证区（放在最前，一屏可见） -->
+  <section class="card write">
+    <div class="h-head" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong>POST /api/favorites</strong>
+      <span class="badge" id="wBadge">待验证</span>
+    </div>
+    <p class="h-meta" style="margin:8px 0 0">
+      两道闸门：① 入参校验（缺字段/格式错 → 400 中文提示）② 唯一约束（重复提交 → 409）
+    </p>
+
+    <div class="w-form">
+      <label>workId
+        <input id="wWorkId" type="text" value="game-2" placeholder="如 music-1">
+      </label>
+      <label>note（可选）
+        <input id="wNote" type="text" value="Day18 页面写入验证" placeholder="一句话备注">
+      </label>
+      <button class="tab primary" id="btnWrite" type="button">发起 POST 写入</button>
+    </div>
+
+    <div class="w-actions">
+      <button class="tab" id="btnDup" type="button">再点一次（测重复提交）</button>
+      <button class="tab" id="btnMissing" type="button">发空对象（测缺必填字段）</button>
+      <button class="tab" id="btnBadFmt" type="button">发错格式（测格式校验）</button>
+    </div>
+
+    <div class="w-result">
+      <div class="w-line">
+        <span>最近一次响应</span>
+        <code id="wStatus">—</code>
+      </div>
+      <pre id="wJson">点上方按钮发起写入后，这里显示接口返回的原始 JSON…</pre>
+    </div>
+  </section>
+
+  <!-- 健康状态卡（JSON 默认收起，避免占满首屏） -->
   <section class="card health" id="healthCard">
     <div class="h-head">
       <span class="dot" id="hDot"></span>
       <strong>GET /api/health</strong>
       <span class="badge" id="hBadge">检测中…</span>
     </div>
-    <pre id="hJson">请求中…</pre>
     <div class="h-meta" id="hMeta"></div>
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">展开原始 JSON</summary>
+      <pre id="hJson">请求中…</pre>
+    </details>
   </section>
 
-  <section class="filters">
-    <input id="q" class="field" placeholder="搜索作品名 / 作者 / 标签…（示例数据）" aria-label="搜索作品：可按作品名、作者、标签筛选">
-    <div class="tabs" id="tabs" role="tablist"></div>
+  <!-- 收藏列表：写入后刷新这里，能看到库里多了那一行 -->
+  <section class="card">
+    <div class="h-head" style="display:flex;align-items:center;gap:8px">
+      <strong>GET /api/favorites</strong>
+      <span class="badge" id="favBadge">加载中…</span>
+      <button class="tab" id="btnReload" type="button" style="margin-left:auto">重新读取</button>
+    </div>
+    <p class="h-meta" id="favMeta" style="margin:10px 0 0"></p>
+    <div class="grid" id="favGrid" style="margin-top:12px"></div>
   </section>
 
-  <section class="grid" id="grid"></section>
-  <p class="empty" id="empty" hidden>没有匹配的示例作品，换个词试试。</p>
+  <!-- 热搜榜（Day 17 保留） -->
+  <section class="card">
+    <div class="h-head" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong>GET /api/hot</strong>
+      <span class="badge" id="hotBadge">加载中…</span>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button class="tab" id="tabFresh" type="button" aria-selected="true">当日新发布</button>
+        <button class="tab" id="tabHot" type="button" aria-selected="false">历史热门</button>
+      </span>
+    </div>
+    <p class="h-meta" id="hotMeta" style="margin:10px 0 0"></p>
+    <div class="grid" id="hotGrid" style="margin-top:12px"></div>
+  </section>
 
   <footer>
-    <p>本页面所有作品数据均为前端写死的 mock 示例，不代表真实站点内容。</p>
+    <p>数据源：B 站搜索接口（wbi 签名）→ 相关性过滤 → 入库 → 接口读出。</p>
     <p>接口契约见仓库 <code>docs/api-contract.md</code>。</p>
   </footer>
 </main>
 
-<script src="./app.js?v=1"></script>
+<script src="./app.js?v=3"></script>
 </body>
 </html>
