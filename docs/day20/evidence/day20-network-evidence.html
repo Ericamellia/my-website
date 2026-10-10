@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Day 20 · 网络请求证据</title>
+<style>
+  :root{
+    --bg:#202124; --panel:#292a2d; --line:#3c4043; --txt:#e8eaed;
+    --dim:#9aa0a6; --green:#81c995; --blue:#8ab4f8; --pink:#f28b82;
+    --mono:"Cascadia Mono","Consolas","Menlo",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:"Segoe UI","Microsoft YaHei",sans-serif;padding:20px 22px 26px}
+  h1{font-size:15px;margin:0 0 4px;font-weight:600;display:flex;align-items:center;gap:9px}
+  h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--green);
+          box-shadow:0 0 8px var(--green)}
+  .sub{font-size:11.5px;color:var(--dim);margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:12.5px}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);
+        white-space:nowrap}
+  th{background:#35363a;color:var(--dim);font-weight:600;font-size:11px;
+     letter-spacing:.03em;text-transform:uppercase}
+  tr:last-child td{border-bottom:none}
+  td.url{font-family:var(--mono);font-size:11.5px;white-space:normal;word-break:break-all}
+  td.url b{color:var(--pink);font-weight:600}
+  .st{font-weight:700}
+  .st.ok{color:var(--green)}
+  .st.fail{color:var(--pink)}
+  .ip{font-family:var(--mono);color:var(--dim);font-size:11px}
+  .row-hl{background:rgba(242,139,130,.07)}
+  .note{margin-top:14px;background:#292a2d;border:1px solid var(--line);
+        border-left:3px solid var(--blue);border-radius:5px;padding:11px 14px;
+        font-size:12px;line-height:1.75;color:#d7dade}
+  .note b{color:var(--blue)}
+  .note code{font-family:var(--mono);background:#1b1c1e;padding:1px 5px;
+             border-radius:3px;color:#f0c674;font-size:11.5px}
+  .foot{margin-top:12px;font-size:11px;color:var(--dim)}
+</style>
+</head>
+<body>
+  <h1><span class="dot"></span>Day 20 · 浏览器真实网络请求记录</h1>
+  <p class="sub">
+    来源：Edge DevTools Protocol（Network domain）实时抓取 · 页面
+    <span style="font-family:var(--mono)">https://touhou-mock.app.workbuddy.host/</span>
+    · 抓取时间 2026-10-10
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>方法</th><th>请求 URL</th><th>状态</th><th>类型</th><th>远端 IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GET</td>
+        <td class="url">https://touhou-mock.app.workbuddy.host/api/hot?board=fresh&amp;limit=12</td>
+        <td class="st ok">200</td>
+        <td>Fetch</td>
+        <td class="ip">49.233.240.214</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td class="url">https://touhou-mock.app.workbuddy.host/api/favorites?limit=20</td>
+        <td class="st ok">200</td>
+        <td>Fetch</td>
+        <td class="ip">49.233.240.214</td>
+      </tr>
+      <tr class="row-hl">
+        <td>GET</td>
+        <td class="url"><b>https://ericamellia24-d2gk0ftukc71292c5.service.tcloudbase.com/api/health</b></td>
+        <td class="st ok">200</td>
+        <td>Fetch</td>
+        <td class="ip">124.223.146.214</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>关键判读：</b>第三条请求的域名是
+    <code>*.service.tcloudbase.com</code>——这是 CloudBase
+    <b>云函数 HTTP 访问服务</b>的公网地址，<b>不是</b>本站域名，
+    证明 health 卡片确实在跨域直连云函数。<br>
+    它的远端 IP <code>124.223.146.214</code> 与本站 Node 服务
+    <code>49.233.240.214</code> <b>是两台不同的机器</b>——
+    若请求走的是本站代理或本地 mock，IP 必然相同。IP 不同 = 真的跨出去了。
+  </div>
+
+  <p class="foot">
+    复现方式：<code style="font-family:var(--mono)">cd shots &amp;&amp;
+    python cdp_net.py &lt;url&gt; &lt;out.png&gt;</code> ·
+    抓取脚本 <code style="font-family:var(--mono)">shots/cdp_net.py</code>
+  </p>
+</body>
+</html>

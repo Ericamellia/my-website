@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>东方同人搜索 · 公网持久化验证（Day 19）</title>
-<link rel="stylesheet" href="./style.css?v=4">
+<title>东方同人搜索 · 公网数据展示（Day 20）</title>
+<link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
 <header class="top">
-  <h1>东方同人搜索 <span class="tag">Day 19 持久化</span></h1>
-  <p class="sub">走 HTTP API 真库：写入之后，重新打开页面数据依然在</p>
+  <h1>东方同人搜索 <span class="tag">Day 20 跨域接线</span></h1>
+  <p class="sub">health 卡片直连 CloudBase 云函数公网地址（跨域）；业务数据走本站 Node 服务读真库</p>
 </header>
 
 <main>
@@ -20,7 +20,7 @@
       <span class="badge" id="wBadge">待验证</span>
     </div>
     <p class="h-meta" style="margin:8px 0 0">
-      Day 19：数据源已切到 <b>HTTP API 真库</b>（<code>source: rest</code>）——写进去就是真落库，不再随发布重置。
+      Day 19 起数据源为 <b>HTTP API 真库</b>（<code>source: rest</code>）——写进去就是真落库，不再随发布重置。
     </p>
 
     <div class="w-form">
@@ -52,10 +52,15 @@
   <section class="card health" id="healthCard">
     <div class="h-head">
       <span class="dot" id="hDot"></span>
-      <strong>GET /api/health</strong>
+      <strong>云函数 api-health<span class="lbl-tag">跨域直连</span></strong>
       <span class="badge" id="hBadge">检测中…</span>
     </div>
     <div class="h-meta" id="hMeta"></div>
+    <div class="h-url" id="hUrl" style="margin:6px 0 0;font-size:11.5px;color:var(--muted);word-break:break-all"></div>
+    <div class="h-last" style="margin:4px 0 0;display:flex;align-items:center;gap:8px">
+      <span id="hLastChecked" style="font-size:11.5px;color:var(--muted)">最后更新：—</span>
+      <button class="tab" id="btnRecheck" type="button" style="font-size:11px;padding:3px 10px">重新检查</button>
+    </div>
     <details style="margin-top:8px">
       <summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">展开原始 JSON</summary>
       <pre id="hJson">请求中…</pre>
@@ -93,6 +98,6 @@
   </footer>
 </main>
 
-<script src="./app.js?v=4"></script>
+<script src="./app.js?v=5"></script>
 </body>
 </html>

@@ -135,3 +135,11 @@ footer code { background: #f6eef0; padding: 1px 6px; border-radius: 4px; }
   font-size: 11px; padding: 2px 8px; border-radius: 999px;
   background: rgba(58,166,117,.16); color: var(--ok); font-weight: 600;
 }
+
+/* Day 20：卡头小标签（标明这个卡片走的是哪条通道） */
+.lbl-tag {
+  display: inline-block; margin-left: 6px; vertical-align: middle;
+  font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  background: rgba(201,74,112,.12); color: var(--pink-dark);
+}
+

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 前端页面脚本（Day 17 读接口 → Day 18 加写接口）
+ * 前端页面脚本（Day 17 读接口 → Day 18 加写接口 → Day 20 跨域接线）
  * ------------------------------------------------------------------
  * 这一版真实调用四个接口：
  *   GET  /api/health      → 链路 + 数据源状态
@@ -13,7 +13,49 @@
  *   所以页面上要能现场发 POST、并把**接口返回的原始 JSON 原样显示出来**——
  *   这正是当天那张「POST 成功返回」截图要拍的东西。
  *   同时也让「重复提交被拒」「缺字段被拒」能一键复现，不用敲 curl。
+ *
+ * ★ Day 20 新增：跨域接线
+ *   health 卡片改为**直连 CloudBase 云函数公网地址**（而不是本站相对路径）。
+ *   目的：让 F12 里能亲眼看到「请求打到了公网云函数域名」，
+ *   并借此暴露/验证**跨域（CORS）**这一关。
  */
+
+/* ===========================================================================
+ * ★ Day 20：接口地址配置
+ * ===========================================================================
+ * 关键区别（今天要认出的那件事）：
+ *   API_BASE  —— 本站相对路径，走**发布平台的 Node 服务**（同源，无跨域）
+ *   FN_BASE   —— CloudBase 云函数公网地址，走**云函数网关**（跨域，需 CORS 放行）
+ *
+ * 为什么 health 要单独走云函数：
+ *   云函数是真的跑在 CloudBase 上的独立后端，域名与本站不同 →
+ *   浏览器会先发一次 OPTIONS 预检（preflight），这就是「跨域」的现场。
+ *
+ * ⚠️ 用哪个云函数地址？（Day 20 踩坑，务必看）
+ *   CloudBase 上同一个函数有**两条通道**，长得像但不是一回事：
+ *
+ *   ① {envId}.api.tcloudbasegateway.com/v1/functions/{name}?webfn=true
+ *      —— **管理端 API 网关**。给服务端/CLI 调用，**必须带凭证**
+ *         （service_role Key 或登录态）。匿名调用会依次被
+ *         401 MISSING_CREDENTIALS → 403 EXCEED_AUTHORITY 挡下。
+ *         ❌ 不适合浏览器前端。
+ *
+ *   ② {envId}.service.tcloudbase.com/api/health
+ *      —— **云函数 HTTP 访问服务**（`cloudbaserc.json` 里配的 http trigger）。
+ *         面向公网，**不需要任何凭证**，且自带 `Access-Control-Allow-Origin: *`。
+ *         ✅ 这才是浏览器该用的地址。
+ *
+ * envId 来源：cloudbase/cloudbaserc.json 的 envId 字段。
+ * 换环境时只改这一处即可。
+ */
+var TCB_ENV_ID = 'ericamellia24-d2gk0ftukc71292c5';
+
+/** 本站业务接口（Node 服务，同源）。 */
+var API_BASE = '';
+
+/** CloudBase 云函数公网入口（跨域，无需凭证）。
+ *  走「云函数 HTTP 访问服务」，路径即 cloudbaserc.json 的 http trigger `/api/health`。 */
+var FN_BASE = 'https://' + TCB_ENV_ID + '.service.tcloudbase.com/api/health';
 
 /** ① 统一的 fetch 封装：拿文本 + 状态码 + 耗时，方便出错时定位。 */
 function getJson(url) {
@@ -66,28 +108,57 @@ function cardHtml(cover, coverText, title, meta, tags) {
 }
 
 // ===========================================================================
-// 健康检查
+// 健康检查（★ Day 20：改为直连 CloudBase 云函数公网地址）
 // ===========================================================================
+/**
+ * 余力加练：把「最后更新时间」显示在检查台上。
+ * 记录**本地**完成这次检查的时刻（不是服务端时间）——
+ * 因为它回答的是「我上一次看它是什么时候」，属于观察者视角。
+ */
+function fmtClock(d) {
+  var p = function (x) { return (x < 10 ? '0' : '') + x; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+    ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+function setLastChecked(at, ms, ok) {
+  var el = document.getElementById('hLastChecked');
+  if (!el) return;
+  el.textContent = '最后更新：' + fmtClock(at) +
+    '（' + (ok ? '成功' : '失败') + ' · ' + ms + 'ms）';
+}
+
 function loadHealth() {
   var card = document.getElementById('healthCard');
   var badge = document.getElementById('hBadge');
   var out = document.getElementById('hJson');
   var meta = document.getElementById('hMeta');
 
-  getJson('/api/health').then(function (res) {
+  // 页面上一眼可见「请求打到哪了」——截图和 F12 互相印证
+  var urlLine = document.getElementById('hUrl');
+  if (urlLine) urlLine.textContent = FN_BASE;
+
+  var t0 = Date.now();
+
+  getJson(FN_BASE).then(function (res) {
     out.textContent = res.txt;
     var d = res.data;
     var ok = res.status === 200 && d && d.ok === true;
     card.classList.add(ok ? 'ok' : 'bad');
     badge.textContent = 'HTTP ' + res.status + (ok ? ' · 正常' : ' · 异常');
     meta.textContent = ok
-      ? 'env=' + d.env + ' · 数据源=' + (d.checks && d.checks.dataSource) +
+      ? '来源=云函数 · env=' + d.env + ' · node=' + d.node +
         ' · uptime=' + d.uptimeSec + 's · 耗时 ' + res.ms + 'ms'
-      : '返回不是预期的 JSON';
+      : '返回不是预期的 JSON（若为 401/CORS，见下方提示）';
+    setLastChecked(new Date(), Date.now() - t0, ok);
   }).catch(function (err) {
+    // 跨域被拦时，fetch 抛 TypeError，message 通常是 "Failed to fetch"
     card.classList.add('bad');
     badge.textContent = '请求失败';
+    meta.textContent = '跨域或网络被拦：' + String(err.message || err) +
+      '（F12 Console 会有 CORS 提示）';
     out.textContent = String(err);
+    setLastChecked(new Date(), Date.now() - t0, false);
   });
 }
 
@@ -100,7 +171,7 @@ function loadHot() {
   var badge = document.getElementById('hotBadge');
   var meta = document.getElementById('hotMeta');
   var grid = document.getElementById('hotGrid');
-  var url = '/api/hot?board=' + encodeURIComponent(hotState.board) + '&limit=12';
+  var url = API_BASE + '/api/hot?board=' + encodeURIComponent(hotState.board) + '&limit=12';
 
   grid.innerHTML = '';
   getJson(url).then(function (res) {
@@ -151,7 +222,7 @@ function loadFavorites() {
   var badge = document.getElementById('favBadge');
   var meta = document.getElementById('favMeta');
   var grid = document.getElementById('favGrid');
-  var url = '/api/favorites?limit=20';
+  var url = API_BASE + '/api/favorites?limit=20';
 
   grid.innerHTML = '';
   getJson(url).then(function (res) {
@@ -214,7 +285,7 @@ function doPost(body) {
   badge.textContent = '请求中…';
   pre.textContent = 'POST /api/favorites\n发送内容：' + JSON.stringify(body) + '\n\n等待响应…';
 
-  fetch('/api/favorites', {
+  fetch(API_BASE + '/api/favorites', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -284,6 +355,13 @@ document.getElementById('btnBadFmt').addEventListener('click', function () {
 });
 
 document.getElementById('btnReload').addEventListener('click', loadFavorites);
+
+// 余力加练：手动重跑一次云函数检查（会刷新「最后更新」时间）
+document.getElementById('btnRecheck').addEventListener('click', function () {
+  document.getElementById('healthCard').classList.remove('ok', 'bad');
+  document.getElementById('hBadge').textContent = '检测中…';
+  loadHealth();
+});
 
 // 截图/演示用：带 ?auto=1 打开时，页面自动发一次 POST，
 // 这样浏览器地址栏截图里能同时看到「页面 + 真实写入结果」。
