@@ -1,0 +1,158 @@
+{
+  "_origin": "CloudBase PostgreSQL · favorites JOIN works（与 db/seed-favorites.sql 同批）",
+  "_note": "CloudBase 控制台仅提供 PostgREST 访问；本快照即库中 favorites 7 条 JOIN works 后的逐条映射，user_id+work_id 集合与 seed-favorites.sql 完全一致。",
+  "userId": "local",
+  "count": 7,
+  "items": [
+    {
+      "id": 1,
+      "userId": "local",
+      "note": "东方同人音乐入门必听，循环一整周",
+      "workId": "music-1",
+      "category": "music",
+      "name": "ハルトマンの妖怪少女",
+      "circle": "COOL&CREATE",
+      "creator": "有泉",
+      "year": 2007,
+      "cover": "assets/music/cover1.jpg",
+      "tags": [
+        "妖妖梦"
+      ],
+      "characters": [
+        "西行寺幽幽子",
+        "魂魄妖梦"
+      ],
+      "description": "COOL&CREATE 于 C72 发布的东方同人声乐专辑，以妖妖梦主题曲改编的人声曲目最为知名。",
+      "sourceUrl": "https://thwiki.cc/ハルトマンの妖怪少女"
+    },
+    {
+      "id": 2,
+      "userId": "local",
+      "note": "社团代表作，编曲很稳",
+      "workId": "music-2",
+      "category": "music",
+      "name": "チルノのパーフェクトさんすう教室",
+      "circle": "IOSYS",
+      "creator": "ARM",
+      "year": 2009,
+      "cover": "assets/music/cover2.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "琪露诺"
+      ],
+      "description": "IOSYS 于 C76 发布的琪露诺主题同人专辑，多首人声改编曲在网络上广为流传。",
+      "sourceUrl": "https://thwiki.cc/チルノのパーフェクトさんすう教室"
+    },
+    {
+      "id": 3,
+      "userId": "local",
+      "note": "画风对味，四格节奏舒服",
+      "workId": "doujin-1",
+      "category": "doujin",
+      "name": "- Bibliotheca - 劇毒少女 publication number V",
+      "circle": "劇毒少女",
+      "creator": "劇毒少女",
+      "year": 2010,
+      "cover": "assets/works/doujin01.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "雾雨魔理沙",
+        "帕秋莉",
+        "琪露诺"
+      ],
+      "description": "以红魔馆大图书馆为舞台的东方同人漫画，帕秋莉、魔理沙与琪露诺登场。",
+      "sourceUrl": "https://thwiki.cc/-_Bibliotheca_-_%E5%8A%87%E6%AF%92%E5%B0%91%E5%A5%B3_publication_number_V"
+    },
+    {
+      "id": 4,
+      "userId": "local",
+      "note": "东方玩法还原度很高",
+      "workId": "game-1",
+      "category": "game",
+      "name": "东方月神夜（Touhou Luna Nights）",
+      "circle": "Team Ladybug",
+      "creator": "Team Ladybug",
+      "year": 2019,
+      "cover": "assets/games/game1.jpg",
+      "tags": [
+        "红魔乡"
+      ],
+      "characters": [
+        "十六夜咲夜",
+        "蕾米莉亚",
+        "帕秋莉",
+        "红美铃"
+      ],
+      "description": "Team Ladybug 开发、WSS playground 发行的类银河城动作游戏，操纵十六夜咲夜运用时间停止在平行世界的红魔馆中探索脱出。",
+      "sourceUrl": "https://store.steampowered.com/app/851100/Touhou_Luna_Nights/"
+    },
+    {
+      "id": 5,
+      "userId": "local",
+      "note": "立绘细节惊艳，收藏参考",
+      "workId": "art-1",
+      "category": "art",
+      "name": "LAST WORDS",
+      "circle": "Miv4t",
+      "creator": "Miv4t",
+      "year": 2016,
+      "cover": "assets/art/art1.jpg",
+      "tags": [
+        "妖妖梦",
+        "东方Project"
+      ],
+      "characters": [
+        "西行寺幽幽子"
+      ],
+      "description": "Miv4t 绘制的西行寺幽幽子同人插画，标题为 LAST WORDS。",
+      "sourceUrl": "https://www.pixiv.net/artworks/60181142"
+    },
+    {
+      "id": 6,
+      "userId": "local",
+      "note": "Bad Apple 影绘，永不过时",
+      "workId": "video-1",
+      "category": "video",
+      "name": "Bad Apple!! feat. nomico（影绘PV）",
+      "circle": "Alstroemeria Records",
+      "creator": "あにら",
+      "year": 2009,
+      "cover": "https://i1.hdslb.com/bfs/archive/753453a776fca838165a52c7511e8557857b61ea.jpg",
+      "tags": [
+        "幻想乡"
+      ],
+      "characters": [
+        "博丽灵梦",
+        "雾雨魔理沙"
+      ],
+      "description": "东方同人圈传播度最高的影绘 PV，由 あにら 制作，配乐是 Alstroemeria Records 的 arrange 曲「Bad Apple!!」",
+      "sourceUrl": "https://thwiki.cc/Bad_Apple!!"
+    },
+    {
+      "id": 7,
+      "userId": "local",
+      "note": "手书叙事强，值得二刷",
+      "workId": "video-2",
+      "category": "video",
+      "name": "魔理沙は大変なものを盗んでいきました",
+      "circle": "IOSYS",
+      "creator": "IOSYS",
+      "year": 2006,
+      "cover": "https://i1.hdslb.com/bfs/archive/848a0cefead5a1be6123ed37c8b1d75d4129e5e9.png",
+      "tags": [
+        "妖妖梦",
+        "怪绮谈"
+      ],
+      "characters": [
+        "雾雨魔理沙",
+        "爱丽丝·玛格特罗伊德"
+      ],
+      "description": "IOSYS 2006 年发布的 Flash 音乐 PV，是东方二创史上播放量最高的作品之一",
+      "sourceUrl": "https://thwiki.cc/%E9%AD%94%E7%90%86%E6%B2%99%E3%81%AF%E5%A4%A7%E5%A4%89%E3%81%AA%E3%82%82%E3%81%AE%E3%82%92%E7%9B%97%E3%82%93%E3%81%A7%E3%81%84%E3%81%8D%E3%81%BE%E3%81%97%E3%81%9F"
+    }
+  ]
+}

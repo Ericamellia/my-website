@@ -1,12 +1,18 @@
 -- ============================================================================
--- 东方同人搜索 · 数据库表结构（Day 16）
+-- 东方同人搜索 · 数据库表结构（Day 16 起，Day 17 扩充）
 -- ============================================================================
 -- 目标数据库：CloudBase PostgreSQL（SQL 数据库 → PostgreSQL 管理）
--- 表数量：2 张核心表 —— circles（社团）/ works（作品）
--- 关联字段：works.circle_name  →  circles.name
+-- 表数量：4 张 —— circles（社团）/ works（作品）/ favorites（收藏）/ hot_videos（热搜）
+-- 关联字段：
+--   works.circle_name     → circles.name
+--   favorites.work_id     → works.work_id
+--   hot_videos 独立（外部平台同步表，不与其他表关联）
 --
 -- 执行方式：CloudBase 控制台 → SQL 数据库 → SQL 编辑器 → 粘贴执行
 -- 幂等性：全部使用 CREATE TABLE IF NOT EXISTS，可重复执行不报错
+--
+-- 单表独立文件（只想补某张表时用）：
+--   db/schema-favorites.sql（表 3）· db/schema-hot.sql（表 4）
 --
 -- PostgreSQL 版本要点（与 MySQL 的差异）：
 --   ① 不用反引号，标识符用双引号或直接裸写
@@ -14,6 +20,7 @@
 --   ③ KEY xxx 索引要单独写 CREATE INDEX，不能写在建表语句里
 --   ④ 注释用 COMMENT ON COLUMN 单独语句（比 MySQL 内联 COMMENT 更规范）
 --   ⑤ JSON 用 JSONB（二进制存储、可建 GIN 索引、支持 @> 包含查询）
+--   ⑥ 自增主键用 BIGSERIAL（不是 MySQL 的 AUTO_INCREMENT）
 -- ============================================================================
 
 
@@ -136,3 +143,96 @@ CREATE INDEX IF NOT EXISTS idx_works_popularity ON works (popularity);   -- 按�
 -- JSONB 的 GIN 索引：让 tags @> '["红魔乡"]' 这类标签包含查询能走索引
 CREATE INDEX IF NOT EXISTS idx_works_tags       ON works USING GIN (tags);
 CREATE INDEX IF NOT EXISTS idx_works_characters ON works USING GIN (characters);
+
+
+-- ----------------------------------------------------------------------------
+-- 表 3：favorites　收藏表（Day 17 新增）
+-- ----------------------------------------------------------------------------
+-- 存什么：「谁收藏了哪个作品」。Day 17 只读（GET /api/favorites 返回收藏列表），
+--   写入接口（POST /api/favorites）排在 Day 18，所以今天这张表先建好灌示例数据。
+--
+-- 为什么有 id 又要有 work_id：
+--   id 是自增代理键，专门做「同一条收藏的唯一标识」，方便以后取消收藏时精确定位；
+--   work_id 是业务外键，指向 works.work_id，说明收藏的是哪件作品。
+--   两者职责不同，不能合并。
+--
+-- 为什么 work_id 用 VARCHAR(32) 而不是 BIGINT：
+--   works 表主键本身就是 VARCHAR(32)（格式「板块-原id」如 music-1），
+--   外键类型必须与被引用列完全一致，否则 PG 建表直接报错。
+--
+-- 为什么 user_id 给默认值 'local'：
+--   Day 17 还没有登录体系（Day 22+ 才做），先用固定值占位，
+--   等接入用户系统后把默认值去掉、改为必填即可，历史数据不会因此失效。
+--
+-- 为什么 (user_id, work_id) 要唯一：
+--   同一个人对同一件作品只应有一条收藏记录，加唯一约束后，
+--   未来的写入接口可以用 ON CONFLICT (user_id, work_id) DO NOTHING 天然幂等。
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS favorites (
+  id          BIGSERIAL     NOT NULL,               -- 自增主键（代理键）
+  user_id     VARCHAR(64)   NOT NULL DEFAULT 'local', -- 用户标识（Day 17 固定 local）
+  work_id     VARCHAR(32)   NOT NULL,               -- 收藏的作品，关联 works.work_id
+  note        VARCHAR(255),                         -- 收藏备注（可选，一句话）
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(), -- 收藏时间
+  CONSTRAINT pk_favorites PRIMARY KEY (id),
+  CONSTRAINT uq_favorites_user_work UNIQUE (user_id, work_id),
+  -- 外键：作品改名跟着改；作品被删则连带删掉这条收藏（收藏离不开作品）
+  CONSTRAINT fk_favorites_work FOREIGN KEY (work_id)
+    REFERENCES works (work_id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+COMMENT ON TABLE  favorites             IS '收藏表：存「谁收藏了哪个作品」。Day 17 只读，写入接口 Day 18';
+COMMENT ON COLUMN favorites.id          IS '自增主键（代理键）。取消收藏时用它精确定位';
+COMMENT ON COLUMN favorites.user_id     IS '用户标识。Day 17 无登录体系，固定 local 占位';
+COMMENT ON COLUMN favorites.work_id     IS '收藏的作品，外键 → works.work_id（如 music-1）';
+COMMENT ON COLUMN favorites.note        IS '收藏备注。可选，一句话说明为什么收藏';
+COMMENT ON COLUMN favorites.created_at  IS '收藏时间，列表默认按它倒序';
+
+-- 索引：列表接口按用户查收藏、按时间倒序，是最典型的两条查询路径
+CREATE INDEX IF NOT EXISTS idx_favorites_user    ON favorites (user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_created ON favorites (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_favorites_work    ON favorites (work_id);
+
+
+CREATE TABLE IF NOT EXISTS hot_videos (
+  bvid         VARCHAR(32)   NOT NULL,          -- B站视频号，主键（天然去重键）
+  board        VARCHAR(16)   NOT NULL DEFAULT 'hot', -- 榜单：fresh=当日新 / hot=历史热门
+  title        VARCHAR(300)  NOT NULL,          -- 视频标题（B站标题最长可到 80 字，留足余量）
+  author       VARCHAR(128),                    -- UP 主名字
+  mid          BIGINT,                          -- UP 主 UID
+  play         BIGINT        NOT NULL DEFAULT 0,-- 播放量
+  danmaku      BIGINT        NOT NULL DEFAULT 0,-- 弹幕数
+  favorites    BIGINT        NOT NULL DEFAULT 0,-- 收藏数
+  duration     VARCHAR(16),                     -- 时长（B站给的是 "3:39" 格式，直接存字符串）
+  typename     VARCHAR(32),                     -- B站分区名，如「同人·手书」
+  pubdate      BIGINT,                          -- 发布日期（Unix 时间戳，秒）
+  cover        VARCHAR(512),                    -- 封面图 URL（B站图床）
+  description  TEXT,                            -- 视频简介（截断到 200 字）
+  source       VARCHAR(32)   NOT NULL DEFAULT 'bilibili', -- 数据来源平台
+  rank_no      SMALLINT,                        -- 在所属榜单里的名次（1 开始）
+  synced_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(), -- 本次同步时间
+  CONSTRAINT pk_hot_videos PRIMARY KEY (bvid)
+);
+
+COMMENT ON TABLE  hot_videos              IS '热搜榜同步表：B站东方视频快照，由 sync_hot.py 覆盖式刷新';
+COMMENT ON COLUMN hot_videos.bvid         IS 'B站视频号，主键。如 BV1xx411c79H，天然去重键';
+COMMENT ON COLUMN hot_videos.board        IS '榜单归属：fresh=当日/昨日新发布，hot=历史热门';
+COMMENT ON COLUMN hot_videos.title        IS '视频标题（已去掉搜索结果的高亮标签）';
+COMMENT ON COLUMN hot_videos.author       IS 'UP 主名字';
+COMMENT ON COLUMN hot_videos.mid          IS 'UP 主 UID，用于跳到 UP 主主页';
+COMMENT ON COLUMN hot_videos.play         IS '播放量。BIGINT 因为头部视频可上亿';
+COMMENT ON COLUMN hot_videos.danmaku      IS '弹幕数，衡量讨论热度';
+COMMENT ON COLUMN hot_videos.favorites    IS '收藏数';
+COMMENT ON COLUMN hot_videos.duration     IS '时长。"3:39" 这种格式，原样存字符串';
+COMMENT ON COLUMN hot_videos.typename     IS 'B站分区名。如 同人·手书 / MMD·3D / 单机游戏';
+COMMENT ON COLUMN hot_videos.pubdate      IS '发布日期（Unix 时间戳，秒）。查询时用 to_timestamp(pubdate)';
+COMMENT ON COLUMN hot_videos.cover        IS '封面图 URL（B站图床 i0.hdslb.com）';
+COMMENT ON COLUMN hot_videos.description  IS '视频简介，已截断到 200 字';
+COMMENT ON COLUMN hot_videos.source       IS '数据来源平台，当前恒为 bilibili';
+COMMENT ON COLUMN hot_videos.rank_no      IS '在所属榜单里的名次，从 1 开始。接口默认按它排序';
+COMMENT ON COLUMN hot_videos.synced_at    IS '本次同步时间，用于判断数据新鲜度';
+
+-- 索引：接口最典型的查询是「按榜单取前 N 条」，所以 (board, rank_no) 联合索引
+CREATE INDEX IF NOT EXISTS idx_hot_board_rank ON hot_videos (board, rank_no);
+CREATE INDEX IF NOT EXISTS idx_hot_play       ON hot_videos (play DESC);      -- 按播放排序
+CREATE INDEX IF NOT EXISTS idx_hot_pubdate    ON hot_videos (pubdate DESC);   -- 按时间排序
