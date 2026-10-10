@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" font-family="'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5a6b8c"/>
+    </marker>
+    <linearGradient id="gApi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8f0fe"/><stop offset="100%" stop-color="#d2e3fc"/>
+    </linearGradient>
+    <linearGradient id="gRoute" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef7e0"/><stop offset="100%" stop-color="#fde9b8"/>
+    </linearGradient>
+    <linearGradient id="gChan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e6f4ea"/><stop offset="100%" stop-color="#ceead6"/>
+    </linearGradient>
+    <linearGradient id="gMap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f3e8fd"/><stop offset="100%" stop-color="#e9d8fd"/>
+    </linearGradient>
+    <linearGradient id="gCfg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fce8e6"/><stop offset="100%" stop-color="#fad2cf"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="560" fill="#ffffff"/>
+
+  <!-- 标题 -->
+  <text x="450" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#202124">数据访问层分层结构（Day 21 重构）</text>
+  <text x="450" y="56" text-anchor="middle" font-size="12" fill="#5f6368">deploy/ 目录 · 从「一个 737 行的 db.js」拆成「6 个各司其职的文件」</text>
+
+  <!-- ① 接口层 -->
+  <rect x="60" y="78" width="780" height="62" rx="10" fill="url(#gApi)" stroke="#4285f4" stroke-width="1.6"/>
+  <text x="80" y="104" font-size="15" font-weight="700" fill="#174ea6">① 接口层　server.js</text>
+  <text x="80" y="126" font-size="11.5" fill="#3c4043">只管 HTTP：解析请求、包装响应、状态码。不知道数据从哪来，只调 db.getHot() / db.addFavorite() …</text>
+
+  <line x1="450" y1="140" x2="450" y2="166" stroke="#5a6b8c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="462" y="158" font-size="10.5" fill="#5a6b8c" font-style="italic">require('./db')</text>
+
+  <!-- ② 选路层 -->
+  <rect x="60" y="170" width="780" height="88" rx="10" fill="url(#gRoute)" stroke="#f9ab00" stroke-width="1.6"/>
+  <text x="80" y="196" font-size="15" font-weight="700" fill="#b06000">② 选路层　db/index.js</text>
+  <text x="80" y="217" font-size="11.5" fill="#3c4043">业务查询实现：getHotFromRest / getHotFromPg / getFavoritesFromRest / addFavoriteToPg …</text>
+  <text x="80" y="238" font-size="11.5" font-weight="600" fill="#b06000">通道优先级：① REST → ② pg → ③ 快照　（判断依据全部来自 config.js）</text>
+
+  <!-- 三条通道箭头 -->
+  <line x1="200" y1="258" x2="200" y2="292" stroke="#5a6b8c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="450" y1="258" x2="450" y2="292" stroke="#5a6b8c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="700" y1="258" x2="700" y2="292" stroke="#5a6b8c" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- ③ 通道层 -->
+  <rect x="60" y="296" width="230" height="104" rx="10" fill="url(#gChan)" stroke="#34a853" stroke-width="1.6"/>
+  <text x="175" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#0d652d">rest.js</text>
+  <text x="175" y="343" text-anchor="middle" font-size="11" fill="#3c4043">HTTP API（PostgREST）</text>
+  <text x="175" y="362" text-anchor="middle" font-size="10.5" fill="#5f6368">零依赖 · fetch</text>
+  <text x="175" y="380" text-anchor="middle" font-size="10.5" fill="#0d652d" font-weight="600">source: rest</text>
+
+  <rect x="335" y="296" width="230" height="104" rx="10" fill="url(#gChan)" stroke="#34a853" stroke-width="1.6"/>
+  <text x="450" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#0d652d">pg.js</text>
+  <text x="450" y="343" text-anchor="middle" font-size="11" fill="#3c4043">PostgreSQL 直连</text>
+  <text x="450" y="362" text-anchor="middle" font-size="10.5" fill="#5f6368">需 pg 包 · 连接池</text>
+  <text x="450" y="380" text-anchor="middle" font-size="10.5" fill="#0d652d" font-weight="600">source: database</text>
+
+  <rect x="610" y="296" width="230" height="104" rx="10" fill="url(#gChan)" stroke="#34a853" stroke-width="1.6"/>
+  <text x="725" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#0d652d">snapshot.js</text>
+  <text x="725" y="343" text-anchor="middle" font-size="11" fill="#3c4043">JSON 快照（降级）</text>
+  <text x="725" y="362" text-anchor="middle" font-size="10.5" fill="#5f6368">读 deploy/data/*.json</text>
+  <text x="725" y="380" text-anchor="middle" font-size="10.5" fill="#b06000" font-weight="600">source: snapshot</text>
+
+  <!-- 汇聚箭头 -->
+  <line x1="175" y1="400" x2="175" y2="428" stroke="#5a6b8c" stroke-width="1.6"/>
+  <line x1="725" y1="400" x2="725" y2="428" stroke="#5a6b8c" stroke-width="1.6"/>
+  <line x1="175" y1="428" x2="725" y2="428" stroke="#5a6b8c" stroke-width="1.6"/>
+  <line x1="450" y1="428" x2="450" y2="446" stroke="#5a6b8c" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- ④ mappers -->
+  <rect x="270" y="450" width="360" height="46" rx="10" fill="url(#gMap)" stroke="#a142f4" stroke-width="1.6"/>
+  <text x="285" y="470" font-size="13" font-weight="700" fill="#6a1b9a">④ mappers.js　形状收敛 + 入参校验</text>
+  <text x="285" y="487" font-size="10.5" fill="#3c4043">三条通道的原始行 → 统一对外形状（toFavItem / toHotItem / validateFavoriteInput）</text>
+
+  <!-- ⑤ config 侧栏 -->
+  <rect x="650" y="450" width="190" height="46" rx="10" fill="url(#gCfg)" stroke="#ea4335" stroke-width="1.6"/>
+  <text x="665" y="470" font-size="12.5" font-weight="700" fill="#b31412">⑤ config.js</text>
+  <text x="665" y="487" font-size="10.5" fill="#3c4043">环境变量 → 连接参数/开关</text>
+
+  <!-- 底部说明 -->
+  <text x="450" y="528" text-anchor="middle" font-size="11" fill="#80868b">三条通道最终都经过 mappers 收敛，接口层永远只看到一种数据形状 —— 这是「换数据源不用改业务代码」的关键</text>
+  <text x="450" y="548" text-anchor="middle" font-size="11" fill="#80868b">注：原 deploy/db.js 已删除；Node 解析 require('./db') 时自动落到 db/index.js，server.js 零改动</text>
+</svg>

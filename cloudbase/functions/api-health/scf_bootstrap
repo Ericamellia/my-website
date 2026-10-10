@@ -1,0 +1,14 @@
+#!/bin/bash
+# CloudBase HTTP 云函数启动脚本（api-health）
+# ------------------------------------------------------------------
+# ⚠️ 三个硬性要求（都踩过坑，别改）：
+#   1. 文件名必须精确为 scf_bootstrap（无扩展名）
+#   2. 必须用 LF 换行符（不能用 CRLF，否则 exec format error）
+#   3. 必须有可执行权限（chmod +x）
+#
+# Node 二进制路径必须匹配函数运行时：
+#   Nodejs18.15 → /var/lang/node18/bin/node   ← 本函数用这个
+export PORT=9000
+# 切到脚本所在目录再启动，避免容器工作目录不是代码根目录
+cd "$(dirname "$0")"
+exec /var/lang/node18/bin/node index.js

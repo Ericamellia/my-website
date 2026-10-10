@@ -1,0 +1,12 @@
+# Git 换行符约束
+# ------------------------------------------------------------------
+# 默认：仓库内统一用 LF。Windows 工作区可按需转 CRLF（Git 自动处理）。
+* text=auto
+
+# ⚠️ CloudBase HTTP 云函数的启动脚本必须**严格保持 LF**。
+# 一旦被转成 CRLF，部署到云端会报 `exec format error`（很多人栽在这里）。
+# 所以对它显式关闭换行符转换，并声明为二进制，让 Git 原样存储。
+cloudbase/functions/*/scf_bootstrap -text binary
+
+# Shell 脚本同理，统一 LF。
+*.sh text eol=lf

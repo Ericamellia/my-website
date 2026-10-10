@@ -2,7 +2,7 @@
   "name": "api-health",
   "version": "1.0.0",
   "private": true,
-  "description": "CloudBase 云函数：/api/health 健康检查（Day 15）",
+  "description": "CloudBase 云函数：/api/health 健康检查（HTTP 云函数，监听 9000）",
   "main": "index.js",
   "scripts": {
     "deploy": "tcb fn deploy api-health --force"

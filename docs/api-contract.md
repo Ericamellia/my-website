@@ -1,9 +1,10 @@
-# api-contract.md｜东方同人搜索 接口契约（Day 19）
+# api-contract.md｜东方同人搜索 接口契约（Day 21）
 
 > 本文件是前后端之间的**唯一接口约定**。已落地：`GET /api/health`（Day 15）、
 > `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）。
-> Day 19 打通 **HTTP API 真库数据源**（写入持久化），接口形状**未变**。
-> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 20+。
+> Day 19 打通 **HTTP API 真库数据源**（写入持久化）；Day 21 把数据访问层拆分重构 + 修通云函数网关，
+> 两次改动**接口形状均未变**。
+> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 22+。
 
 | 项 | 值 |
 |---|---|
@@ -403,6 +404,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | 2026-10-10（Day 17） | 补 §2 `GET /api/hot`、§3 `GET /api/favorites` 完整定义；契约版本升 `1.1.0`；新增 `favorites` / `hot_videos` 两张表说明 |
 | 2026-10-10（Day 18） | 新增 §4 `POST /api/favorites`（第一个写接口）。明确两道闸门（入参校验 + 唯一约束）、错误码全表、校验顺序；状态码表补 `201` / `409` / `413` 及 409 与 400 的语义区别 |
 | 2026-10-10（Day 19） | **接口形状未变**，只扩展数据源：`source` 字段增补 `rest`（HTTP API 真库，写入持久）。Day 15 起悬而未决的 `INVALID_ENV` 定位为**环境 ID 少写一个 `t`**，修正 `cloudbaserc.json` / README / 本文档等 12 处；§7 部署与数据源说明改写为三态优先级 |
+| 2026-10-10（Day 21） | **接口形状未变**，只重构内部结构：数据访问层从单文件 `db.js`（737 行）拆为 `db/` 目录 6 个文件（详见 `docs/day21/data-layer-refactor.md`）。同时修通 **云函数网关**：Day 15 起 404 `INVALID_ENV` → 443（函数类型与代码不匹配 + 缺 `scf_bootstrap`）→ `200 OK`。9 项全接口回归通过 |
 
 ---
 

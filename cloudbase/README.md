@@ -1,9 +1,10 @@
 # CloudBase 开通与云函数部署说明（Day 15 · 板块①）
 
 > 这份文档对应 Day 15 板块①「注册并开通 CloudBase」。
-> **状态：已完成（2026-10-08）** —— 环境 `ericamellia24-d2gk0ftukc71292c5` 已开通，
-> 云函数 `api-health` 已在控制台部署成功；仅 HTTP 网关默认域名处于生效窗口期
-> （访问返回 `INVALID_ENV`，排查记录见 `docs/day15/deploy-env.md` §二·补）。
+> **状态：已完成并已修通（2026-10-10 / Day 21）** —— 环境 `ericamellia24-d2gk0ftukc71292c5` 已开通，
+> 云函数 `api-health` 已部署且**经网关访问返回 200**。
+> Day 15 记录的 HTTP 网关 `INVALID_ENV` 已于 Day 21 定位并修复（真因见 §二·补2），
+> 排查全过程记录在 `docs/day15/deploy-env.md`。
 > 下文步骤保留作存档，重装/换环境时照做即可。
 
 ## 〇、本环境实测信息
@@ -14,7 +15,42 @@
 | 地域 | 上海（ap-shanghai） |
 | 计费 | 免费体验版（3000 资源点/月，单环境，不可加购） |
 | 到期 | `2027-04-08`（单次续期 6 个月，不自动续） |
-| 云函数 | `api-health`（`tam-dbzoo3qi`）· Node.js 18.15 · 监听 9000 |
+| 云函数 | `api-health`（`tam-dbzoo3qi`）· Node.js 18.15 · **HTTP 云函数** · 监听 9000 |
+| 云函数状态 | ✅ **已修通**（Day 21）——经网关 `POST .../v1/functions/api-health?webfn=true` 返回 `200` |
+
+## 〇·补　HTTP 云函数部署的三个关键点（Day 21 踩坑总结）
+
+`api-health` 在控制台登记为「**HTTP 云函数**」，它和「自定义函数」是两套完全不同的模型：
+
+| | 自定义函数 | **HTTP 云函数**（本函数） |
+|---|---|---|
+| 入口 | `exports.main(event, context)` | `app.listen(9000)` 的 Web 服务 |
+| 监听端口 | 不需要 | ✅ **必须 9000** |
+| `scf_bootstrap` | 不需要 | ✅ **必须有**（无扩展名、LF 换行、可执行权限） |
+
+启动脚本（`functions/api-health/scf_bootstrap`）：
+
+```bash
+#!/bin/bash
+export PORT=9000
+cd "$(dirname "$0")"
+exec /var/lang/node18/bin/node index.js
+```
+
+> 运行时的 Node 路径必须匹配：`Nodejs18.15` → `/var/lang/node18/bin/node`。
+
+**打包时容易踩的坑**（Windows 上尤其）：
+1. `scf_bootstrap` 必须是 **LF** 换行（CRLF 会报 `exec format error`）
+2. 必须有**可执行权限**（zip 里写 `external_attr = 0o755 << 16`）
+3. 包内文件**平铺根目录**，不要套一层文件夹
+
+**调用时**必须带 `?webfn=true`，否则网关按普通云函数调用，返回 `400 FUNCTIONS_PARAM_INVALID`：
+
+```bash
+curl -X POST "https://{envId}.api.tcloudbasegateway.com/v1/functions/api-health?webfn=true" \
+  -H "Authorization: Bearer {API_KEY}" -H "Content-Type: application/json" \
+  -d '{"path":"/api/health","method":"GET"}'
+```
 
 ## 一、开通步骤（约 10–15 分钟）
 

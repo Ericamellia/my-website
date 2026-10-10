@@ -1,45 +1,54 @@
 'use strict';
 /**
- * CloudBase 云函数：api-health（Day 15）
+ * CloudBase 云函数：api-health
  * ------------------------------------------------------------------
- * 与 deploy/server.js 的 /api/health 返回完全一致（同一份契约，见 docs/api-contract.md），
- * 只是换成了云函数签名：CloudBase 会把 HTTP 请求转成 event 传进来，我们回一个
- * { statusCode, headers, body } 的「云函数 HTTP 响应」结构。
+ * 与 deploy/server.js 的 /api/health 返回**完全一致**（同一份契约，见 docs/api-contract.md）。
+ *
+ * ⚠️ Day 21 修正：控制台里这个函数被登记为「HTTP 云函数」，
+ *    而 Day 15 写的只有 exports.main（那是「自定义函数」的写法）——
+ *    类型与代码不匹配，导致经网关调用时上游返回 443（端口不通，见文档 §真因）。
+ *    本地址：http://{envId}.api.tcloudbasegateway.com/v1/functions/api-health?webfn=true
+ *    报 x-cloudbase-upstream-status-code: 443。
+ *
+ * 因此本文件现在**同时**支持两种调用形态：
+ *   ① HTTP 云函数  —— 启动一个原生 http 服务监听 9000 端口（零依赖，不用 express）
+ *   ② 自定义函数   —— 保留 exports.main，兼容事件调用 / 本地调试
+ * 两条通道共用同一份 buildHealthPayload()，保证返回结构永远一致。
  *
  * 部署方式见同目录 README.md：
  *   tcb fn deploy api-health --force      （CLI 方式）
  */
+
+const http = require('http');
 
 /** 冷启动后第一次执行的时间，用来算 uptime（云函数实例活了多久）。 */
 const STARTED_AT = Date.now();
 
 const SERVICE = 'touhou-search';
 const VERSION = '1.0.0';
+const PORT = 9000; // CloudBase HTTP 云函数固定监听 9000
 
-/** CloudBase 云函数入口。event 在 HTTP 触发时自带 httpContext / path / headers 等字段。 */
-exports.main = async (event = {}, context = {}) => {
-  // ① 取环境 ID：云函数运行时通常能从上下文拿到，拿不到就退回环境变量
-  const env =
-    (context && (context.envId || (context.namespace && context.namespace.envId))) ||
-    process.env.TCB_ENV ||
-    process.env.SCF_NAMESPACE ||
-    'cloudbase';
+/**
+ * 纯函数：根据「方法 + 路径 + 环境」组装响应。
+ * HTTP 通道与事件通道都调它，避免两份逻辑漂移。
+ * @returns {{statusCode:number, headers:object, body:string}}
+ */
+function buildHealthPayload(method, path, env) {
+  const m = String(method || 'GET').toUpperCase();
 
-  // ② 取请求方法与路径（HTTP 触发才有；本地/定时触发时给默认值，方便直接调试）
-  const http = event.httpContext || {};
-  const method = (http.httpMethod || event.method || 'GET').toUpperCase();
-  const path = http.path || event.path || '/api/health';
-
-  // ③ 只接受 GET / HEAD，其它方法明确回 405，而不是照常返回 200
-  if (method !== 'GET' && method !== 'HEAD') {
+  // 只接受 GET / HEAD，其它方法明确回 405
+  if (m !== 'GET' && m !== 'HEAD') {
     return {
       statusCode: 405,
       headers: jsonHeaders(),
-      body: JSON.stringify({ ok: false, error: 'method_not_allowed', allow: ['GET', 'HEAD'] }, null, 2)
+      body: JSON.stringify(
+        { ok: false, error: 'method_not_allowed', allow: ['GET', 'HEAD'] },
+        null,
+        2
+      )
     };
   }
 
-  // ④ 组装健康信息：不查库、不调外部服务，保证毫秒级返回
   const payload = {
     ok: true,
     service: SERVICE,
@@ -60,9 +69,47 @@ exports.main = async (event = {}, context = {}) => {
     headers: jsonHeaders(),
     body: JSON.stringify(payload, null, 2)
   };
+}
+
+/** 取当前运行环境 ID：优先运行时上下文，其次环境变量，最后兜底。 */
+function resolveEnv(context) {
+  return (
+    (context && (context.envId || (context.namespace && context.namespace.envId))) ||
+    process.env.TCB_ENV ||
+    process.env.SCF_NAMESPACE ||
+    process.env.TENCENTCLOUD_RUNENV ||
+    'cloudbase'
+  );
+}
+
+/* ==================================================================
+ * ① HTTP 云函数通道：监听 9000，处理原生 Node HTTP 请求
+ * ================================================================== */
+const server = http.createServer((req, res) => {
+  const result = buildHealthPayload(req.method, req.url || '/api/health', resolveEnv(null));
+
+  // HEAD 请求不要 body
+  const isHead = String(req.method).toUpperCase() === 'HEAD';
+  res.writeHead(result.statusCode, result.headers);
+  res.end(isHead ? undefined : result.body);
+});
+
+// 启动监听。CloudBase 要求 HTTP 云函数必须监听 9000。
+server.listen(PORT, () => {
+  console.log('[api-health] HTTP 云函数已启动，监听端口 ' + PORT);
+});
+
+/* ==================================================================
+ * ② 自定义函数通道：兼容事件调用 / 本地直接 require 调试
+ * ================================================================== */
+exports.main = async (event = {}, context = {}) => {
+  const httpCtx = event.httpContext || {};
+  const method = httpCtx.httpMethod || event.method || 'GET';
+  const path = httpCtx.path || event.path || '/api/health';
+  return buildHealthPayload(method, path, resolveEnv(context));
 };
 
-/** 统一响应头：JSON + 不缓存。跨域白名单 Day 16 再收紧。 */
+/** 统一响应头：JSON + 不缓存。 */
 function jsonHeaders() {
   return {
     'Content-Type': 'application/json; charset=utf-8',

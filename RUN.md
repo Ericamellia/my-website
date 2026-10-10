@@ -127,6 +127,21 @@ PORT=3000 node server.js
 - **公网版**：配 ① 走 HTTP API，**不需要装 `pg`**（发布平台 pre-check 会拒绝含 `pg` 的项目）。
 - 凭证放在**项目根 `.env`**（已被 `.gitignore` 忽略），`server.js` 内置零依赖加载器读取。
 
+**数据访问层代码结构（Day 21 重构）**：
+
+```
+deploy/db/
+├── index.js      业务查询 + 通道选路（优先级 ①→②→③）
+├── config.js     环境变量 → 连接参数
+├── pg.js         通道②：PostgreSQL 直连（pg 驱动）
+├── rest.js       通道①：HTTP API（PostgREST）
+├── snapshot.js   通道③：JSON 快照（降级）
+└── mappers.js    行 → 对外形状（三条通道收敛成同一形状）
+```
+
+`server.js` 只 `require('./db')`，永远不知道数据从哪来。
+详见 `docs/day21/data-layer-refactor.md`。
+
 ### 配置 HTTP API（Day 19）
 
 1. 控制台 → 环境管理 → **API Key 配置** → 「服务端 API Key」→ 创建
