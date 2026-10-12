@@ -115,6 +115,23 @@ curl -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/my-app/   # 期望 200
 PORT=3000 node server.js
 ```
 
+> ⚠️ **服务是「会话级」的**（2026-10-12 再次确认）：
+> 由 AI 助手会话启动的 node 进程**活不过一次工具调用就会随会话回收**，
+> `netstat` 会立刻看不到 `LISTENING`。所以**验证类脚本必须由人在自己的终端里起服务**，
+> AI 会话里起的服务只够自己看一眼启动日志。
+
+**验证脚本的跑法（Python + urllib，不走代理）**：
+
+```bash
+# 先在自己的终端里把服务起起来（见上），然后在项目根执行：
+python docs/day22/evidence/verify_soft_delete.py
+```
+
+> ⚠️ **本机有代理环境变量**（`HTTP_PROXY=http://127.0.0.1:5xxxx`）。
+> Node 的 `fetch` 会把 `127.0.0.1:3000` 也塞进代理，直接报 `fetch failed`；
+> 所以验证脚本一律用 **Python `urllib`**，并在跑之前清掉代理变量：
+> `no_proxy=127.0.0.1,localhost NO_PROXY=127.0.0.1,localhost python <脚本>`
+
 **数据源优先级（Day 19 起三态）**：
 
 | 优先级 | 条件 | 数据源 | 写入持久？ | `source` 字段 |

@@ -148,11 +148,16 @@ async function getFavorites(opt) {
 async function getFavoritesFromRest(userId, limit) {
   // PostgREST 的 JOIN 靠「嵌套 select」表达：works(category,name,...)
   // 返回时 works 是一个对象（外键是单条），要拍平回 GET 的形状。
+  //
+  // ★ Day 22 软删除：必须过滤 is_deleted。
+  //   PostgREST 的布尔过滤写成 is_deleted=eq.false（不是 is.false）——
+  //   eq. 用在布尔列上同样有效，且比 is. 更不容易写错。
   const res = await rest.restRequest('GET', 'favorites', {
     query: {
       select: 'id,user_id,work_id,note,created_at,' +
               'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
       user_id: 'eq.' + userId,
+      is_deleted: 'eq.false',          // ← 软删除过滤：已取消的收藏不出现在列表里
       order: 'created_at.desc,id.desc',
       limit: String(limit)
     }
@@ -179,12 +184,13 @@ function flattenRestFavRow(r) {
 /** ② pg 直连通道。 */
 async function getFavoritesFromPg(userId, limit) {
   // JOIN works 把作品名/社团/封面一起带出来，前端不用再发一次请求
+  // ★ Day 22 软删除：WHERE 里必须带上 is_deleted = FALSE，否则已取消的会漏出来
   const sql = `SELECT f.id, f.user_id, f.work_id, f.note, f.created_at,
                       w.category, w.name, w.circle_name, w.creator, w.year,
                       w.cover, w.tags, w.characters, w.description, w.source_url
                  FROM favorites f
                  LEFT JOIN works w ON w.work_id = f.work_id
-                WHERE f.user_id = $1
+                WHERE f.user_id = $1 AND f.is_deleted = FALSE
                 ORDER BY f.created_at DESC, f.id DESC
                 LIMIT $2`;
   const rows = await pg.query(sql, [userId, limit]);
@@ -197,7 +203,11 @@ async function getFavoritesFromSnapshot(userId, limit) {
   const s = snap.readSnapshot('favorites.json');
   if (!s) throw snap.dataMissing('favorites_data_unavailable');
 
-  const items = (s.items || []).slice(0, limit).map(function (r) {
+  // ★ 软删除：快照路径同样要跳过已删的（且要兼顾老数据没有 isDeleted 字段的情况）
+  const items = (s.items || [])
+    .filter(function (r) { return r.isDeleted !== true; })
+    .slice(0, limit)
+    .map(function (r) {
     return {
       id: r.id,
       userId: r.userId,
@@ -249,9 +259,37 @@ async function addFavorite(input) {
 
 /** ① HTTP API 通道（真正写进真库，持久化）。 */
 async function addFavoriteToRest(userId, workId, note) {
+  // ★ Day 22 软删除带来的一个必须处理的场景：
+  //   「取消收藏 → 又想收藏同一作品」。
+  //   这时表里躺着一条 is_deleted=TRUE 的旧行。两种做法：
+  //     A. 再插一条新的（旧行留着）→ 表会越积越多，且要处理「两条同作品」
+  //     B. 把旧行**复活**（is_deleted=FALSE + 覆盖 note）
+  //   这里选 B：favorites 的语义是「谁收藏了哪个作品」，
+  //   同一个人对同一作品本质上只该有一条 —— 历史记录不是这张表该管的事。
+  //   好处还有：部分唯一索引 uq_favorites_active 不会被旧行干扰。
+  const revived = await rest.restRequest('PATCH', 'favorites', {
+    query: {
+      select: 'id,user_id,work_id,note,created_at',
+      user_id: 'eq.' + userId,
+      work_id: 'eq.' + workId,
+      is_deleted: 'eq.true',            // 只找「已软删」的那条来复活
+      limit: '1'
+    },
+    prefer: 'return=representation',
+    body: { is_deleted: false, note: note, created_at: new Date().toISOString() }
+  });
+
+  if (revived.status === 200 && Array.isArray(revived.data) && revived.data.length > 0) {
+    // 复活成功：补全作品详情后返回，形状与 GET 一致
+    const rid = revived.data[0].id;
+    const fullR = await fetchFavFullFromRest(rid);
+    return { source: 'rest', created: true, duplicate: false, item: fullR };
+  }
+
+  // 没有可复活的旧行 → 正常插入
   // POST + Prefer: return=representation
   //   → 201 返回插入后的整行（含数据库生成的 id、created_at）
-  //   → 409 + DATABASE_23505 撞 UNIQUE (user_id, work_id)，即「已收藏过」
+  //   → 409 + DATABASE_23505 撞唯一索引 uq_favorites_active，即「已收藏过」
   const res = await rest.restRequest('POST', 'favorites', {
     query: { select: 'id,user_id,work_id,note,created_at' },
     prefer: 'return=representation',
@@ -260,11 +298,13 @@ async function addFavoriteToRest(userId, workId, note) {
 
   if (rest.isUniqueViolation(res.status, res.data)) {
     // 撞唯一约束：把已有那条读回来，告诉调用方「已收藏过」而不是报错
+    // ★ 必须限定 is_deleted=eq.false —— 未删除的那条才是「已收藏过」的那个
     const exist = await rest.restRequest('GET', 'favorites', {
       query: {
         select: 'id,user_id,work_id,note,created_at',
         user_id: 'eq.' + userId,
         work_id: 'eq.' + workId,
+        is_deleted: 'eq.false',
         limit: '1'
       }
     });
@@ -276,54 +316,83 @@ async function addFavoriteToRest(userId, workId, note) {
 
   // 插入成功：再查一次（带 JOIN）把作品详情补全，让返回体与 GET 条目同形状
   const inserted = (res.data && res.data[0]) || {};
+  return { source: 'rest', created: true, duplicate: false, item: await fetchFavFullFromRest(inserted.id, inserted) };
+}
+
+/** 按 id 读一条收藏（带 JOIN），形状与 GET 条目一致。rest 通道多处复用。 */
+async function fetchFavFullFromRest(id, fallbackRow) {
   const full = await rest.restRequest('GET', 'favorites', {
     query: {
       select: 'id,user_id,work_id,note,created_at,' +
               'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
-      id: 'eq.' + inserted.id,
+      id: 'eq.' + id,
       limit: '1'
     }
   });
   const r0 = (full.data && full.data[0]) || {};
+  const fallback = fallbackRow || {};
   const w = r0.works || {};
-  return {
-    source: 'rest',
-    created: true,
-    duplicate: false,
-    item: mappers.toFavItem({
-      id: r0.id !== undefined ? r0.id : inserted.id,
-      user_id: r0.user_id || inserted.user_id,
-      work_id: r0.work_id || inserted.work_id,
-      note: r0.note !== undefined ? r0.note : inserted.note,
-      created_at: r0.created_at || inserted.created_at,
-      category: w.category, name: w.name, circle_name: w.circle_name,
-      creator: w.creator, year: w.year, cover: w.cover,
-      tags: w.tags, characters: w.characters,
-      description: w.description, source_url: w.source_url
-    })
-  };
+  return mappers.toFavItem({
+    id: r0.id !== undefined ? r0.id : fallback.id,
+    user_id: r0.user_id || fallback.user_id,
+    work_id: r0.work_id || fallback.work_id,
+    note: r0.note !== undefined ? r0.note : fallback.note,
+    created_at: r0.created_at || fallback.created_at,
+    category: w.category, name: w.name, circle_name: w.circle_name,
+    creator: w.creator, year: w.year, cover: w.cover,
+    tags: w.tags, characters: w.characters,
+    description: w.description, source_url: w.source_url
+  });
 }
 
 /** ② pg 直连通道。 */
 async function addFavoriteToPg(userId, workId, note) {
+  // ★ 先看有没有「已软删」的同一行 —— 有就复活它，不再插新行（与 rest 通道同一套语义）
+  const revived = await pg.query(
+    `UPDATE favorites
+        SET is_deleted = FALSE, note = $3, created_at = NOW()
+      WHERE user_id = $1 AND work_id = $2 AND is_deleted = TRUE
+      RETURNING id, user_id, work_id, note, created_at`,
+    [userId, workId, note]
+  );
+  if (revived.length > 0) {
+    // 复活成功：JOIN 作品详情后返回，形状与 GET 一致
+    return { source: 'database', created: true, duplicate: false,
+             item: await fetchFavFullFromPg(revived[0].id) };
+  }
+
   // RETURNING 让 INSERT 一次性把插入后的整行带回，不用再查一次
+  //
+  // ★ Day 22 软删除后 ON CONFLICT 的写法必须改：
+  //   原来 `ON CONFLICT (user_id, work_id)` 对应的是**全表唯一约束**；
+  //   现在唯一性由**部分索引** uq_favorites_active 保证，
+  //   PG 要求用「带 WHERE 的推断子句」才能匹配到那个部分索引：
+  //       ON CONFLICT (user_id, work_id) WHERE is_deleted = FALSE
+  //   写法不对的话，PG 会报「there is no unique or exclusion constraint
+  //   matching the ON CONFLICT specification」——这个坑必须踩过一次才知道。
   const sql = `INSERT INTO favorites (user_id, work_id, note)
                VALUES ($1, $2, $3)
-               ON CONFLICT (user_id, work_id) DO NOTHING
+               ON CONFLICT (user_id, work_id) WHERE is_deleted = FALSE DO NOTHING
                RETURNING id, user_id, work_id, note, created_at`;
   const rows = await pg.query(sql, [userId, workId, note]);
 
   if (rows.length === 0) {
-    // 撞唯一约束：没插进去，但不算错误 —— 去把已有那条读回来告诉调用方
+    // 撞唯一索引：没插进去，但不算错误 —— 去把已有那条读回来告诉调用方
+    // 只找未删除的那条（已删的刚才已经尝试复活过了，走到这里说明没有）
     const exist = await pg.query(
       `SELECT id, user_id, work_id, note, created_at
-         FROM favorites WHERE user_id = $1 AND work_id = $2`,
+         FROM favorites WHERE user_id = $1 AND work_id = $2 AND is_deleted = FALSE`,
       [userId, workId]
     );
     return { source: 'database', created: false, duplicate: true, item: mappers.toFavItem(exist[0]) };
   }
 
-  // 插入成功：把作品详情 JOIN 回来，让返回体和 GET 的条目形状一致
+  return { source: 'database', created: true, duplicate: false,
+           item: await fetchFavFullFromPg(rows[0].id) };
+}
+
+/** 按 id 读一条收藏（带 JOIN），形状与 GET 条目一致。pg 通道复用。 */
+async function fetchFavFullFromPg(id) {
   const full = await pg.query(
     `SELECT f.id, f.user_id, f.work_id, f.note, f.created_at,
             w.category, w.name, w.circle_name, w.creator, w.year,
@@ -331,9 +400,9 @@ async function addFavoriteToPg(userId, workId, note) {
        FROM favorites f
        LEFT JOIN works w ON w.work_id = f.work_id
       WHERE f.id = $1`,
-    [rows[0].id]
+    [id]
   );
-  return { source: 'database', created: true, duplicate: false, item: mappers.toFavItem(full[0]) };
+  return mappers.toFavItem(full[0]);
 }
 
 /** ③ 快照降级通道：用文件里的数据模拟同一套语义（先查重，再追加）。 */
@@ -342,8 +411,11 @@ async function addFavoriteToSnapshot(userId, workId, note) {
   if (!s) throw snap.dataMissing('favorites_data_unavailable');
   const items = s.items || [];
 
+  // Day 22 余力：先找「活着的那条」判重；再找「已软删的那条」复活。
+  // 顺序不能反 —— 如果同一 (user, work) 同时存在活行和软删行（历史脏数据），
+  // 优先认活行，避免复活时把活行挤成两条。
   const dup = items.find(function (r) {
-    return r.userId === userId && r.workId === workId;
+    return r.userId === userId && r.workId === workId && r.isDeleted !== true;
   });
   if (dup) {
     return {
@@ -351,6 +423,25 @@ async function addFavoriteToSnapshot(userId, workId, note) {
       created: false,
       duplicate: true,
       item: mappers.toFavItem(mappers.snapshotRowToDbShape(dup))
+    };
+  }
+
+  const soft = items.find(function (r) {
+    return r.userId === userId && r.workId === workId && r.isDeleted === true;
+  });
+  if (soft) {
+    // 复活：沿用原来那行（id / createdAt 都换新，当作一次新的收藏）
+    soft.isDeleted = false;
+    soft.note = note;
+    soft.createdAt = new Date().toISOString();
+    s.items = items;
+    s.count = items.length;
+    snap.writeSnapshot('favorites.json', s);
+    return {
+      source: 'snapshot',
+      created: true,
+      duplicate: false,
+      item: mappers.toFavItem(mappers.snapshotRowToDbShape(soft))
     };
   }
 
@@ -418,7 +509,7 @@ async function updateFavoriteToRest(id, patch) {
   // PostgREST 的 PATCH：过滤条件写在 query 上，要改的字段放在 body 里。
   // Prefer: return=representation → 200 直接返回改完之后的整行（改到 0 行则返回 []）。
   const res = await rest.restRequest('PATCH', 'favorites', {
-    query: { id: 'eq.' + id, select: 'id,user_id,work_id,note,created_at' },
+    query: { id: 'eq.' + id, is_deleted: 'eq.false', select: 'id,user_id,work_id,note,created_at' },
     prefer: 'return=representation',
     body: { note: patch.note }
   });
@@ -426,7 +517,7 @@ async function updateFavoriteToRest(id, patch) {
 
   const rows = Array.isArray(res.data) ? res.data : [];
   if (rows.length === 0) {
-    // 0 行 = 这个 id 不存在。**不能**当成「改成功但没变化」——
+    // 0 行 = 这个 id 不存在（或已被软删）。**不能**当成「改成功但没变化」——
     // 后者 PostgREST 也会返回那一行（值相同也是 1 行），所以 0 行只可能是没找到。
     return { source: 'rest', updated: false, notFound: true, item: null };
   }
@@ -463,8 +554,10 @@ async function updateFavoriteToRest(id, patch) {
 /** ② pg 直连通道。 */
 async function updateFavoriteToPg(id, patch) {
   // RETURNING 把改完的行直接带回；没改到任何行 → 空数组 → 404
+  // （带 is_deleted = FALSE：软删掉的行不参与修改，从用户视角它已经不存在）
   const rows = await pg.query(
-    'UPDATE favorites SET note = $1 WHERE id = $2 RETURNING id, user_id, work_id, note, created_at',
+    'UPDATE favorites SET note = $1 WHERE id = $2 AND is_deleted = FALSE ' +
+    'RETURNING id, user_id, work_id, note, created_at',
     [patch.note, id]
   );
   if (rows.length === 0) {
@@ -490,8 +583,11 @@ async function updateFavoriteToSnapshot(id, patch) {
   if (!s) throw snap.dataMissing('favorites_data_unavailable');
 
   const items = s.items || [];
-  // 快照里的 id 可能是字符串，统一按数字比
-  const row = items.find(function (r) { return Number(r.id) === Number(id); });
+  // 快照里的 id 可能是字符串，统一按数字比。
+  // 软删掉的行视同不存在（与真库路径的 is_deleted = FALSE 对齐）
+  const row = items.find(function (r) {
+    return Number(r.id) === Number(id) && r.isDeleted !== true;
+  });
   if (!row) {
     return { source: 'snapshot', updated: false, notFound: true, item: null };
   }
@@ -522,10 +618,16 @@ async function updateFavoriteToSnapshot(id, patch) {
  *   反过来「先删再看删了几行」也能判 404，但拿不到被删的内容，
  *   没法在响应里告诉用户删掉的是哪一条。
  *
- * ⚠️ 为什么不做软删除（is_deleted 标记）：
- *   软删除要动表结构（加一列）和现有 3 条查询路径（都要加 WHERE 过滤），
- *   属于独立一轮改动，排在当日「余力加练」。
- *   这一轮的 DELETE 是**真删**，靠「响应里回传被删数据 + 前端二次确认」兜底。
+ * ⚠️ 现在是**软删除**（余力加练已实施）：
+ *   不再物理 DELETE，改成把 is_deleted 置为 TRUE。
+ *   好处：删错了还能找回、删除不破坏外键引用链、以后能出「回收站」。
+ *   代价：所有读路径都必须记得加过滤（3 条查询 + PATCH 都已加），
+ *        且原来 UNIQUE(user_id, work_id) 会让「删后重新收藏」撞约束 ——
+ *        已换成部分唯一索引 `... WHERE is_deleted = FALSE`（见 db/migration-soft-delete.sql）。
+ *
+ *   但「先查后删」的顺序**不变**：仍然要先 SELECT 出整条当凭证，
+ *   再把它标记成已删除；用「读到了没有」决定 404 还是 200。
+ *   软删除改变的是「删的动作」，不改变「删除要回答的那两个问题」。
  * ============================================================ */
 
 /**
@@ -543,11 +645,13 @@ async function deleteFavorite(id) {
 async function deleteFavoriteFromRest(id) {
   // 第 ① 步：先查。带 JOIN 一次把整条（含作品详情）读出来，
   // 既是「存不存在」的判断，也是「删的是哪一条」的凭证。
+  // 带 is_deleted = eq.false：已经软删过的行视同不存在 → 二次删也是 404（顺带获得幂等语义）
   const found = await rest.restRequest('GET', 'favorites', {
     query: {
       select: 'id,user_id,work_id,note,created_at,' +
               'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
       id: 'eq.' + id,
+      is_deleted: 'eq.false',
       limit: '1'
     }
   });
@@ -557,11 +661,18 @@ async function deleteFavoriteFromRest(id) {
   if (!row) {
     return { source: 'rest', deleted: false, notFound: true, item: null };
   }
-  // 先把要返回的凭证形状算好，再删 —— 删完就查不到了
+  // 先把要返回的凭证形状算好，再标记删除
   const victim = flattenRestFavRow(row);
 
-  // 第 ② 步：真删。filter 只按 id，不带别的条件（避免误删别人的数据）
-  const del = await rest.restRequest('DELETE', 'favorites', { query: { id: 'eq.' + id } });
+  // 第 ② 步：软删。filter 只按 id + is_deleted = false，
+  // 保证不会误标别人的数据、也不会重复标记已删的行。
+  // ⚠️ 不碰 created_at / note —— 「什么时候收藏的」和「备注写了什么」
+  //    都留着，将来做「回收站 / 恢复」时用得上。
+  const del = await rest.restRequest('PATCH', 'favorites', {
+    query: { id: 'eq.' + id, is_deleted: 'eq.false' },
+    prefer: 'return=representation',
+    body: { is_deleted: true }
+  });
   if (del.status !== 200 && del.status !== 204) {
     throw rest.restFailed('rest_delete_failed', del.data);
   }
@@ -571,14 +682,15 @@ async function deleteFavoriteFromRest(id) {
 
 /** ② pg 直连通道。 */
 async function deleteFavoriteFromPg(id) {
-  // 第 ① 步：先查（JOIN 作品详情），拿到「删的是哪一条」
+  // 第 ① 步：先查（JOIN 作品详情），拿到「删的是哪一条」。
+  // 带 f.is_deleted = FALSE：已软删的行视同不存在 → 二次删 404
   const found = await pg.query(
     `SELECT f.id, f.user_id, f.work_id, f.note, f.created_at,
             w.category, w.name, w.circle_name, w.creator, w.year,
             w.cover, w.tags, w.characters, w.description, w.source_url
        FROM favorites f
        LEFT JOIN works w ON w.work_id = f.work_id
-      WHERE f.id = $1`,
+      WHERE f.id = $1 AND f.is_deleted = FALSE`,
     [id]
   );
   if (found.length === 0) {
@@ -586,8 +698,12 @@ async function deleteFavoriteFromPg(id) {
   }
   const victim = mappers.toFavItem(found[0]);
 
-  // 第 ② 步：真删
-  await pg.query('DELETE FROM favorites WHERE id = $1', [id]);
+  // 第 ② 步：软删。加 is_deleted = FALSE 双保险（避免并发下重复标记）。
+  // 保留 note / created_at，将来做恢复时用得上。
+  await pg.query(
+    'UPDATE favorites SET is_deleted = TRUE WHERE id = $1 AND is_deleted = FALSE',
+    [id]
+  );
 
   return { source: 'database', deleted: true, notFound: false, item: victim };
 }
@@ -598,16 +714,19 @@ async function deleteFavoriteFromSnapshot(id) {
   if (!s) throw snap.dataMissing('favorites_data_unavailable');
 
   const items = s.items || [];
-  const idx = items.findIndex(function (r) { return Number(r.id) === Number(id); });
+  const idx = items.findIndex(function (r) {
+    return Number(r.id) === Number(id) && r.isDeleted !== true;
+  });
   if (idx === -1) {
     return { source: 'snapshot', deleted: false, notFound: true, item: null };
   }
 
   const victim = mappers.toFavItem(mappers.snapshotRowToDbShape(items[idx]));
 
-  items.splice(idx, 1);        // 从数组里摘掉那一条
+  // 软删：只打标记，**不**从数组里摘掉，note / createdAt 都留着
+  items[idx].isDeleted = true;
   s.items = items;
-  s.count = items.length;
+  s.count = items.filter(function (r) { return r.isDeleted !== true; }).length;
   snap.writeSnapshot('favorites.json', s);
 
   return { source: 'snapshot', deleted: true, notFound: false, item: victim };
