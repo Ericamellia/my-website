@@ -1,0 +1,1126 @@
+{
+  "characters": [
+    {
+      "id": "reimu", "name": "博丽灵梦", "name_en": "Reimu Hakurei",
+      "games": ["th06","th07","th08","th09","th10","th11","th12","th13","th14","th15","th16","th17","th18","th19","th20","th075","th105","th123","th135","th145","th155","th095","th125","th165","th175"],
+      "playableIn": ["th06","th07","th08","th09","th10","th11","th12","th13","th14","th15","th16","th17","th18","th19","th20","th075","th105","th123","th135","th145","th155","th095","th125","th165","th175"],
+      "twilight_art": "assets/characters/reimu.jpg",
+      "moegirl": {
+        "intro": "博丽神社的巫女，东方Project的恒例自机主角。性格乐天、好管闲事又有点懒惰，靠解决异变维持神社的香火。拥有「在空中飞翔程度的能力」，绝大多数正作中由玩家操控。",
+        "basic": {"种族":"人类","能力":"在空中飞翔程度的能力","称号":"乐园的巫女","登场作品":"东方Project 全作"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/博丽灵梦"
+    },
+    {
+      "id": "marisa", "name": "雾雨魔理沙", "name_en": "Marisa Kirisame",
+      "games": ["th06","th07","th08","th09","th10","th11","th12","th13","th14","th15","th16","th17","th18","th19","th20","th075","th105","th123","th135","th145","th155","th095","th125","th165","th175"],
+      "playableIn": ["th06","th07","th08","th09","th10","th11","th12","th13","th14","th15","th16","th17","th18","th19","th20","th075","th105","th123","th135","th145","th155","th095","th125","th165","th175"],
+      "twilight_art": "assets/characters/marisa.jpg",
+      "moegirl": {
+        "intro": "普通的魔法使，东方Project的恒例自机主角之一。住在魔法森林，常到博丽神社串门，性格大大咧咧、爱收集东西。拥有「使用魔法程度的能力」，多数正作中可由玩家操控。",
+        "basic": {"种族":"人类","能力":"使用魔法程度的能力","称号":"普通的魔法使","登场作品":"东方Project 全作"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/雾雨魔理沙"
+    },
+    {
+      "id": "rumia", "name": "露米娅", "name_en": "Rumia",
+      "games": ["th06"], "playableIn": [],
+      "twilight_art": "assets/characters/rumia.jpg",
+      "moegirl": {
+        "intro": "东方红魔乡第一关的 boss，操纵黑暗的妖怪。平时用丝带缠住眼睛以维持人性，解开后能释放黑暗。",
+        "basic": {"种族":"妖怪","能力":"吞噬光亮程度的能力","称号":"宵闇的妖怪","登场作品":"东方红魔乡"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/露米娅"
+    },
+    {
+      "id": "cirno", "name": "琪露诺", "name_en": "Cirno",
+      "games": ["th06","th07","th08","th09","th16"], "playableIn": ["th09","th16"],
+      "twilight_art": "assets/characters/cirno.jpg",
+      "moegirl": {
+        "intro": "操纵冰的妖精，常出没于红魔乡附近的湖面。被官方钦定为「笨蛋」，却是人气极高的看板娘之一，在花映塚中可由玩家操控。",
+        "basic": {"种族":"妖精","能力":"操纵冰程度的能力","称号":"湖上的冰精","登场作品":"东方红魔乡 / 妖妖梦 / 永夜抄 / 花映塚"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/琪露诺"
+    },
+    {
+      "id": "daiyousei", "name": "大妖精", "name_en": "Daiyousei",
+      "games": ["th06"], "playableIn": [],
+      "twilight_art": "assets/characters/daiyousei.jpg",
+      "moegirl": {
+        "intro": "东方红魔乡第二关的中boss，琪露诺的同伴。设定资料极少，是东方中谜团最多的角色之一。",
+        "basic": {"种族":"妖精","能力":"不明","称号":"小小的妖精","登场作品":"东方红魔乡"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/大妖精"
+    },
+    {
+      "id": "meiling", "name": "红美铃", "name_en": "Hong Meiling",
+      "games": ["th06"], "playableIn": [],
+      "twilight_art": "assets/characters/meiling.jpg",
+      "moegirl": {
+        "intro": "红魔馆的门番，操纵格斗术的妖怪（龙）。性格开朗爱睡午觉，常与咲夜练习武艺。",
+        "basic": {"种族":"妖怪（龙）","能力":"操纵格斗程度的能力","称号":"红魔馆的门番","登场作品":"东方红魔乡"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/红美铃"
+    },
+    {
+      "id": "koakuma", "name": "小恶魔", "name_en": "Koakuma",
+      "games": ["th06"], "playableIn": [],
+      "twilight_art": "assets/characters/koakuma.jpg",
+      "moegirl": {
+        "intro": "红魔馆书库的看守，帕秋莉的助手。设定资料极少，是红魔乡第四关的中boss。",
+        "basic": {"种族":"恶魔（？）","能力":"不明","称号":"红魔馆的书库番","登场作品":"东方红魔乡"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/小恶魔"
+    },
+    {
+      "id": "patchouli", "name": "帕秋莉", "name_en": "Patchouli Knowledge", "aliases": ["帕秋莉·诺蕾姬"],
+      "games": ["th06","th075","th095"], "playableIn": [],
+      "twilight_art": "assets/characters/patchouli.jpg",
+      "moegirl": {
+        "intro": "红魔馆大图书馆的主人，不动的大图书馆。精通七种属性的魔法，体弱多病常咳嗽，与咲夜是好友。",
+        "basic": {"种族":"魔法使","能力":"使用魔法程度的能力","称号":"不动的大图书馆","登场作品":"东方红魔乡 / 萃梦想 / 文花帖"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/帕秋莉"
+    },
+    {
+      "id": "sakuya", "name": "十六夜咲夜", "name_en": "Sakuya Izayoi",
+      "games": ["th06","th07","th08","th075","th095","th18"], "playableIn": ["th07","th08","th18"],
+      "twilight_art": "assets/characters/sakuya.jpg",
+      "moegirl": {
+        "intro": "红魔馆的女仆长，操纵时间程度的女仆。在妖妖梦与永夜抄中可由玩家操控，是红魔组的核心战力。",
+        "basic": {"种族":"人类","能力":"操纵时间程度的能力","称号":"红魔馆的女仆长","登场作品":"东方红魔乡 / 妖妖梦 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/十六夜咲夜"
+    },
+    {
+      "id": "remilia", "name": "蕾米莉亚", "name_en": "Remilia Scarlet", "aliases": ["蕾米莉亚·斯卡雷特"],
+      "games": ["th06","th075","th08"], "playableIn": ["th08"],
+      "twilight_art": "assets/characters/remilia.jpg",
+      "moegirl": {
+        "intro": "红魔馆的主人，吸血鬼。外表是年幼的少女，却拥有操纵命运程度的能力。在永夜抄中可由玩家操控。",
+        "basic": {"种族":"吸血鬼","能力":"操纵命运程度的能力","称号":"红魔之馆的主人","登场作品":"东方红魔乡 / 萃梦想 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/蕾米莉亚"
+    },
+    {
+      "id": "flandre", "name": "芙兰朵露", "name_en": "Flandre Scarlet", "aliases": ["芙兰朵露·斯卡雷特"],
+      "games": ["th06"], "playableIn": [],
+      "twilight_art": "assets/characters/flandre.jpg",
+      "moegirl": {
+        "intro": "红魔馆的二小姐，蕾米莉亚的妹妹。拥有「将一切破坏程度的能力」，平时被关在馆内地下的原因成谜。",
+        "basic": {"种族":"吸血鬼","能力":"将一切破坏程度的能力","称号":"恶魔之妹","登场作品":"东方红魔乡"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/芙兰朵露"
+    },
+    {
+      "id": "letty", "name": "蕾蒂·霍瓦特洛克", "name_en": "Letty Whiterock",
+      "games": ["th07"], "playableIn": [],
+      "twilight_art": "assets/characters/letty.jpg",
+      "moegirl": {
+        "intro": "东方妖妖梦第一关的 boss，操纵冬天的妖怪。冬天时力量增强，春天便销声匿迹。",
+        "basic": {"种族":"妖怪","能力":"操纵冬程度的能力","称号":"冻结的妖怪","登场作品":"东方妖妖梦"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/蕾蒂"
+    },
+    {
+      "id": "alice", "name": "爱丽丝", "name_en": "Alice Margatroid", "aliases": ["爱丽丝·玛格特罗伊德"],
+      "games": ["th07","th08","th075"], "playableIn": ["th08"],
+      "twilight_art": "assets/characters/alice.jpg",
+      "moegirl": {
+        "intro": "七色的人形使，操纵人形程度的魔法使。在永夜抄中可由玩家操控，与魔理沙亦敌亦友。",
+        "basic": {"种族":"魔法使","能力":"操纵人形程度的能力","称号":"七色的人形使","登场作品":"东方妖妖梦 / 永夜抄 / 萃梦想"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/爱丽丝"
+    },
+    {
+      "id": "lily", "name": "莉莉白", "name_en": "Lily White",
+      "games": ["th07","th16"], "playableIn": ["th16"],
+      "twilight_art": "assets/characters/lily.jpg",
+      "moegirl": {
+        "intro": "东方妖妖梦第三关的中boss，带来春天的妖精。拼命想宣告春天的到来却总被忽略。",
+        "basic": {"种族":"妖精","能力":"带来春天程度的能力","称号":"春天的妖精","登场作品":"东方妖妖梦"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/莉莉白"
+    },
+    {
+      "id": "keine", "name": "上白泽慧音", "name_en": "Keine Kamishirasawa",
+      "games": ["th07","th08","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/keine.jpg",
+      "moegirl": {
+        "intro": "在人间之里教书的老师，实为白泽。拥有「吞噬历史程度的能力」，平日隐藏兽耳与角以融入人类。",
+        "basic": {"种族":"人类（白泽）","能力":"吞噬历史程度的能力","称号":"历史的吞噬者","登场作品":"东方妖妖梦 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/上白泽慧音"
+    },
+    {
+      "id": "reisen", "name": "铃仙", "name_en": "Reisen Udongein Inaba", "aliases": ["铃仙·优昙华院·稻叶"],
+      "games": ["th07","th08","th15"], "playableIn": ["th15"],
+      "twilight_art": "assets/characters/reisen.jpg",
+      "moegirl": {
+        "intro": "从月球逃到地面的月兔，投靠永远亭。拥有「操纵波长短程度的能力（让人发狂）」，在永夜抄中作为中boss登场。",
+        "basic": {"种族":"月兔","能力":"操纵波长短程度的能力","称号":"月兔的使者","登场作品":"东方永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/铃仙"
+    },
+    {
+      "id": "yuyuko", "name": "西行寺幽幽子", "name_en": "Yuyuko Saigyouji",
+      "games": ["th07","th08","th075"], "playableIn": ["th08"],
+      "twilight_art": "assets/characters/yuyuko.jpg",
+      "moegirl": {
+        "intro": "白玉楼的主人，亡灵。性格天真烂漫却深不可测，与妖梦是主仆。在永夜抄中可由玩家操控。",
+        "basic": {"种族":"亡灵","能力":"操纵死亡程度的能力","称号":"彼岸的妖怪","登场作品":"东方妖妖梦 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/西行寺幽幽子"
+    },
+    {
+      "id": "yukari", "name": "八云紫", "name_en": "Yukari Yakumo",
+      "games": ["th07","th08","th075","th095","th165","th19"], "playableIn": ["th08","th19"],
+      "twilight_art": "assets/characters/yukari.jpg",
+      "moegirl": {
+        "intro": "操纵境界的妖怪，妖怪贤者之一。在永夜抄中作为 Extra boss，并由玩家操控。与蓝、橙是主仆式神关系。",
+        "basic": {"种族":"妖怪","能力":"操纵境界程度的能力","称号":"隙间的妖怪","登场作品":"东方妖妖梦 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/八云紫"
+    },
+    {
+      "id": "ran", "name": "八云蓝", "name_en": "Ran Yakumo",
+      "games": ["th07","th08","th095","th19"], "playableIn": ["th19"],
+      "twilight_art": "assets/characters/ran.jpg",
+      "moegirl": {
+        "intro": "八云紫的式神，九尾的狐妖。在妖妖梦中作为 Extra 中boss 登场，腹黑而可靠。",
+        "basic": {"种族":"妖怪（九尾的狐）","能力":"使役式神程度的能力","称号":"八云紫的式神","登场作品":"东方妖妖梦"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/八云蓝"
+    },
+    {
+      "id": "chen", "name": "橙", "name_en": "Chen",
+      "games": ["th07"], "playableIn": [],
+      "twilight_art": "assets/characters/chen.jpg",
+      "moegirl": {
+        "intro": "八云蓝的式神，猫妖。在妖妖梦中作为 Extra 中boss 登场，十分怕寂寞。",
+        "basic": {"种族":"妖怪（猫）","能力":"不明","称号":"八云蓝的式神（恶魔猫）","登场作品":"东方妖妖梦"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/橙"
+    },
+    {
+      "id": "youmu", "name": "魂魄妖梦", "name_en": "Youmu Konpaku",
+      "games": ["th07","th08","th095","th17"], "playableIn": ["th08","th17"],
+      "twilight_art": "assets/characters/youmu.jpg",
+      "moegirl": {
+        "intro": "白玉楼的庭师，半人半灵。使用剑术程度的能力，侍奉幽幽子。在永夜抄中可由玩家操控。",
+        "basic": {"种族":"半人半灵","能力":"使用剑术程度的能力","称号":"半人半灵的庭师","登场作品":"东方妖妖梦 / 永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/魂魄妖梦"
+    },
+    {
+      "id": "wriggle", "name": "莉格露·奈特巴格", "name_en": "Wriggle Nightbug",
+      "games": ["th08"], "playableIn": [],
+      "twilight_art": "assets/characters/wriggle.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄第一关的 boss，萤（火虫）的妖怪。试图让虫类在夜空中重获地位。",
+        "basic": {"种族":"妖怪（萤）","能力":"操纵虫子程度的能力","称号":"小小的萤","登场作品":"东方永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/莉格露"
+    },
+    {
+      "id": "mystia", "name": "米斯蒂娅·罗蕾拉", "name_en": "Mystia Lorelei",
+      "games": ["th08","th09"], "playableIn": ["th09"],
+      "twilight_art": "assets/characters/mystia.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄第二关的 boss，夜雀的妖怪。歌声能让人迷失方向，在花映塚中可由玩家操控。",
+        "basic": {"种族":"妖怪（夜雀）","能力":"操纵夜程度的能力","称号":"夜雀的妖怪","登场作品":"东方永夜抄 / 花映塚"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/米斯蒂娅"
+    },
+    {
+      "id": "tewi", "name": "因幡帝", "name_en": "Tewi Inaba",
+      "games": ["th08"], "playableIn": [],
+      "twilight_art": "assets/characters/tewi.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄第四关的 boss，带来幸运的妖怪兔。在永远亭与绵月姐妹、铃仙一同生活。",
+        "basic": {"种族":"妖怪兔","能力":"带来幸运程度的能力","称号":"幸运的兔子","登场作品":"东方永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/因幡帝"
+    },
+    {
+      "id": "eirin", "name": "八意永琳", "name_en": "Eirin Yagokoro",
+      "games": ["th08"], "playableIn": [],
+      "twilight_art": "assets/characters/eirin.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄第五关的 boss，月之贤者。永远亭的主人，精通医药，曾是月都的制药师。",
+        "basic": {"种族":"月之贤者","能力":"制作药物程度的能力","称号":"月之贤者","登场作品":"东方永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/八意永琳"
+    },
+    {
+      "id": "kaguya", "name": "蓬莱山辉夜", "name_en": "Kaguya Houraisan",
+      "games": ["th08"], "playableIn": [],
+      "twilight_art": "assets/characters/kaguya.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄第六关的 boss，月之公主。因触犯禁忌被流放地面，居于永远亭，拥有「操纵永远与须臾程度的能力」。",
+        "basic": {"种族":"月之公主","能力":"操纵永远与须臾程度的能力","称号":"月之公主","登场作品":"东方永夜抄"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/蓬莱山辉夜"
+    },
+    {
+      "id": "mokou", "name": "藤原妹红", "name_en": "Fujiwara no Mokou",
+      "games": ["th08","th12"], "playableIn": [],
+      "twilight_art": "assets/characters/mokou.jpg",
+      "moegirl": {
+        "intro": "东方永夜抄的 Extra boss，不老不死的少女。因服用蓬莱药而长生，与辉夜有不死不休的缘分。",
+        "basic": {"种族":"人类（不老不死）","能力":"不老不死 / 操纵火程度的能力","称号":"不老不死的少女","登场作品":"东方永夜抄 / 星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/藤原妹红"
+    },
+    {
+      "id": "aya", "name": "射命丸文", "name_en": "Aya Shameimaru",
+      "games": ["th09","th10","th12","th125","th16"], "playableIn": ["th09","th16"],
+      "twilight_art": "assets/characters/aya.jpg",
+      "moegirl": {
+        "intro": "鸦天狗的新闻记者，操纵风程度的能力。在花映塚中可由玩家操控，以「不正经的记者」闻名，常惹是生非。",
+        "basic": {"种族":"天狗（鸦）","能力":"操纵风程度的能力","称号":"传统的记者","登场作品":"东方花映塚 / 风神录 / 文花帖"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/射命丸文"
+    },
+    {
+      "id": "komachi", "name": "小野塚小町", "name_en": "Komachi Onozuka",
+      "games": ["th09"], "playableIn": ["th09"],
+      "twilight_art": "assets/characters/komachi.jpg",
+      "moegirl": {
+        "intro": "东方花映塚的 boss 之一，彼岸的死神。负责摆渡亡魂，性格悠闲爱偷懒，与四季映姬是拍档。",
+        "basic": {"种族":"死神","能力":"操纵距离程度的能力","称号":"彼岸的摆渡人","登场作品":"东方花映塚"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/小野塚小町"
+    },
+    {
+      "id": "shikieiki", "name": "四季映姫·亚玛萨那度", "name_en": "Shikieiki Yamaxanadu",
+      "games": ["th09"], "playableIn": ["th09"],
+      "twilight_art": "assets/characters/shikieiki.jpg",
+      "moegirl": {
+        "intro": "东方花映塚的最终 boss，地狱的审判官。以严厉的说教闻名，引导亡魂审视一生。",
+        "basic": {"种族":"地狱的审判官","能力":"审判死者程度的能力","称号":"地狱的审判官","登场作品":"东方花映塚"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/四季映姬"
+    },
+    {
+      "id": "tenshi", "name": "比那名居天子", "name_en": "Tenshi Hinanawi",
+      "games": ["th105"], "playableIn": [],
+      "twilight_art": "assets/characters/tenshi.jpg",
+      "moegirl": {
+        "intro": "东方绯想天的最终 boss，有顶天的天人。因无聊而降临地面引发异变，操纵引力程度的能力。",
+        "basic": {"种族":"天人","能力":"操纵引力程度的能力","称号":"有顶天的天人","登场作品":"东方绯想天"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/比那名居天子"
+    },
+    {
+      "id": "suika", "name": "伊吹萃香", "name_en": "Suika Ibuki",
+      "games": ["th075","th095","th19"], "playableIn": ["th19"],
+      "twilight_art": "assets/characters/suika.jpg",
+      "moegirl": {
+        "intro": "东方萃梦想的 boss，操纵密度的鬼。能巨大化与微小化，与博丽灵梦是旧识，是四天王之一的鬼王。",
+        "basic": {"种族":"鬼","能力":"操纵密度程度的能力","称号":"萃集的百鬼","登场作品":"东方萃梦想 / 文花帖"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/伊吹萃香"
+    },
+    {
+      "id": "iku", "name": "永江衣玖", "name_en": "Iku Nagae",
+      "games": ["th105","th123"], "playableIn": [],
+      "twilight_art": "assets/characters/iku.jpg",
+      "moegirl": {
+        "intro": "东方绯想天 / 非想天则的登场角色，蛟的妖怪。作为青龙的使者往返于天人之间，性格温和。",
+        "basic": {"种族":"妖怪（蛟）","能力":"读取气氛程度的能力","称号":"传达天意的使者","登场作品":"东方绯想天 / 非想天则"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/永江衣玖"
+    },
+    {
+      "id": "yuuka", "name": "风见幽香", "name_en": "Yuuka Kazami",
+      "games": ["th05"], "playableIn": [],
+      "twilight_art": "assets/characters/yuuka.jpg",
+      "moegirl": {
+        "intro": "东方怪绮谈的 boss，花之妖怪。实力深不可测、爱好赏花，被公认为东方最强大的角色之一。",
+        "basic": {"种族":"妖怪","能力":"操纵花程度的能力","称号":"花之妖怪","登场作品":"东方怪绮谈"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/风见幽香"
+    },
+    {
+      "id": "hina", "name": "键山雏", "name_en": "Hina Kagiyama",
+      "games": ["th10"], "playableIn": [],
+      "twilight_art": "assets/characters/hina.jpg",
+      "moegirl": {
+        "intro": "东方风神录第二关的 boss，收集厄运的厄神。看似阴沉，实则为了保护人类而背负厄运。",
+        "basic": {"种族":"神明（厄神）","能力":"收集厄运程度的能力","称号":"背负厄运的巫女","登场作品":"东方风神录"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/键山雏"
+    },
+    {
+      "id": "nitori", "name": "河城荷取", "name_en": "Nitori Kawashiro",
+      "games": ["th10","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/nitori.jpg",
+      "moegirl": {
+        "intro": "东方风神录第三关的 boss，河童的工程师。擅长机械制造，对外人害羞却对技术充满热情。",
+        "basic": {"种族":"河童","能力":"操纵水程度的能力","称号":"河童的工程师","登场作品":"东方风神录"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/河城荷取"
+    },
+    {
+      "id": "momizi", "name": "犬走椛", "name_en": "Momizi Inubashiri",
+      "games": ["th10"], "playableIn": [],
+      "twilight_art": "assets/characters/momizi.jpg",
+      "moegirl": {
+        "intro": "东方风神录第四关的中boss，白狼天狗的哨戒。负责守矢神社周边的警戒与侦察。",
+        "basic": {"种族":"天狗（白狼）","能力":"不明","称号":"白狼天狗的哨戒","登场作品":"东方风神录"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/犬走椛"
+    },
+    {
+      "id": "sanae", "name": "东风谷早苗", "name_en": "Sanae Kochiya",
+      "games": ["th10","th125","th165","th15"], "playableIn": ["th15"],
+      "twilight_art": "assets/characters/sanae.jpg",
+      "moegirl": {
+        "intro": "守矢神社的巫女，现人神。拥有「引发奇迹程度的能力」，从外界来到幻想乡，是风神录的人类主角。",
+        "basic": {"种族":"人类（现人神）","能力":"引发奇迹程度的能力","称号":"守矢的巫女","登场作品":"东方风神录 / 文花帖DS"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/东风谷早苗"
+    },
+    {
+      "id": "kanako", "name": "八坂神奈子", "name_en": "Kanako Yasaka",
+      "games": ["th10","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/kanako.jpg",
+      "moegirl": {
+        "intro": "守矢神社的神明，山神。操纵蛇程度的能力，推动守矢神社在幻想乡的信仰扩张。",
+        "basic": {"种族":"神明","能力":"操纵蛇程度的能力","称号":"守矢的神明","登场作品":"东方风神录"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/八坂神奈子"
+    },
+    {
+      "id": "suwako", "name": "洩矢诹访子", "name_en": "Suwako Moriya",
+      "games": ["th10","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/suwako.jpg",
+      "moegirl": {
+        "intro": "守矢神社的祖先神，蛙神。外表可爱却实力强大，与神奈子是长久的对手兼搭档。",
+        "basic": {"种族":"神明（蛙）","能力":"操纵大地程度的能力","称号":"守矢的祖先神","登场作品":"东方风神录"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/洩矢诹访子"
+    },
+    {
+      "id": "utsuho", "name": "灵乌路空", "name_en": "Utsuho Reiuji",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/utsuho.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿的最终 boss，地狱的鸦。被冠以「耀目者」之名后获得核融合的能力，引发地底异变。",
+        "basic": {"种族":"地狱鸦","能力":"操纵核融合程度的能力","称号":"地狱的鸦","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/灵乌路空"
+    },
+    {
+      "id": "satori", "name": "古明地觉", "name_en": "Satori Komeiji",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/satori.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第四关的 boss，地灵殿的主人。拥有读心程度的能力，因让人不适而戴上面具。",
+        "basic": {"种族":"妖怪（觉）","能力":"读心程度的能力","称号":"地灵殿的主人","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/古明地觉"
+    },
+    {
+      "id": "rin", "name": "火焰猫 燐", "name_en": "Rin Kaenbyou",
+      "games": ["th11","th19"], "playableIn": ["th19"],
+      "twilight_art": "assets/characters/rin.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第五关的 boss，地狱的猫（火车）。侍奉觉，负责搬运尸首，与阿空是好友。",
+        "basic": {"种族":"猫（火车）","能力":"操纵尸首程度的能力","称号":"地狱的猫","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/火焰猫燐"
+    },
+    {
+      "id": "koishi", "name": "古明地恋", "name_en": "Koishi Komeiji",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/koishi.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿的 Extra boss，觉的妹妹。封闭了第三只眼而失去读心能力，转而操纵无意识。",
+        "basic": {"种族":"妖怪（觉）","能力":"操纵无意识程度的能力","称号":"闭上的第三只眼","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/古明地恋"
+    },
+    {
+      "id": "kisume", "name": "琪斯美", "name_en": "Kisume",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/kisume.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第一关的中boss，提着木桶的妖怪。设定资料较少，是地底常见的弱小妖怪。",
+        "basic": {"种族":"妖怪","能力":"不明","称号":"提桶的妖怪","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/琪斯美"
+    },
+    {
+      "id": "yamame", "name": "黑谷山女", "name_en": "Yamame Kurodani",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/yamame.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第一关的 boss，土之妖怪。拥有操纵疾病程度的能力，其实性格友好不传染。",
+        "basic": {"种族":"妖怪","能力":"操纵疾病程度的能力","称号":"土之妖怪","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/黑谷山女"
+    },
+    {
+      "id": "parsee", "name": "水桥帕露西", "name_en": "Parsee Mizuhashi",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/parsee.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第二关的 boss，桥姬。拥有操纵嫉妒程度的能力，因被遗忘的桥而心怀嫉妒。",
+        "basic": {"种族":"妖怪（桥姬）","能力":"操纵嫉妒程度的能力","称号":"桥下的妖怪","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/水桥帕露西"
+    },
+    {
+      "id": "yuugi", "name": "星熊勇仪", "name_en": "Yuugi Hoshiguma",
+      "games": ["th11"], "playableIn": [],
+      "twilight_art": "assets/characters/yuugi.jpg",
+      "moegirl": {
+        "intro": "东方地灵殿第三关的 boss，鬼族四天王之一。拥有操纵重力程度的能力，豪爽好酒。",
+        "basic": {"种族":"鬼","能力":"操纵重力程度的能力","称号":"四天王之一","登场作品":"东方地灵殿"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/星熊勇仪"
+    },
+    {
+      "id": "byakuren", "name": "圣白莲", "name_en": "Byakuren Hijiri",
+      "games": ["th12","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/byakuren.jpg",
+      "moegirl": {
+        "intro": "东方星莲船的最终 boss，被封印的大魔法使。表面是僧尼，实则深研魔法，乘宝船现世。",
+        "basic": {"种族":"魔法使","能力":"操纵魔力程度的能力","称号":"被封印的大魔法使","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/圣白莲"
+    },
+    {
+      "id": "shou", "name": "命莲", "name_en": "Shou Toramaru",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/shou.jpg",
+      "moegirl": {
+        "intro": "东方星莲船第四关的 boss，白莲的弟子，兽（狮）的妖怪。自称「圣白莲的代理」，野心勃勃。",
+        "basic": {"种族":"妖怪（狮）","能力":"不明","称号":"白莲的代理","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/命莲"
+    },
+    {
+      "id": "nazrin", "name": "娜兹琳", "name_en": "Nazrin",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/nazrin.jpg",
+      "moegirl": {
+        "intro": "东方星莲船第二关的 boss，寻宝的妖怪鼠。拥有寻找物品程度的能力，手持能指引宝藏的杖。",
+        "basic": {"种族":"妖怪（鼠）","能力":"寻找物品程度的能力","称号":"寻宝的老鼠","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/娜兹琳"
+    },
+    {
+      "id": "kogasa", "name": "多多良小伞", "name_en": "Kogasa Tatara",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/kogasa.jpg",
+      "moegirl": {
+        "intro": "东方星莲船第三关的中boss，唐伞妖怪。为了让人害怕而不断努力，却总以失败告终。",
+        "basic": {"种族":"妖怪（唐伞）","能力":"惊吓人类程度的能力","称号":"被遗忘的伞","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/多多良小伞"
+    },
+    {
+      "id": "ichirin", "name": "云居一轮", "name_en": "Ichirin Kumoi",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/ichirin.jpg",
+      "moegirl": {
+        "intro": "东方星莲船第三关的 boss，操纵云的妖怪。与云山（巨大的云）是搭档，守护白莲的宝船。",
+        "basic": {"种族":"妖怪","能力":"操纵云程度的能力","称号":"云守","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/云居一轮"
+    },
+    {
+      "id": "unzan", "name": "云山", "name_en": "Unzan",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/unzan.jpg",
+      "moegirl": {
+        "intro": "东方星莲船第三关登场，云居一轮的式神，巨大的云。平时安静，被召唤时显现实体。",
+        "basic": {"种族":"云","能力":"巨大化","称号":"云","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/云山"
+    },
+    {
+      "id": "nue", "name": "封兽鵺", "name_en": "Nue Houjuu",
+      "games": ["th12"], "playableIn": [],
+      "twilight_art": "assets/characters/nue.jpg",
+      "moegirl": {
+        "intro": "东方星莲船的 Extra boss，鵺。拥有「让人无法辨认真实身份程度的能力」，是宝船异变的幕后黑手。",
+        "basic": {"种族":"妖怪（鵺）","能力":"让人无法辨认真实身份程度的能力","称号":"诡计多端的鵺","登场作品":"东方星莲船"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/封兽鵺"
+    },
+    {
+      "id": "seiga", "name": "青娥娘娘", "name_en": "Seiga Kaku",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/seiga.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙的 boss 之一，破戒的仙人。追求尸解仙之道，与物部布都、丰聪耳神子有渊源。",
+        "basic": {"种族":"仙人","能力":"使尸解仙程度的能力","称号":"破戒的仙人","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/青娥娘娘"
+    },
+    {
+      "id": "yoshika", "name": "宫古芳香", "name_en": "Yoshika Miyako",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/yoshika.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙第二关的 boss，不死身的僵尸。被青娥娘娘召唤而来，战斗力强却缺乏自我意志。",
+        "basic": {"种族":"僵尸","能力":"不死身","称号":"不死身的僵尸","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/宫古芳香"
+    },
+    {
+      "id": "futo", "name": "物部布都", "name_en": "Futo Mononobe",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/futo.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙第三关的 boss，古代的咒术师。追随丰聪耳神子复兴「御灵」信仰，个性高傲。",
+        "basic": {"种族":"人类（咒术师）","能力":"操纵咒术程度的能力","称号":"布都的咒术师","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/物部布都"
+    },
+    {
+      "id": "miko", "name": "丰聪耳神子", "name_en": "Toyosatomimi no Miko",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/miko.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙的最终 boss，圣人（原型为圣德太子）。复活于神灵庙，意图建立人与灵共存的理想国。",
+        "basic": {"种族":"圣人","能力":"听取十种神宝程度的能力","称号":"圣德太子","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/丰聪耳神子"
+    },
+    {
+      "id": "kyouko", "name": "幽谷响子", "name_en": "Kyouko Kasodani",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/kyouko.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙第一关的 boss，山彦的妖怪。拥有操纵回声程度的能力，声音能传到很远的地方。",
+        "basic": {"种族":"妖怪（山彦）","能力":"操纵回声程度的能力","称号":"山彦的妖怪","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/幽谷响子"
+    },
+    {
+      "id": "tojiko", "name": "苏我屠自古", "name_en": "Soga no Tojiko",
+      "games": ["th13"], "playableIn": [],
+      "twilight_art": "assets/characters/tojiko.jpg",
+      "moegirl": {
+        "intro": "东方神灵庙第二关登场，古代的怨灵。与物部布都、丰聪耳神子同属古代阵营，性格温和。",
+        "basic": {"种族":"怨灵","能力":"不明","称号":"古代的怨灵","登场作品":"东方神灵庙"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/苏我屠自古"
+    },
+    {
+      "id": "sekibanki", "name": "赤蛮奇", "name_en": "Sekibanki",
+      "games": ["th14"], "playableIn": [],
+      "twilight_art": "assets/characters/sekibanki.jpg",
+      "moegirl": {
+        "intro": "东方辉针城第二关的 boss，辘轳首（飞头）的妖怪。拥有操纵头程度的能力，与黑谷山女是好友。",
+        "basic": {"种族":"妖怪（辘轳首）","能力":"操纵头程度的能力","称号":"飞头的妖怪","登场作品":"东方辉针城"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/赤蛮奇"
+    },
+    {
+      "id": "seija", "name": "正邪", "name_en": "Seija Kijin",
+      "games": ["th14"], "playableIn": [],
+      "twilight_art": "assets/characters/seija.jpg",
+      "moegirl": {
+        "intro": "东方辉针城的最终 boss，鬼神。拥有「反转事物程度的能力」，煽动万物造反，是罕见以「恶」自居的角色。",
+        "basic": {"种族":"鬼神","能力":"反转事物程度的能力","称号":"逆转的鬼神","登场作品":"东方辉针城"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/正邪"
+    },
+    {
+      "id": "wakasagihime", "name": "若鹭姬", "name_en": "Wakasagihime",
+      "games": ["th14"], "playableIn": [],
+      "twilight_art": "assets/characters/wakasagihime.jpg",
+      "moegirl": {
+        "intro": "东方辉针城第一关的 boss，人鱼的妖怪。对外形自卑却心地善良，是辉针城异变的开端。",
+        "basic": {"种族":"妖怪（人鱼）","能力":"不明","称号":"人鱼的妖怪","登场作品":"东方辉针城"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/若鹭姬"
+    },
+    {
+      "id": "kagerou", "name": "影狼", "name_en": "Kagerou Imaizumi",
+      "games": ["th14"], "playableIn": [],
+      "twilight_art": "assets/characters/kagerou.jpg",
+      "moegirl": {
+        "intro": "东方辉针城第三关的中boss，狼的妖怪。与村纱水蜜等一同行动，对正邪的计划有所疑虑。",
+        "basic": {"种族":"妖怪（狼）","能力":"不明","称号":"狼的妖怪","登场作品":"东方辉针城"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/影狼"
+    },
+    {
+      "id": "hecate", "name": "赫卡提亚·拉碧斯拉祖利", "name_en": "Hecatia Lapislazuli",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/hecate.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传的最终 boss，同时存在于地球、月球、异界三处的神明。与纯狐联手向月都复仇。",
+        "basic": {"种族":"神","能力":"在三个世界同时存在","称号":"三界的神明","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/赫卡提亚"
+    },
+    {
+      "id": "junko", "name": "纯狐", "name_en": "Junko",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/junko.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传的 boss，因憎恨月人而向月都复仇的神明。与赫卡提亚结盟，策划绀珠传的异变。",
+        "basic": {"种族":"神","能力":"不明","称号":"纯粹的复仇者","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/纯狐"
+    },
+    {
+      "id": "akyu", "name": "稗田阿求", "name_en": "Hieda no Akyu",
+      "games": ["th09","th125"], "playableIn": [],
+      "twilight_art": "assets/characters/akyu.jpg",
+      "moegirl": {
+        "intro": "稗田家第九代，人类。拥有「不用修行也能记住一切程度的能力」，编纂《幻想乡缘起》记录历史。",
+        "basic": {"种族":"人类","能力":"过目不忘程度的能力","称号":"第九代御阿礼之子","登场作品":"东方花映塚 / 文花帖DS"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/稗田阿求"
+    },
+    {
+      "id": "rinnosuke", "name": "森近霖之助", "name_en": "Rinnosuke Morichika",
+      "games": ["th08","th125","th175"], "playableIn": [],
+      "twilight_art": "assets/characters/rinnosuke.jpg",
+      "moegirl": {
+        "intro": "香霖堂的店主，半人类（？）。与魔理沙交好，在《东方香霖堂》《东方刚欲异闻》中活跃。",
+        "basic": {"种族":"半人类（？）","能力":"分辨物品程度的能力","称号":"香霖堂的店主","登场作品":"东方永夜抄 / 文花帖DS"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/森近霖之助"
+    },
+    {
+      "id": "kana", "name": "卡娜", "name_en": "Kana",
+      "games": ["th09"], "playableIn": ["th09"],
+      "twilight_art": "assets/characters/kana.jpg",
+      "moegirl": {
+        "intro": "同人作品中出现的原创角色（非官方正作角色），资料整理中。",
+        "basic": {"种族":"不明","能力":"不明","称号":"（同人原创）","登场作品":"同人作品"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/东方Project"
+    },
+    {
+      "id": "manami", "name": "灯笼坂爱美", "name_en": "Tourozaka Manami",
+      "games": ["th09"], "playableIn": ["th09"],
+      "twilight_art": "assets/characters/manami.jpg",
+      "moegirl": {
+        "intro": "同人作品中出现的原创角色（非官方正作角色），资料整理中。",
+        "basic": {"种族":"不明","能力":"不明","称号":"（同人原创）","登场作品":"同人作品"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/东方Project"
+    },
+    {
+      "id": "seiran", "name": "清兰", "name_en": "Seiran",
+      "games": ["th15","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/seiran.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传第一关的 boss，浅葱色的鹰兔。月之贤者纯狐的部下，与铃瑚一同执行探查地面的任务，在东方兽王园中作为可用角色登场。",
+        "basic": {"种族":"鹰兔","能力":"不明","称号":"浅葱色的鹰兔","登场作品":"东方绀珠传 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/清兰"
+    },
+    {
+      "id": "ringo", "name": "铃瑚", "name_en": "Ringo",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/ringo.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传第二关的 boss，橙色的鹰兔。负责妖怪之山湖上的前线基地，性格活泼，是清兰的搭档。",
+        "basic": {"种族":"鹰兔","能力":"不明","称号":"橙色的鹰兔","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/铃瑚"
+    },
+    {
+      "id": "doremy", "name": "哆来咪·苏伊特", "name_en": "Doremy Sweet",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/doremy.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传第三关的 boss，食梦的獏。拥有「操纵梦程度的能力」，在 Extra 关卡中作为中boss 再次出现。",
+        "basic": {"种族":"獏","能力":"操纵梦程度的能力","称号":"梦的支配者","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/哆来咪·苏伊特"
+    },
+    {
+      "id": "sagume", "name": "稀神探女", "name_en": "Kishin Sagume",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/sagume.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传第四关的 boss，月之民。拥有「说出话语能让事态逆转程度的能力」，因言语往往会成谶而格外谨慎。",
+        "basic": {"种族":"月之民","能力":"口出之言使事态逆转程度的能力","称号":"招来口舌之祸的女神","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/稀神探女"
+    },
+    {
+      "id": "clownpiece", "name": "克劳恩皮丝", "name_en": "Clownpiece",
+      "games": ["th15"], "playableIn": [],
+      "twilight_art": "assets/characters/clownpiece.jpg",
+      "moegirl": {
+        "intro": "东方绀珠传第五关的 boss，来自地狱的妖精。拥有「让人狂气程度的能力」，被赫卡提亚带到月球参与异变。",
+        "basic": {"种族":"妖精（地狱）","能力":"让人狂气程度的能力","称号":"地狱的妖精","登场作品":"东方绀珠传"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/克劳恩皮丝"
+    },
+    {
+      "id": "eternity", "name": "爱塔妮缇拉尔瓦", "name_en": "Eternity Larva",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/eternity.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第一关的 boss，接近神的蝴蝶妖精。在盛夏的高空试图现身，与季节的异变相关。",
+        "basic": {"种族":"妖精（接近神的蝶）","能力":"不明","称号":"希望之星直升青霄","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/爱塔妮缇拉尔瓦"
+    },
+    {
+      "id": "kazura", "name": "坂田合欢", "name_en": "Kazura Sakata",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/kazura.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第二关的 boss，跨越浮世门关的山姥。与地狱有所关联，守护着红叶尽染的山。",
+        "basic": {"种族":"山姥","能力":"不明","称号":"深山的遭遇","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/坂田合欢"
+    },
+    {
+      "id": "aunn", "name": "高丽野阿吽", "name_en": "Komano Aun",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/aunn.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第四关道中登场的守护神兽（狮子），高丽野的阿吽。与守矢神社的村社有所渊源。",
+        "basic": {"种族":"神兽（狮子）","能力":"不明","称号":"成对的神兽","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/高丽野阿吽"
+    },
+    {
+      "id": "yatadera", "name": "矢田寺成美", "name_en": "Narumi Yatadera",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/yatadera.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第四关的 boss，垂迹于森林的魔法地藏。拥有「操纵魔法程度的能力」，守护着魔法森林。",
+        "basic": {"种族":"魔法地藏","能力":"操纵魔法程度的能力","称号":"魔法的笠地藏","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/矢田寺成美"
+    },
+    {
+      "id": "rino", "name": "尔子田里乃", "name_en": "Satono Irintōrino",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/rino.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第五关的 boss，过于危险的背景舞者（童子）。与丁礼田舞成对起舞，是秘神隐岐奈的随从。",
+        "basic": {"种族":"背景舞者（童子）","能力":"不明","称号":"禁忌之门对侧","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/尔子田里乃"
+    },
+    {
+      "id": "mai", "name": "丁礼田舞", "name_en": "Mai Teraida",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/mai.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第五、六关登场的背景舞者，与尔子田里乃成对。同样是秘神隐岐奈的随从。",
+        "basic": {"种族":"背景舞者","能力":"不明","称号":"过于危险的背景舞者","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/丁礼田舞"
+    },
+    {
+      "id": "okina", "name": "摩多罗隐岐奈", "name_en": "Matara Okina",
+      "games": ["th16"], "playableIn": [],
+      "twilight_art": "assets/characters/okina.jpg",
+      "moegirl": {
+        "intro": "东方天空璋第六关及 Extra 的 boss，究极的绝对秘神。拥有「操纵背后（秘天）程度的能力」，实力深不可测。",
+        "basic": {"种族":"秘神","能力":"操纵背后程度的能力","称号":"被秘匿的四个季节","登场作品":"东方天空璋"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/摩多罗隐岐奈"
+    },
+    {
+      "id": "eika", "name": "戎璎花", "name_en": "Eika Warugoto",
+      "games": ["th17"], "playableIn": [],
+      "twilight_art": "assets/characters/eika.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第一关的 boss，河原的偶像水子。被供奉在赛之河原的神秘存在，与地狱的动物灵有关。",
+        "basic": {"种族":"偶像（水子）","能力":"不明","称号":"河原的偶像水子","登场作品":"东方鬼形兽"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/戎璎花"
+    },
+    {
+      "id": "urumi", "name": "牛崎润美", "name_en": "Urumi Ushizaki",
+      "games": ["th17"], "playableIn": [],
+      "twilight_art": "assets/characters/urumi.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第二关的 boss，古代鱼的携子护卫。牛崎家出身，拥有「操纵水程度的能力」，性格随和。",
+        "basic": {"种族":"妖怪（牛/ Ancient Fish）","能力":"操纵水程度的能力","称号":"古代鱼的携子护卫","登场作品":"东方鬼形兽"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/牛崎润美"
+    },
+    {
+      "id": "kutaka", "name": "庭渡久侘歌", "name_en": "Kutaka Niwatari",
+      "games": ["th17"], "playableIn": [],
+      "twilight_art": "assets/characters/kutaka.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第三关的 boss，地狱口岸的守护神（鸡）。负责鬼渡之关，性格豪爽可靠。",
+        "basic": {"种族":"守护神（鸡）","能力":"渡桥程度的能力","称号":"地狱口岸的守护神","登场作品":"东方鬼形兽"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/庭渡久侘歌"
+    },
+    {
+      "id": "yachie", "name": "吉吊八千慧", "name_en": "Yachie Kicchou",
+      "games": ["th17","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/yachie.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第四关的 boss，鬼杰组组长（吉吊/鳖）。谋略深远，意图让地狱的动物灵进军地表，在东方兽王园中继续活跃。",
+        "basic": {"种族":"妖怪（吉吊）","能力":"操纵龟程度的能力","称号":"鬼杰组组长","登场作品":"东方鬼形兽 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/吉吊八千慧"
+    },
+    {
+      "id": "mayumi", "name": "杖刀偶磨弓", "name_en": "Mayumi Joutouguu",
+      "games": ["th17"], "playableIn": [],
+      "twilight_art": "assets/characters/mayumi.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第五关的 boss，埴轮兵长（人形）。侍奉埴安神袿姬，操纵人形程度的能力。",
+        "basic": {"种族":"人形（埴轮）","能力":"操纵人形程度的能力","称号":"埴轮兵长","登场作品":"东方鬼形兽"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/杖刀偶磨弓"
+    },
+    {
+      "id": "haniyasushin", "name": "埴安神袿姬", "name_en": "Keiki Haniyasushin",
+      "games": ["th17"], "playableIn": [],
+      "twilight_art": "assets/characters/haniyasushin.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽第六关的 boss，孤立无援造就的造形神（神明）。保护灵长园中的人类灵，与动物灵对立。",
+        "basic": {"种族":"神明（造形神）","能力":"造型程度的能力","称号":"孤立无援造就的造形神","登场作品":"东方鬼形兽"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/埴安神袿姬"
+    },
+    {
+      "id": "saki", "name": "骊驹早鬼", "name_en": "Saki Kurokoma",
+      "games": ["th17","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/saki.jpg",
+      "moegirl": {
+        "intro": "东方鬼形兽 Extra 的 boss，劲牙组组长（妖马）。地狱的骏马，与吉吊八千慧的鬼杰组对立，在东方兽王园中继续活跃。",
+        "basic": {"种族":"妖怪（马）","能力":"操纵马程度的能力","称号":"劲牙组组长","登场作品":"东方鬼形兽 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/骊驹早鬼"
+    },
+    {
+      "id": "mike", "name": "豪德寺三花", "name_en": "Mike Goutokuzi",
+      "games": ["th18","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/mike.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第一关的 boss，生意兴隆的吉祥物（招财猫）。在东方兽王园中作为可用角色登场。",
+        "basic": {"种族":"招财猫","能力":"招财或招客程度的能力","称号":"生意兴隆的吉祥物","登场作品":"东方虹龙洞 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/豪德寺三花"
+    },
+    {
+      "id": "takane", "name": "山城高岭", "name_en": "Takane Yamashiro",
+      "games": ["th18"], "playableIn": [],
+      "twilight_art": "assets/characters/takane.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第二关的 boss，深山的妖怪商人（山童）。拥有「操纵森林之气程度的能力」，在秘天崖经营生意。",
+        "basic": {"种族":"山童","能力":"操纵森林之气程度的能力","称号":"深山的妖怪商人","登场作品":"东方虹龙洞"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/山城高岭"
+    },
+    {
+      "id": "sannyo", "name": "驹草山如", "name_en": "Sannyo Komakusa",
+      "games": ["th18"], "playableIn": [],
+      "twilight_art": "assets/characters/sannyo.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第三关的 boss，栖息于高地的山女郎。通过烟草的烟来操纵精神程度的能力。",
+        "basic": {"种族":"山女郎","能力":"通过烟草的烟操纵精神程度的能力","称号":"栖息于高地的山女郎","登场作品":"东方虹龙洞"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/驹草山如"
+    },
+    {
+      "id": "misumaru", "name": "玉造魅须丸", "name_en": "Misumaru Tamatsukuri",
+      "games": ["th18","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/misumaru.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第四关的 boss，真正的勾玉制作匠人（神明）。拥有「制造勾玉程度的能力」，在东方兽王园中继续登场。",
+        "basic": {"种族":"神明","能力":"制造勾玉程度的能力","称号":"真正的勾玉匠人","登场作品":"东方虹龙洞 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/玉造魅须丸"
+    },
+    {
+      "id": "tsukasa", "name": "菅牧典", "name_en": "Tsukasa Kudamaki",
+      "games": ["th18","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/tsukasa.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第五关及 Extra 的中boss，鸦天狗们的首领（管狐）。拥有「从灵魂的弱点乘虚而入程度的能力」，在东方兽王园中继续登场。",
+        "basic": {"种族":"管狐（大天狗下属）","能力":"从灵魂的弱点乘虚而入程度的能力","称号":"耳边低语的邪恶白狐","登场作品":"东方虹龙洞 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/菅牧典"
+    },
+    {
+      "id": "megumu", "name": "饭纲丸龙", "name_en": "Megumu Iizunamaru",
+      "games": ["th18","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/megumu.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第五关的 boss，在耳边低语的邪恶白狐（大天狗）。拥有「操纵星空程度的能力」，鸦天狗的首领，在东方兽王园中继续登场。",
+        "basic": {"种族":"大天狗","能力":"操纵星空程度的能力","称号":"鸦天狗的首领","登场作品":"东方虹龙洞 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/饭纲丸龙"
+    },
+    {
+      "id": "chimata", "name": "天弓千亦", "name_en": "Chimata Tenkyuu",
+      "games": ["th18"], "playableIn": [],
+      "twilight_art": "assets/characters/chimata.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞第六关的 boss，无主之物的神（神明）。拥有「使所有权丧失程度的能力」，意图将一切收归市场流通。",
+        "basic": {"种族":"神明","能力":"使所有权丧失程度的能力","称号":"无主之物的神","登场作品":"东方虹龙洞"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/天弓千亦"
+    },
+    {
+      "id": "momoyo", "name": "姬虫百百世", "name_en": "Momoyo Himemushi",
+      "games": ["th18","th19"], "playableIn": [],
+      "twilight_art": "assets/characters/momoyo.jpg",
+      "moegirl": {
+        "intro": "东方虹龙洞 Extra 的 boss，漆黑的噬龙者（大蜈蚣）。拥有「噬龙程度的能力」，在东方兽王园中继续登场。",
+        "basic": {"种族":"大蜈蚣","能力":"噬龙程度的能力","称号":"漆黑的噬龙者","登场作品":"东方虹龙洞 / 东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/姬虫百百世"
+    },
+    {
+      "id": "mamizou", "name": "二岩猯藏", "name_en": "Mamizou Futatsuiwa",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/mamizou.jpg",
+      "moegirl": {
+        "intro": "变幻自在且老奸巨猾的妖怪狸，在东方兽王园中作为可用角色登场。曾于弹幕对战作品中活跃。",
+        "basic": {"种族":"妖怪（狸）","能力":"变幻自在程度的能力","称号":"表里两面的妖怪","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/二岩猯藏"
+    },
+    {
+      "id": "hisami", "name": "豫母都日狭美", "name_en": "Hisami Yomotsu",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/hisami.jpg",
+      "moegirl": {
+        "intro": "东方兽王园登场的新角色，侍奉日白残无的豫母都一族。作为残无的追随者参与异变。",
+        "basic": {"种族":"豫母都","能力":"不明","称号":"残无的追随者","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/豫母都日狭美"
+    },
+    {
+      "id": "zanmu", "name": "日白残无", "name_en": "Zanmu Nippaku",
+      "games": ["th19"], "playableIn": ["th19"],
+      "twilight_art": "assets/characters/zanmu.jpg",
+      "moegirl": {
+        "intro": "东方兽王园的自机兼最终 boss，地狱的贤者、人鬼。拥有「操纵虚无程度的能力」，策划让三大组织互相牵制以自然化解异变。",
+        "basic": {"种族":"人鬼","能力":"操纵虚无程度的能力","称号":"寂灭为乐之王","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/日白残无"
+    },
+    {
+      "id": "biten", "name": "孙美天", "name_en": "Biten Son",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/biten.jpg",
+      "moegirl": {
+        "intro": "东方兽王园登场，鬼杰组的猿神。自诩为孙悟空转世，以圣地幽灵为食逐渐鬼化，加入吉吊八千慧的组织。",
+        "basic": {"种族":"猿神","能力":"操纵猿猴程度的能力","称号":"小小圣域的齐天大圣","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/孙美天"
+    },
+    {
+      "id": "enoko", "name": "三头慧之子", "name_en": "Enoko Mitsugashira",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/enoko.jpg",
+      "moegirl": {
+        "intro": "东方兽王园登场，劲牙组的地狱犬。因吃下人类肉获不死诅咒，顺从骊驹早鬼。",
+        "basic": {"种族":"不死的山犬","能力":"操纵陷阱程度的能力","称号":"寂静的地狱犬","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/三头慧之子"
+    },
+    {
+      "id": "chiyari", "name": "天火人血枪", "name_en": "Chiyari Tenkajin",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/chiyari.jpg",
+      "moegirl": {
+        "intro": "东方兽王园登场，刚欲同盟组的天火人。身缠血与火，正体不明的妖怪，追随饕餮尤魔。",
+        "basic": {"种族":"天火人","能力":"操纵血与火程度的能力","称号":"肮脏的有机怪物","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/天火人血枪"
+    },
+    {
+      "id": "yuuma", "name": "饕餮尤魔", "name_en": "Yuuma Toutetsu",
+      "games": ["th19"], "playableIn": [],
+      "twilight_art": "assets/characters/yuuma.jpg",
+      "moegirl": {
+        "intro": "东方兽王园登场，刚欲同盟组的饕餮。理解动物灵之争并推波助澜，意图染指地表。",
+        "basic": {"种族":"饕餮","能力":"吞噬一切程度的能力","称号":"刚欲同盟组","登场作品":"东方兽王园"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/饕餮尤魔"
+    },
+    {
+      "id": "ubame", "name": "尘塚姥芽", "name_en": "Ubame Chirizuka",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/ubame.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第一关的 boss，栖息于圣域的山姥之长。守护着妖怪之山的圣域。",
+        "basic": {"种族":"山姥","能力":"不明","称号":"栖息于圣域的山姥之长","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/尘塚姥芽"
+    },
+    {
+      "id": "chimi", "name": "封兽魑魅", "name_en": "Chimi Houjuu",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/chimi.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第二关的 boss，原形不明的反骨妖兽（封兽）。在森林中引发骚动。",
+        "basic": {"种族":"封兽（妖兽）","能力":"不明","称号":"原形不明的反骨妖兽","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/封兽魑魅"
+    },
+    {
+      "id": "nareko", "name": "道神驯子", "name_en": "Nareko Michigami",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/nareko.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第三关的 boss，闭门不出的圣地道祖神。守护圣地，性格内向。",
+        "basic": {"种族":"道祖神","能力":"不明","称号":"闭门不出的圣地道祖神","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/道神驯子"
+    },
+    {
+      "id": "yuiman", "name": "维缦·浅间", "name_en": "Yuiman Asama",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/yuiman.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第四关的 boss，锦上之京的命脉所在。与异变石的力量密切相关。",
+        "basic": {"种族":"神明","能力":"不明","称号":"锦上之京的要害","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/维缦·浅间"
+    },
+    {
+      "id": "toyohime", "name": "绵月丰姬", "name_en": "Watatsuki no Toyohime",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/toyohime.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第五关的 boss，月之民的贤者，连接三角山与海的神秘存在。与八意永琳、蓬莱山辉夜同属月都。",
+        "basic": {"种族":"月之民","能力":"不明","称号":"连接三角山与海的贤者","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/绵月丰姬"
+    },
+    {
+      "id": "ariya", "name": "磐永阿梨夜", "name_en": "Ariya Iwanaga",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/ariya.jpg",
+      "moegirl": {
+        "intro": "东方锦上京第六关的 boss，恒久之姬（石长姬）。掌管永恒，意图将一切化石化以留存。",
+        "basic": {"种族":"神明（石长姬）","能力":"永恒程度的能力","称号":"永恒之姬","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/磐永阿梨夜"
+    },
+    {
+      "id": "nina", "name": "渡里贝子", "name_en": "Nina Watari",
+      "games": ["th20"], "playableIn": [],
+      "twilight_art": "assets/characters/nina.jpg",
+      "moegirl": {
+        "intro": "东方锦上京 Extra 的 boss，创造虚构都市之怪（双壳贝）。以幻影构筑锦上京的虚像。",
+        "basic": {"种族":"创造虚构都市之怪","能力":"不明","称号":"双壳贝上的幻觉","登场作品":"东方锦上京"}
+      },
+      "source_url": "https://zh.moegirl.org.cn/渡里贝子"
+    }
+  ]
+}

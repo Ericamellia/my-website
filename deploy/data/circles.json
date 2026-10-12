@@ -1,0 +1,314 @@
+[
+  {
+    "name": "A-One",
+    "name_en": "A-One",
+    "intro": "2008年成立的日本东方同人音乐社团，主催ELEMENTAS，以Eurobeat/Vocal改编见长，在华语圈人气极高，官方B站账号为A-One-JPN。",
+    "source_url": "https://thwiki.cc/A-One",
+    "avatar": "assets/circles/A-One.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 2378,
+      "url": "https://space.bilibili.com/2119177"
+    }
+  },
+  {
+    "name": "AQUA STYLE",
+    "name_en": "AQUA STYLE",
+    "intro": "2001年成立的日本东方同人社团，主催JYUNYA，以《不思議の幻想郷》系列同人游戏及东方改编曲闻名，并参与《东方弹幕神乐》开发。",
+    "source_url": "https://thwiki.cc/AQUA_STYLE",
+    "avatar": "assets/circles/AQUA-STYLE.jpg",
+    "top_platform": {
+      "name": "Twitter",
+      "followers": "",
+      "url": "https://twitter.com/_AQUASTYLE"
+    }
+  },
+  {
+    "name": "Alstroemeria Records",
+    "name_en": "Alstroemeria Records",
+    "intro": "2003年成立的日本东方同人音乐社团，主催Masayoshi Minoshima，被誉为“东方电音御三家”之一，以《Bad Apple!!》等电子/Trance名曲闻名。",
+    "source_url": "https://thwiki.cc/Alstroemeria_Records",
+    "avatar": "assets/circles/Alstroemeria-Records.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 2915,
+      "url": "https://space.bilibili.com/89231604"
+    }
+  },
+  {
+    "name": "Analogue Reverie",
+    "name_en": "Analogue Reverie",
+    "intro": "2018年成立的欧美东方同人游戏社团，主催WishMakers，成员遍布全球，以《东方実在相》《东方封魔再録》等东方二次创作STG著称。",
+    "source_url": "https://thwiki.cc/Analogue_Reverie",
+    "avatar": "assets/circles/Analogue-Reverie.png",
+    "top_platform": {
+      "name": "Twitter",
+      "followers": "",
+      "url": "https://twitter.com/AnalogueReverie"
+    }
+  },
+  {
+    "name": "BlackEditionFX",
+    "name_en": "BlackEditionFX",
+    "intro": "日本东方同人志（插画）社团，主催GmoT（ジモティー），以Black Edition FX名义发行东方同人画集，目前处于休止状态。",
+    "source_url": "https://thwiki.cc/BlackEditionFX",
+    "avatar": "assets/circles/BlackEditionFX.jpg",
+    "top_platform": {
+      "name": "Pixiv",
+      "followers": "",
+      "url": "https://www.pixiv.net/users/1117905"
+    }
+  },
+  {
+    "name": "COOL&CREATE",
+    "name_en": "COOL&CREATE",
+    "intro": "COOL&CREATE是2003年成立的东方同人音乐社团，由ビートまりお与あまね主理，以《最终鬼畜妹》《Night of Knights》等神曲著称。",
+    "source_url": "https://zh.moegirl.wiki/COOL%26CREATE",
+    "avatar": "assets/circles/COOL-CREATE.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 19909,
+      "url": "https://space.bilibili.com/3546752567216796"
+    }
+  },
+  {
+    "name": "IOSYS",
+    "name_en": "IOSYS",
+    "intro": "IOSYS是1998年成立于日本北海道的同人音乐社团，以东方Project编曲和鬼畜电波曲闻名，2007年因《魔理沙偷走了重要的东西》恶搞PV爆红网络。",
+    "source_url": "https://zh.moegirl.wiki/IOSYS",
+    "avatar": "assets/circles/IOSYS.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 47991,
+      "url": "https://space.bilibili.com/10923790"
+    }
+  },
+  {
+    "name": "Lota",
+    "name_en": "Lota",
+    "intro": "未能在公开资料（THBWiki/萌娘百科等）中确认名为 Lota 的东方同人社团，可能为极冷门社团或名称有误。",
+    "source_url": "",
+    "avatar": "",
+    "top_platform": {
+      "name": "unknown",
+      "followers": "",
+      "url": ""
+    }
+  },
+  {
+    "name": "Miv4t",
+    "name_en": "Miv4t",
+    "intro": "Miv4t是95后中国画师，常驻德国法兰克福，以暗色调场景与精妙光影著称，数度将东方Project推上pixiv榜首。",
+    "source_url": "https://www.bilibili.com/read/cv7360675/",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 180000,
+      "url": "https://www.pixiv.net/users/11246082"
+    }
+  },
+  {
+    "name": "ShibayanRecords",
+    "name_en": "Shibayan Records",
+    "intro": "2003年成立的日本东方同人音乐社团，主催Shibayan，以TOHO BOSSA NOVA系列（波萨诺瓦/电子）改编著称，YouTube官方频道订阅超10万。",
+    "source_url": "https://thwiki.cc/ShibayanRecords",
+    "avatar": "assets/circles/ShibayanRecords.jpg",
+    "top_platform": {
+      "name": "YouTube",
+      "followers": 107000,
+      "url": "https://www.youtube.com/@ShibayanRecords"
+    }
+  },
+  {
+    "name": "Team Ladybug",
+    "name_en": "Team Ladybug",
+    "intro": "Team Ladybug（チームレディバグ）是日本独立游戏团队，以东方同人动作游戏《东方月神夜》闻名，亦开发《罗德岛战记》《Blade Chimera》等2D横版动作游戏。",
+    "source_url": "https://www.gematsu.com/companies/team-ladybug",
+    "avatar": "",
+    "top_platform": {
+      "name": "twitter",
+      "followers": 50000,
+      "url": "https://twitter.com/ladybug_happy6"
+    }
+  },
+  {
+    "name": "Tiny Feather",
+    "name_en": "Tiny Feather",
+    "intro": "Tiny Feather（タイニィ・フェザー）是日本同人社团，主催Sin-Go，自2002年起创作东方等同人志与R18漫画，画风细腻。",
+    "source_url": "https://thbwiki.cc/index.php?title=Tiny_Feather",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 30000,
+      "url": "https://www.pixiv.net/users/621239"
+    }
+  },
+  {
+    "name": "bob",
+    "name_en": "bob",
+    "intro": "bob是日本男性插画家，活跃于东方等同人绘画，亦担任《舰队Collection》舰娘设定与《大器晚成的冒险者》插画，画风细腻。",
+    "source_url": "https://zh.moegirl.org.cn/Bob%28%E6%8F%92%E7%94%BB%E5%AE%B6%29",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 90000,
+      "url": "https://www.pixiv.net/users/45350924"
+    }
+  },
+  {
+    "name": "wukloo",
+    "name_en": "wukloo",
+    "intro": "wukloo是活跃于东方的国人画师，擅长柔情少女与屏幕互动题材，人物眼睛水汪汪、质感油润，作品多拟真。",
+    "source_url": "https://danbooru.donmai.us/artists/128445",
+    "avatar": "assets/circles/wukloo.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 455,
+      "url": "https://space.bilibili.com/401029"
+    }
+  },
+  {
+    "name": "久蒼穹",
+    "name_en": "Kuusoukū",
+    "intro": "日本插画师，以东方Project同人插画闻名，构图灵活、配色极具视觉冲击力，亦创作寒蝉鸣泣之时、明日方舟等作品。",
+    "source_url": "https://www.pixiv.net/users/66038798",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 50000,
+      "url": "https://www.pixiv.net/users/66038798"
+    }
+  },
+  {
+    "name": "九十九",
+    "name_en": "Tsukumo",
+    "intro": "VirtuaReal十二期虚拟UP主（2021出道、2024毕业），翻唱众多动漫歌曲，在东方同好中亦有较高知名度。",
+    "source_url": "https://mzh.moegirl.org/%E4%B9%9D%E5%8D%81%E4%B9%9D(%E8%99%9A%E6%8B%9FUP%E4%B8%BB)",
+    "avatar": "assets/circles/九十九.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 45465,
+      "url": "https://space.bilibili.com/690608702"
+    }
+  },
+  {
+    "name": "二色幽紫蝶 · Re零同人社",
+    "name_en": "Dichroic Purpilion",
+    "intro": "中国大陆东方同人游戏社团，主催幽紫kk，与Re零同人社联合推出《东方华彩乱战》《东方夜雀食堂》等人气同人游戏。",
+    "source_url": "https://thbwiki.cc/index.php?title=%E4%BA%8C%E8%89%B2%E5%B9%BD%E7%B4%AB%E8%9D%B6",
+    "avatar": "assets/circles/二色幽紫蝶-Re零同人社.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 170475,
+      "url": "https://space.bilibili.com/86865890"
+    }
+  },
+  {
+    "name": "凋叶棕",
+    "name_en": "Diao ye zong",
+    "intro": "凋叶棕是2007年成立的东方同人音乐社团，为RD-Sounds在东方界的名义，以叙事性歌词与House、Jazz、Rock等多元曲风闻名，被誉为“黑化曲”典范。",
+    "source_url": "https://zh.moegirl.wiki/凋叶棕",
+    "avatar": "assets/circles/凋叶棕.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 2,
+      "url": "https://space.bilibili.com/37631503"
+    }
+  },
+  {
+    "name": "劇毒少女",
+    "name_en": "Gekidoku Shoujo",
+    "intro": "日本东方同人社团，主催ke-ta，以柔和光影与“蜜桃脸”画风著称，长期发行东方同人画集与抱枕等周边。",
+    "source_url": "https://thbwiki.cc/index.php?title=%E5%8A%87%E6%AF%92%E5%B0%91%E5%A5%B3",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 85000,
+      "url": "https://www.pixiv.net/users/3104565"
+    }
+  },
+  {
+    "name": "大魔王るあえる",
+    "name_en": "Daimaou Ruaeru",
+    "intro": "日本插画师，早年创作大量东方Project同人插画，擅长冷系治愈光影与细腻质感，近年亦画《世界计划》等角色。",
+    "source_url": "https://www.pixiv.net/users/3935806",
+    "avatar": "",
+    "top_platform": {
+      "name": "pixiv",
+      "followers": 65000,
+      "url": "https://www.pixiv.net/users/3935806"
+    }
+  },
+  {
+    "name": "幻想夜桜",
+    "name_en": "Genso Yozakura",
+    "intro": "日本东方同人社团，主催为菜奈紫拓未，以同人志创作为主，曾参展东方红楼梦与博丽神社例大祭，现处于休止状态。",
+    "source_url": "https://thbwiki.cc/index.php?title=幻想夜桜",
+    "avatar": "",
+    "top_platform": {
+      "name": "unknown",
+      "followers": "",
+      "url": ""
+    }
+  },
+  {
+    "name": "暁Records",
+    "name_en": "Akatsuki Records",
+    "intro": "暁Records是2012年成立的东方同人音乐社团，曲风独特、中毒性强，主唱Stack声线多变，多首曲目成为东方圈“神曲”。",
+    "source_url": "https://zh.moegirl.wiki/暁Records",
+    "avatar": "assets/circles/暁Records.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 15,
+      "url": "https://space.bilibili.com/7799486"
+    }
+  },
+  {
+    "name": "桜花月間",
+    "name_en": "Ouka Gekkan",
+    "intro": "日本东方同人社团，主催为萩宮アルト，主要创作东方同人漫画与小说，代表作有《桜月歌》《Prelude》等。",
+    "source_url": "https://thbwiki.cc/index.php?title=桜花月間",
+    "avatar": "",
+    "top_platform": {
+      "name": "unknown",
+      "followers": "",
+      "url": ""
+    }
+  },
+  {
+    "name": "給食頭蛮",
+    "name_en": "Kyushoku Toman",
+    "intro": "日本东方同人社团，主催为ぱらどっと（Para Dot.），以东方改编电子音乐为主，兼作同人游戏与周边，活跃至今。",
+    "source_url": "https://thbwiki.cc/index.php?title=給食頭蛮",
+    "avatar": "",
+    "top_platform": {
+      "name": "Twitter",
+      "followers": 77700,
+      "url": "https://twitter.com/zenerat"
+    }
+  },
+  {
+    "name": "舞风（MAIKAZE）",
+    "name_en": "MAIKAZE",
+    "intro": "日本东方同人社团，2006年成立，以制作二次同人动画《梦想夏乡》闻名，亦发行同人音乐，主催为时音。",
+    "source_url": "https://thbwiki.cc/%E8%88%9E%E9%A2%A8%EF%BC%88MAIKAZE%EF%BC%89",
+    "avatar": "assets/circles/舞风-MAIKAZE.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 5171,
+      "url": "https://space.bilibili.com/1597865246"
+    }
+  },
+  {
+    "name": "豚乙女",
+    "name_en": "Buta-Otome",
+    "intro": "豚乙女是2009年成立的东方同人音乐社团，主唱ランコ声线辨识度极高，成员常以布偶装登场，风格活泼独特。",
+    "source_url": "https://zh.moegirl.wiki/豚乙女",
+    "avatar": "assets/circles/豚乙女.jpg",
+    "top_platform": {
+      "name": "bilibili",
+      "followers": 20,
+      "url": "https://space.bilibili.com/3651425"
+    }
+  }
+]

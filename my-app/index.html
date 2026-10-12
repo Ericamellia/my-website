@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>东方Project同人作品查询｜Day 7 MVP</title>
-  <link rel="stylesheet" href="style.css?v=101">
+  <link rel="stylesheet" href="style.css?v=109">
   <script>
     // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
     function showLoadError(msg) {
@@ -69,6 +69,10 @@
           <span class="nav-face" aria-hidden="true">⩌ˬ⩌</span>
           <span class="nav-label">原作</span>
         </a>
+        <a class="nav-item nav-hot" href="#/hot" aria-label="B站必看" title="B站必看">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
+          <span class="nav-label">B站必看</span>
+        </a>
         <a class="nav-item nav-fav" href="#/fav" aria-label="我的收藏" title="我的收藏">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
           <span class="nav-label">我的收藏</span>
@@ -85,9 +89,14 @@
   <footer class="site-footer">
     Day 7 MVP · 数据为模拟（mock）· 部署: GitHub Pages
   </footer>
-  <!-- 大图预览遮罩：点击详情页配图时全屏显示（app.js 控制开关） -->
+  <!-- 大图预览遮罩：点击详情页配图 / 热搜卡封面时全屏显示（app.js 控制开关） -->
   <div id="lightbox" class="lightbox" hidden>
     <img id="lightbox-img" src="" alt="" referrerpolicy="no-referrer">
+    <!-- 下载原图按钮：右上角固定（app.js 绑定，下载当前大图的原图） -->
+    <button id="lightbox-dl" class="lightbox-dl" type="button" aria-label="下载原图" title="下载原图">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM12 2v12.17l-4-4L6.59 11.6 12 17l5.41-5.4L16 10.17l-4 4V2z"/></svg>
+      <span>下载原图</span>
+    </button>
   </div>
   <!-- 修改作品信息弹窗：详情页「修改介绍」按钮唤起（app.js 填充表单内容） -->
   <div id="editModal" class="edit-modal" hidden>
@@ -121,6 +130,6 @@
     <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
     <span class="fab-tip">教训baka</span>
   </button>
-  <script src="app.js?v=87" defer></script>
+  <script src="app.js?v=97" defer></script>
 </body>
 </html>

@@ -1,103 +1,135 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>东方同人搜索 · 公网数据展示（Day 20）</title>
-<link rel="stylesheet" href="./style.css?v=5">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>东方Project同人作品查询｜Day 7 MVP</title>
+  <link rel="stylesheet" href="style.css?v=109">
+  <script>
+    // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
+    function showLoadError(msg) {
+      var app = document.getElementById('app');
+      if (!app || !app.querySelector('.loading-state')) return;
+      app.innerHTML = '<p class="empty-state">页面加载出错：' + msg +
+        '<br>请先按 Ctrl+F5 强制刷新；若仍不行，把这段文字发给我。</p>';
+    }
+    window.addEventListener('error', function (e) { showLoadError(e.message || '未知脚本错误'); });
+    window.addEventListener('unhandledrejection', function (e) {
+      showLoadError((e.reason && (e.reason.message || e.reason)) || '未知请求错误');
+    });
+  </script>
 </head>
 <body>
-<header class="top">
-  <h1>东方同人搜索 <span class="tag">Day 20 跨域接线</span></h1>
-  <p class="sub">health 卡片直连 CloudBase 云函数公网地址（跨域）；业务数据走本站 Node 服务读真库</p>
-</header>
-
-<main>
-  <!-- ★ Day 19 重点：写接口验证区（放在最前，一屏可见） -->
-  <section class="card write">
-    <div class="h-head" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <strong>POST /api/favorites</strong>
-      <span class="badge" id="wBadge">待验证</span>
-    </div>
-    <p class="h-meta" style="margin:8px 0 0">
-      Day 19 起数据源为 <b>HTTP API 真库</b>（<code>source: rest</code>）——写进去就是真落库，不再随发布重置。
-    </p>
-
-    <div class="w-form">
-      <label>workId
-        <input id="wWorkId" type="text" value="art-2" placeholder="如 music-1">
-      </label>
-      <label>note（可选）
-        <input id="wNote" type="text" value="Day19 持久化验证" placeholder="一句话备注">
-      </label>
-      <button class="tab primary" id="btnWrite" type="button">发起 POST 写入</button>
-    </div>
-
-    <div class="w-actions">
-      <button class="tab" id="btnDup" type="button">再点一次（测重复提交 → 409）</button>
-      <button class="tab" id="btnMissing" type="button">发空对象（测缺必填字段 → 400）</button>
-      <button class="tab" id="btnBadFmt" type="button">发错格式（测格式校验 → 400）</button>
-    </div>
-
-    <div class="w-result">
-      <div class="w-line">
-        <span>最近一次响应</span>
-        <code id="wStatus">—</code>
+  <header>
+    <div class="container">
+      <div class="brand">
+        <button id="backBtn" class="home-link back-btn" type="button" aria-label="返回上一页" title="返回上一页">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+          <span class="nav-label">返回上一页</span>
+        </button>
+        <a class="home-link" href="#/" aria-label="返回首页" title="返回首页">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+          <span class="nav-label">返回首页</span>
+        </a>
+        <h1>歡迎來到人與妖怪的世界！</h1>
       </div>
-      <pre id="wJson">点上方按钮发起写入后，这里显示接口返回的原始 JSON…</pre>
+      <div class="header-search-wrap">
+        <svg class="search-icon" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input id="globalSearch" class="header-search" type="search"
+               placeholder="全站搜索：作品 / 作者 / 角色 / 标签 / 原曲…" aria-label="全站搜索">
+      </div>
+      <nav>
+        <a class="nav-item" href="#/music" aria-label="同人音乐">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          <span class="nav-label">同人音乐</span>
+        </a>
+        <a class="nav-item" href="#/doujin" aria-label="同人漫画">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-1.45-1.1-3.55-1.5-5.5-1.5zM6.5 17.5c-1.2 0-2.4.15-3.5.5V7.5c1.1-.35 2.3-.5 3.5-.5s2.4.15 3.5.5v10.5c-1.1-.35-2.3-.5-3.5-.5zm11 0c-1.2 0-2.4.15-3.5.5V7.5c1.1-.35 2.3-.5 3.5-.5s2.4.15 3.5.5V18c-1.1-.35-2.3-.5-3.5-.5z"/></svg>
+          <span class="nav-label">同人漫画</span>
+        </a>
+        <a class="nav-item" href="#/game" aria-label="同人游戏">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM11 13H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+          <span class="nav-label">同人游戏</span>
+        </a>
+        <a class="nav-item" href="#/video" aria-label="同人视频">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/><path d="M10.5 8.5l6 3.5-6 3.5z"/></svg>
+          <span class="nav-label">同人视频</span>
+        </a>
+        <a class="nav-item" href="#/art" aria-label="同人图">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+          <span class="nav-label">同人图</span>
+        </a>
+        <a class="nav-item" href="#/original" aria-label="原作">
+          <span class="nav-face" aria-hidden="true">⩌ˬ⩌</span>
+          <span class="nav-label">原作</span>
+        </a>
+        <a class="nav-item nav-hot" href="#/hot" aria-label="B站必看" title="B站必看">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
+          <span class="nav-label">B站必看</span>
+        </a>
+        <a class="nav-item nav-fav" href="#/fav" aria-label="我的收藏" title="我的收藏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <span class="nav-label">我的收藏</span>
+        </a>
+      </nav>
     </div>
-  </section>
-
-  <!-- 健康状态卡（JSON 默认收起，避免占满首屏） -->
-  <section class="card health" id="healthCard">
-    <div class="h-head">
-      <span class="dot" id="hDot"></span>
-      <strong>云函数 api-health<span class="lbl-tag">跨域直连</span></strong>
-      <span class="badge" id="hBadge">检测中…</span>
+  </header>
+  <main id="app" class="container">
+    <div class="loading-state">
+      <div class="praying-text">少女祈祷中</div>
+      <video class="praying-img" src="assets/praying.mp4?v=2" autoplay loop muted playsinline preload="auto" playbackrate-on="2" onloadeddata="this.playbackRate=2" onplay="this.playbackRate=2" onratechange="if(this.playbackRate!==2)this.playbackRate=2" ontimeupdate="if(this.playbackRate!==2)this.playbackRate=2" aria-label="少女祈祷中"></video>
     </div>
-    <div class="h-meta" id="hMeta"></div>
-    <div class="h-url" id="hUrl" style="margin:6px 0 0;font-size:11.5px;color:var(--muted);word-break:break-all"></div>
-    <div class="h-last" style="margin:4px 0 0;display:flex;align-items:center;gap:8px">
-      <span id="hLastChecked" style="font-size:11.5px;color:var(--muted)">最后更新：—</span>
-      <button class="tab" id="btnRecheck" type="button" style="font-size:11px;padding:3px 10px">重新检查</button>
-    </div>
-    <details style="margin-top:8px">
-      <summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">展开原始 JSON</summary>
-      <pre id="hJson">请求中…</pre>
-    </details>
-  </section>
-
-  <!-- 收藏列表：写入后刷新这里，能看到库里多了那一行 -->
-  <section class="card">
-    <div class="h-head" style="display:flex;align-items:center;gap:8px">
-      <strong>GET /api/favorites</strong>
-      <span class="badge" id="favBadge">加载中…</span>
-      <button class="tab" id="btnReload" type="button" style="margin-left:auto">重新读取</button>
-    </div>
-    <p class="h-meta" id="favMeta" style="margin:10px 0 0"></p>
-    <div class="grid" id="favGrid" style="margin-top:12px"></div>
-  </section>
-
-  <!-- 热搜榜（Day 17 保留） -->
-  <section class="card">
-    <div class="h-head" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <strong>GET /api/hot</strong>
-      <span class="badge" id="hotBadge">加载中…</span>
-      <span style="margin-left:auto;display:flex;gap:6px">
-        <button class="tab" id="tabFresh" type="button" aria-selected="true">当日新发布</button>
-        <button class="tab" id="tabHot" type="button" aria-selected="false">历史热门</button>
-      </span>
-    </div>
-    <p class="h-meta" id="hotMeta" style="margin:10px 0 0"></p>
-    <div class="grid" id="hotGrid" style="margin-top:12px"></div>
-  </section>
-
-  <footer>
-    <p>数据源：B 站搜索接口（wbi 签名）→ 相关性过滤 → 入库 → 接口读出。</p>
-    <p>接口契约见仓库 <code>docs/api-contract.md</code>。</p>
+  </main>
+  <footer class="site-footer">
+    Day 7 MVP · 数据为模拟（mock）· 部署: GitHub Pages
   </footer>
-</main>
-
-<script src="./app.js?v=5"></script>
+  <!-- 大图预览遮罩：点击详情页配图 / 热搜卡封面时全屏显示（app.js 控制开关） -->
+  <div id="lightbox" class="lightbox" hidden>
+    <img id="lightbox-img" src="" alt="" referrerpolicy="no-referrer">
+    <!-- 下载原图按钮：右上角固定（app.js 绑定，下载当前大图的原图） -->
+    <button id="lightbox-dl" class="lightbox-dl" type="button" aria-label="下载原图" title="下载原图">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM12 2v12.17l-4-4L6.59 11.6 12 17l5.41-5.4L16 10.17l-4 4V2z"/></svg>
+      <span>下载原图</span>
+    </button>
+  </div>
+  <!-- 修改作品信息弹窗：详情页「修改介绍」按钮唤起（app.js 填充表单内容） -->
+  <div id="editModal" class="edit-modal" hidden>
+    <div class="edit-panel">
+      <div class="edit-head">
+        <h3>修改作品信息</h3>
+        <button id="editClose" class="edit-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="editForm" class="edit-form"></form>
+    </div>
+  </div>
+  <!-- 上传下载资源弹窗：下载原作页右下角「上传」按钮唤起（app.js 填充表单内容） -->
+  <div id="dlModal" class="edit-modal" hidden>
+    <div class="edit-panel">
+      <div class="edit-head">
+        <h3>上传下载资源</h3>
+        <button id="dlClose" class="edit-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="dlForm" class="edit-form"></form>
+    </div>
+  </div>
+  <!-- 操作反馈提示：收藏/保存/上传等动作完成时从底部浮出（app.js 控制内容与显隐） -->
+  <div id="toast" class="toast" hidden></div>
+  <!-- 返回顶端浮动按钮：固定在右下角，位于「加入作品」按钮上方（app.js 绑定点击） -->
+  <button id="backTop" class="fab fab-backtop" type="button" aria-label="返回顶端" title="返回顶端">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
+    <span class="fab-tip">返回顶端</span>
+  </button>
+  <!-- 教训baka 浮动按钮：固定在返回顶端按钮正上方（app.js 绑定点击） -->
+  <button id="bakaBtn" class="fab fab-baka" type="button" aria-label="教训baka" title="教训baka">
+    <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
+    <span class="fab-tip">教训baka</span>
+  </button>
+  <script src="app.js?v=97" defer></script>
 </body>
 </html>

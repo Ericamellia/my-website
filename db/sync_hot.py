@@ -26,9 +26,10 @@ B 站东方视频同步脚本（Day 17）
     注意「東方」是繁体，B 站老视频大量用繁体，必须一起匹配。
 
 用法：
-    python db/sync_hot.py              # 取 30 条，写入 db/seed-hot.sql
-    python db/sync_hot.py --limit 50   # 取 50 条
-    python db/sync_hot.py --dry-run    # 只打印，不写文件
+    python db/sync_hot.py                      # 取 30 条，写入 db/seed-hot.sql
+    python db/sync_hot.py --limit 60           # 取 60 条
+    python db/sync_hot.py --days 3 --limit 60  # 「当日热搜」放宽到近 3 天，取 60 条
+    python db/sync_hot.py --dry-run            # 只打印，不写文件
 """
 import argparse
 import json
@@ -275,6 +276,7 @@ def collect(keywords, order, pages=2):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--limit', type=int, default=20, help='每个榜单保留条数')
+    ap.add_argument('--days', type=int, default=3, help='「当日热搜」的时间窗（天），默认 3')
     ap.add_argument('--dry-run', action='store_true', help='只打印不写文件')
     args = ap.parse_args()
 
@@ -285,23 +287,33 @@ def main():
     # 用 order=pubdate 拿最新发布的，再用相关性过滤洗掉噪声。
     # 当日新视频播放量天然很低（刚发布），所以不能按播放排序，
     # 按「发布时间倒序」展示才是「当日最新」的正确语义。
-    print('▶ 通道 A：当日新发布（order=pubdate）')
+    #
+    # 关键词池为什么这么宽：东方圈每天的真实投稿量有限，只搜 2~3 个词
+    # 一天往往只凑到 20 多条，展示「6 行 + 继续展开」时很快就到底。
+    # 所以这里把词池铺开（作品名 + 角色名 + 展会/黑话），多页拉取，
+    # 配合 --days 的时效窗口，把条数顶上去。
+    print(f'▶ 通道 A：当日新发布（order=pubdate，时间窗 {args.days} 天）')
     fresh = collect(
-        ['东方project', '東方Project', '东方红魔乡', '东方永夜抄', '幻想乡', '东方'],
-        'pubdate', pages=2)
-    # 只要今天的 + 昨天的（跨零点场景，今天刚开始时昨天的新视频也算「最新」）
-    yday = time.strftime('%Y-%m-%d', time.localtime(time.time() - 86400))
-    fresh = [r for r in fresh if time.strftime('%Y-%m-%d', time.localtime(r['pubdate'])) in (today_str, yday)]
+        ['东方project', '東方Project', '东方红魔乡', '东方永夜抄', '东方妖妖梦',
+         '东方风神录', '东方地灵殿', '东方星莲船', '幻想乡',
+         '东方同人', '东方MMD', '东方手书', '博丽灵梦', '雾雨魔理沙',
+         '芙兰朵露', '魂魄妖梦', '琪露诺', 'touhou'],
+        'pubdate', pages=4)
+    # 时效窗口：默认「今天 + 往前 days-1 天」（跨零点场景下昨天也算「最新」）
+    cutoff = time.strftime('%Y-%m-%d', time.localtime(time.time() - 86400 * (args.days - 1)))
+    fresh = [r for r in fresh if time.strftime('%Y-%m-%d', time.localtime(r['pubdate'])) >= cutoff]
     fresh.sort(key=lambda r: r['pubdate'], reverse=True)
     fresh = fresh[:args.limit]
-    print(f'    → 当日+昨日，按发布时间倒序取 {len(fresh)} 条\n')
+    print(f'    → {cutoff} 起（近 {args.days} 天），按发布时间倒序取 {len(fresh)} 条\n')
 
     # ---- 通道 B：历史热门（对应「热度榜」）----
     # 用 order=totalrank（综合排序）拿当前综合热度最高的一批，按播放量排序。
     print('▶ 通道 B：历史热门（order=totalrank）')
     hot = collect(
-        ['东方project', '東方Project', '东方红魔乡', '东方永夜抄'],
-        'totalrank', pages=2)
+        ['东方project', '東方Project', '东方红魔乡', '东方永夜抄',
+         '东方妖妖梦', '东方风神录', '东方地灵殿', '幻想乡',
+         'bad apple', '东方同人', '东方MMD', '东方手书'],
+        'totalrank', pages=4)
     hot.sort(key=lambda r: (r['play'], r['danmaku']), reverse=True)
     hot = hot[:args.limit]
     print(f'    → 按播放量排序取 {len(hot)} 条\n')

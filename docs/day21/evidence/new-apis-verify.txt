@@ -1,0 +1,59 @@
+==============================================================================
+Day 21 路线B 第2件：5 个新接口实测（真库 REST 通道）
+==============================================================================
+
+/api/works?category=music              HTTP 200  source=rest      count=6      ✓
+      字段: bvid, category, characters, circle, cover, creator, description, id, name, netease_url, original_title, platform, popularity, source_url, tags, type, video_url, views, workId, year
+      样例: {"id": 1, "workId": "music-1", "category": "music", "name": "ハルトマンの妖怪少女", "circle": "COOL&CREATE", "creator": "有泉", "year": 2007, "characters": ["西行寺幽幽子", "魂魄妖梦"], "tags": ["妖妖梦"], "popularity": 16800, "views": 5921, "cover": "ass
+
+/api/works?category=art                HTTP 200  source=rest      count=7      ✓
+      字段: bvid, category, characters, circle, cover, creator, description, id, name, netease_url, original_title, platform, popularity, source_url, tags, type, video_url, views, workId, year
+      样例: {"id": 1, "workId": "art-1", "category": "art", "name": "LAST WORDS", "circle": "Miv4t", "creator": "Miv4t", "year": 2016, "characters": ["西行寺幽幽子"], "tags": ["妖妖梦", "东方Project"], "popularity": 10000, "views": 2279, "cover": "asset
+
+/api/works?category=video              HTTP 200  source=rest      count=6      ✓
+      字段: bvid, category, characters, circle, cover, creator, description, id, name, netease_url, original_title, platform, popularity, source_url, tags, type, video_url, views, workId, year
+      样例: {"id": 1, "workId": "video-1", "category": "video", "name": "Bad Apple!! feat. nomico（影绘PV）", "circle": "Alstroemeria Records", "creator": "あにら", "year": 2009, "characters": ["博丽灵梦", "雾雨魔理沙"], "tags": ["幻想乡"], "popularity": 98650,
+
+/api/works（不带 category）                HTTP 200  source=rest      count=30     ✓
+      字段: bvid, category, characters, circle, cover, creator, description, id, name, netease_url, original_title, platform, popularity, source_url, tags, type, video_url, views, workId, year
+      样例: {"id": 1, "workId": "art-1", "category": "art", "name": "LAST WORDS", "circle": "Miv4t", "creator": "Miv4t", "year": 2016, "characters": ["西行寺幽幽子"], "tags": ["妖妖梦", "东方Project"], "popularity": 10000, "views": 2279, "cover": "asset
+
+/api/works?category=xxx（非法值）           HTTP 400  source=None      count=None
+
+/api/circles                           HTTP 200  source=rest      count=26     ✓
+      字段: avatar, intro, name, name_en, source_url, top_platform
+      样例: {"name": "A-One", "name_en": "A-One", "intro": "2008年成立的日本东方同人音乐社团，主催ELEMENTAS，以Eurobeat/Vocal改编见长，在华语圈人气极高，官方B站账号为A-One-JPN。", "source_url": "https://thwiki.cc/A-One", "avatar": "assets/circles/A-One.jpg", "top_platform": {"name"
+
+/api/original-games                    HTTP 200  source=rest      count=39  
+      字段: category, cover, id, subtitle, tag, th, title, year
+      样例: {"id": "manga01", "th": "漫画", "title": "东方三月精 ~ Eastern and Little Nature Deity.", "subtitle": "作画：比良坂真琴 · 全1卷", "category": "manga", "year": "2005–2007", "cover": "assets/covers/manga01.jpg", "tag": "三月精"}
+
+/api/characters                        HTTP 200  source=rest      count=112    ✓
+      字段: games, id, moegirl, name, name_en, playableIn, source_url, twilight_art
+      样例: {"id": "akyu", "name": "稗田阿求", "name_en": "Hieda no Akyu", "games": ["th09", "th125"], "playableIn": [], "twilight_art": "assets/characters/akyu.jpg", "moegirl": {"basic": {"种族": "人类", "称号": "第九代御阿礼之子", "能力": "过目不忘程度的能力", "登场作品": 
+
+/api/originals                         HTTP 200  source=rest      count=6      ✓
+      字段: description, game, id, title, track_no
+      样例: {"id": "001", "title": "博麗神社境内", "game": "东方灵异传", "track_no": 1, "description": "东方Project全系列最标志性的旋律——博丽神社的主题"}
+
+==============================================================================
+附加核对：id 拆解 + 与本地 JSON 逐字段一致性
+==============================================================================
+接口返回的数字 id : [1, 2, 3, 4, 5, 6]
+接口返回的 workId  : ['music-1', 'music-2', 'music-3', 'music-4', 'music-5', 'music-6']
+本地 JSON 的 id    : [1, 2, 3, 4, 5, 6]
+→ id 一致吗？ True
+
+第 1 条逐字段对比（接口 vs 本地 JSON）：
+  name         ✓  接口=ハルトマンの妖怪少女                                     本地=ハルトマンの妖怪少女
+  circle       ✓  接口=COOL&CREATE                                    本地=COOL&CREATE
+  creator      ✓  接口=有泉                                             本地=有泉
+  year         ✓  接口=2007                                           本地=2007
+  cover        ✓  接口=assets/music/cover1.jpg                        本地=assets/music/cover1.jpg
+  source_url   ✓  接口=https://thwiki.cc/ハルトマンの妖怪少女                   本地=https://thwiki.cc/ハルトマンの妖怪少女
+  description  ✓  接口=COOL&CREATE 于 C72 发布的东方同人声乐专辑，以妖妖梦主题曲改编的人声曲目最为 本地=COOL&CREATE 于 C72 发布的东方同人声乐专辑，以妖妖梦主题曲改编的
+
+original-games 的 categories: [{"id": "old", "label": "旧作"}, {"id": "new", "label": "新作"}, {"id": "fight", "label": "格斗作"}, {"id": "spin", "label": "外传"}, {"id": "manga", "label": "官方漫画"}]
+original-games 的 games 条数: 39
+
+（本地服务已关闭）

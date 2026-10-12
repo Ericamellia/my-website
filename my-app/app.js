@@ -7,21 +7,97 @@
 //     任一瞬时失败（网络抖动/连接数上限/限流）就让 Promise.all 整体 reject → 误弹「baka 冻结」页。
 //     现在只请求一次，正常浏览时根本不再发网络请求，也就不会再误弹。
 //   ②【内存修改跨页丢失】——「上传作品 / 修改介绍」改的是内存里的 data，之前每次导航重新 fetch 会覆盖掉；
-//     现在跨页面保留（刷新仍清空，Day 23 接数据库后再持久化）。
+//     现在跨页面保留（刷新仍清空）。
+//
+// ★ Day 21 改造：数据源从「本地 JSON」换成「真库接口」
+//   原来读的是打包在仓库里的 my-app/data/*.json —— 只读，改一条要重新生成文件。
+//   现在优先读 /api/*（数据来自数据库，改库即生效）；
+//   接口不可用时**自动回落到本地 JSON**，保证离线/纯静态托管也能打开。
+//
+//   对外形状保持不变（这是刻意的）：loadData() 结束后 data 的结构与改造前完全一致，
+//   所以下面所有页面/交互代码一行都不用动。
+//   两处需要「还原包装」的地方：
+//     · original_games：接口返回 {categories, games}，前端要 data.original_games.games ← 保留两层
+//     · characters：接口返回 {characters:[...]}，前端要 data.characters（数组）← 拆掉外层
 let data = { music: [], doujin: [], game: [], video: [], art: [], originals: [], original_games: { categories: [], games: [] }, characters: [], circles: [] };
 let dataPromise = null;
+
+// 接口地址配置：默认同源（部署后页面和 /api/* 在同一个服务上）。
+// 本地想连别的后端时，把 API_BASE 改成 'http://127.0.0.1:3000' 即可。
+const API_BASE = '';
+
+/** 带超时的 fetch：接口不通时不要卡住整页，快速失败好走本地 JSON 兜底。 */
+function fetchJson(url, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => { if (ctl) ctl.abort(); reject(new Error('timeout')); }, timeoutMs || 8000);
+    fetch(url, { cache: 'no-cache', signal: ctl ? ctl.signal : undefined })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(j => { clearTimeout(timer); resolve(j); })
+      .catch(e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+/** 五个作品板块 → 对应的接口地址。 */
+const WORK_MODULES = ['music', 'doujin', 'game', 'video', 'art'];
+
+/**
+ * 从接口拉全部 9 类数据，返回与本地 JSON 完全一致的形状。
+ * 任一接口失败 → 整体抛错，由调用方回落到本地 JSON。
+ */
+async function loadFromApi() {
+  const tasks = [
+    // 5 个作品板块：/api/works?category=xxx → { data: [...] }
+    ...WORK_MODULES.map(m => fetchJson(`${API_BASE}/api/works?category=${m}`).then(j => j.data || [])),
+    // 原曲
+    fetchJson(`${API_BASE}/api/originals`).then(j => j.data || []),
+    // 原作：接口给 {categories, games}，原样留着（前端读 .games / .categories）
+    fetchJson(`${API_BASE}/api/original-games`).then(j => ({ categories: j.categories || [], games: j.games || [] })),
+    // 角色：接口给 {characters:[...]}，前端要数组 → 拆掉外层
+    fetchJson(`${API_BASE}/api/characters`).then(j => j.characters || []),
+    // 社团
+    fetchJson(`${API_BASE}/api/circles`).then(j => j.data || [])
+  ];
+  const [m, d, g, v, a, o, og, c, ci] = await Promise.all(tasks);
+  return { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og, characters: c, circles: ci };
+}
+
+/** 从本地 JSON 拉全部 9 类数据（兜底路径，形状与 loadFromApi 完全一致）。 */
+async function loadFromLocalJson() {
+  const [m, d, g, v, a, o, og, c, ci] = await Promise.all(
+    ['music', 'doujin', 'game', 'video', 'art', 'originals', 'original_games', 'characters', 'circles'].map(k =>
+      fetch(`data/${k}.json`, { cache: 'no-cache' })
+        .then(r => {
+          if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
+          return r.json();
+        }))
+  );
+  return {
+    music: m, doujin: d, game: g, video: v, art: a, originals: o,
+    original_games: og,
+    characters: c?.characters || [],
+    circles: Array.isArray(ci) ? ci : (ci?.circles || [])
+  };
+}
+
 function loadData() {
   if (dataPromise) return dataPromise; // 已加载或正在加载：并发调用共享同一结果，不重复发请求
   dataPromise = (async () => {
-    const [m, d, g, v, a, o, og, c, ci] = await Promise.all(
-      ['music','doujin','game','video','art','originals','original_games','characters','circles'].map(k =>
-        fetch(`data/${k}.json`, { cache: 'no-cache' })
-          .then(r => {
-            if (!r.ok) throw new Error(`data/${k}.json 返回 HTTP ${r.status}`);
-            return r.json();
-          }))
-    );
-    data = { music: m, doujin: d, game: g, video: v, art: a, originals: o, original_games: og, characters: c?.characters || [], circles: Array.isArray(ci) ? ci : (ci?.circles || []) };
+    let from = 'api';
+    try {
+      data = await loadFromApi();
+    } catch (e) {
+      // 接口不可用（没起 Node 服务 / 纯静态托管 / 网络不通）→ 回到本地 JSON。
+      // 这样「本地双击打开」和「部署后走真库」两条路都能用。
+      from = 'local-json';
+      data = await loadFromLocalJson();
+    }
+    // 记在 window 上，方便 F12 里一眼确认这次数据到底从哪来
+    try { window.__dataSource = from; } catch (e) {}
+    return data;
   })();
   return dataPromise;
 }
@@ -183,11 +259,13 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
   });
 }
 
-// ===== 大图预览（点击详情页配图放大；Day 10 新增） =====
+// ===== 大图预览（点击详情页配图放大；Day 10 新增；Day 21 加大图下载） =====
 const $lightbox = document.getElementById('lightbox');
 const $lightboxImg = document.getElementById('lightbox-img');
+let lightboxSrc = '';   // 当前大图的「原图地址」，供下载按钮使用
 function openLightbox(src, alt) {
   if (!$lightbox || !$lightboxImg || !src) return;
+  lightboxSrc = src;
   $lightboxImg.src = src;
   $lightboxImg.alt = alt || '';
   $lightbox.hidden = false;
@@ -197,20 +275,80 @@ function closeLightbox() {
   if (!$lightbox) return;
   $lightbox.hidden = true;
   document.body.classList.remove('no-scroll');
+  lightboxSrc = '';
 }
-// 事件委托：详情页 .zoomable 点开放大；列表/视频/原作卡片的 hover-pop 小窗点击打开原图
+// 下载原图：优先 fetch 成 blob 再触发下载（能拿到真实文件名，且不受跨域 a[download] 限制影响）；
+// 拉取失败（如跨域被拒）时退回「新标签打开原图」，由用户另存。
+function downloadLightboxImage() {
+  const url = lightboxSrc || ($lightboxImg && $lightboxImg.src);
+  if (!url) return;
+  const name = downloadNameFromUrl(url);
+  const a = document.createElement('a');
+  a.download = name;
+  a.rel = 'noopener';
+  try {
+    fetch(url, { mode: 'cors', credentials: 'omit' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+      .then(blob => {
+        const objUrl = URL.createObjectURL(blob);
+        a.href = objUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+        if (typeof showToast === 'function') showToast('原图已开始下载');
+      })
+      .catch(() => { openOriginalInNewTab(url); });
+  } catch (e) {
+    openOriginalInNewTab(url);
+  }
+}
+// 从图片地址推断文件名；拿不到就用带时间戳的兜底名
+function downloadNameFromUrl(url) {
+  try {
+    const path = String(url).split('?')[0].split('#')[0];
+    let base = decodeURIComponent(path.substring(path.lastIndexOf('/') + 1));
+    if (!base || base.indexOf('.') === -1) base = 'touhou-cover-' + Date.now() + '.jpg';
+    return base;
+  } catch (e) {
+    return 'touhou-cover-' + Date.now() + '.jpg';
+  }
+}
+function openOriginalInNewTab(url) {
+  try {
+    const w = window.open(url, '_blank');
+    if (!w && typeof showToast === 'function') showToast('浏览器拦截了新窗口，请右键图片另存为');
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('无法打开原图，请右键图片另存为');
+  }
+}
+// 事件委托：详情页 .zoomable 点开放大。
+// 热搜系卡片（.hot2-open 封面 / .hot2-cover 缩略图）：点封面本体 → 跳 B 站（走 <a href> 原生行为）；
+// 点 hover 小窗（.hover-pop）→ 开大图（大图内可下载原图）。
 $app.addEventListener('click', e => {
   const t = e.target && e.target.closest ? e.target.closest('.zoomable') : null;
   if (t) { openLightbox(t.currentSrc || t.src, t.alt); return; }
+  // 热搜卡片：点小窗 → 开大图（优先于封面跳转分支，否则会被 <a> 带走）
   const pop = e.target && e.target.closest ? e.target.closest('.hover-pop') : null;
   if (pop) {
     e.preventDefault();
     e.stopPropagation();
     const img = pop.querySelector('img');
-    if (img) goExternal(img.currentSrc || img.src, true);
+    openLightbox((img && (img.currentSrc || img.src)) || '', img && img.alt);
+    return;
   }
+  // 其余情况（含点封面本体 .hot2-open）一律不拦截：由外层 <a target="_blank"> 原生跳到 B 站
 });
 if ($lightbox) $lightbox.addEventListener('click', closeLightbox);
+// 下载按钮：点击时不要冒泡到遮罩（否则会顺手关掉大图）
+const $lbDl = document.getElementById('lightbox-dl');
+if ($lbDl) {
+  $lbDl.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    downloadLightboxImage();
+  });
+}
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // ===== 页面状态记忆：返回上一页时恢复分类标签与滚动位置 =====
@@ -1450,10 +1588,16 @@ function applyClamp3(root) {
   });
 }
 
-// ===== 列表分页：一次只展示三行作品，点下方「展开更多」再加载三行 =====
+// ===== 列表分页：一次只展示若干行作品，点下方「展开更多」再加载同样行数 =====
 // 作用范围：所有作品列表容器（.work-list / .video-grid），包含各分类 Tab 面板内的列表。
 // 卡片始终渲染在 DOM 里，超出的只是被隐藏，排序/筛选/搜索不会丢数据。
+// 行数默认 LM_ROWS，容器可用 data-lm-rows="6" 单独指定（热搜详细页用 6 行）。
 const LM_ROWS = 3;
+// 取容器一次展示的行数：优先读 data-lm-rows，非法值回退默认
+function lmRows(list) {
+  const n = Number(list && list.dataset && list.dataset.lmRows);
+  return (Number.isFinite(n) && n > 0) ? Math.floor(n) : LM_ROWS;
+}
 
 // 一行几列：把卡片临时全部显示后，按 offsetTop 分组统计第一行有几张卡
 function lmCols(cards) {
@@ -1480,7 +1624,8 @@ function pageList(list, reset) {
   // 容器不可见（处于未激活的分类面板中）时量不出列数，等面板切出来再处理
   if (!list.clientWidth) return;
   const active = cards.filter(c => c.style.display !== 'none'); // 已通过搜索/筛选的卡片
-  const size = Math.max(1, lmCols(active) * LM_ROWS);           // 三行 = 列数 × 3
+  const rows = lmRows(list);                                    // 本容器一次展示几行
+  const size = Math.max(1, lmCols(active) * rows);               // 一批 = 列数 × 行数
   if (reset) { delete list.dataset.lmShown; delete list.dataset.lmSize; }
   let shown = Number(list.dataset.lmShown) || size;
   if (shown < size) shown = size;
@@ -1497,7 +1642,8 @@ function pageList(list, reset) {
     btn.type = 'button';
     btn.className = 'load-more-btn';
     btn.addEventListener('click', () => {
-      list.dataset.lmShown = String((Number(list.dataset.lmShown) || 0) + (Number(list.dataset.lmSize) || LM_ROWS));
+      // 每次追加「一批」（= 列数 × 行数），保证点完立刻又有同样多的新内容
+      list.dataset.lmShown = String((Number(list.dataset.lmShown) || 0) + (Number(list.dataset.lmSize) || size));
       pageList(list);
     });
     if (list.parentNode) list.parentNode.insertBefore(btn, list.nextSibling);
@@ -1666,6 +1812,241 @@ function renderFavs() {
     });
   }
 }
+
+// ===== B站必看（热搜）页 =====
+// 数据源：GET /api/hot?board=fresh|hot —— 真库 hot_videos 表（40 条：fresh 20 + hot 20）。
+//
+// 页面结构约定：
+//   #/hot          主界面：**一个框 + 两个分类按钮**（今日B站热搜 / 历史B站热门），
+//                  点按钮切换榜单，当前榜显示 10 条，条状纵向排列。
+//   #/hot/fresh    详细页 —— 「今日B站热搜」全部视频（3 行 + 展开更多，同「同人视频」页）。
+//   #/hot/hot      详细页 —— 「历史B站热门」全部视频。
+//
+// 搜索约定：停留在 #/hot 系路由时，顶栏搜索框改为搜「热搜库」（见 doSearch 的 hot 分支），
+//          离开后自动恢复为搜作品库。顶栏本身与作品站完全相同（共用同一个 header）。
+const HOT_BOARDS = [
+  { key: 'fresh', title: '今日B站热搜', sub: 'B站今日最新投稿榜' },
+  { key: 'hot',   title: '历史B站热门', sub: 'B站历史最热视频榜' }
+];
+let hotCache = null;        // { fresh:[...], hot:[...] } —— 一次停留内复用，避免重复请求
+
+/** 拉取单个榜单（带缓存）。board = 'fresh' | 'hot' | 'all' */
+// 取某榜单数据（带缓存）。
+// 注意：主界面只要 10 条预览、详细页要整榜，所以缓存必须按「条数」判断够不够，
+// 不能用「有没有」判断——否则主界面先跑一次就把 10 条的结果钉死，详细页只能拿到 10 条。
+async function fetchHotBoard(board, limit) {
+  const want = limit || 20;
+  const cached = hotCache && hotCache[board];
+  if (cached && cached.length >= want) return cached;
+  const j = await fetchJson(`${API_BASE}/api/hot?board=${encodeURIComponent(board)}&limit=${want}`);
+  const items = (j && j.data) || [];
+  if (!hotCache) hotCache = {};
+  if (!cached || items.length > cached.length) hotCache[board] = items;
+  return hotCache[board];
+}
+
+/** 主界面：#/hot —— 单个框 + 两个分类按钮（今日B站热搜 / 历史B站热门），各显示 10 条。 */
+let hotActiveBoard = 'fresh';   // 当前选中的分类（默认今日热搜）
+async function renderHot() {
+  const PREVIEW = 10;   // 每次显示 10 条
+  const active = HOT_BOARDS.find(b => b.key === hotActiveBoard) || HOT_BOARDS[0];
+
+  $app.innerHTML = `<section class="hot2-box">
+    <div class="hot2-head">
+      <div class="hot2-tabs" role="tablist">
+        ${HOT_BOARDS.map(b => `<button class="hot2-tab${b.key === active.key ? ' active' : ''}"
+            data-hboard="${b.key}" type="button" role="tab"
+            aria-selected="${b.key === active.key}">${esc(b.title)}</button>`).join('')}
+      </div>
+      <a class="hot2-more" href="#/hot/${active.key}" aria-label="查看更多">查看更多<span class="hot2-more-arrow" aria-hidden="true">›</span></a>
+    </div>
+    <p class="hot2-sub">${esc(active.sub)}</p>
+    <div class="hot2-list" id="hot2-list"><p class="empty-state">加载中…</p></div>
+  </section>`;
+
+  const box = document.getElementById('hot2-list');
+  try {
+    const items = await fetchHotBoard(active.key, PREVIEW);
+    // 切榜期间用户可能又点了别的 tab，避免把旧榜数据填进新榜
+    if (hotActiveBoard !== active.key) return;
+    box.innerHTML = items.length
+      ? items.slice(0, PREVIEW).map((it, i) => hotRowHTML(it, i + 1)).join('')
+      : '<p class="empty-state">本榜暂无数据</p>';
+  } catch (e) {
+    box.innerHTML = `<p class="empty-state">加载失败：${esc(e && e.message || e)}</p>`;
+  }
+
+  // 分类按钮切换：只重渲染本页，保持在同一路由
+  document.querySelectorAll('.hot2-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const k = tab.dataset && tab.dataset.hboard;
+      if (!k || k === hotActiveBoard) return;
+      hotActiveBoard = k;
+      renderHot();
+    });
+  });
+}
+
+/** 一条热搜（条状：左封面 + 右标题/作者等信息）。
+ *  封面 hover 弹小窗预览；点封面本体 → 跳 B 站；点小窗 → 开大图（大图内可下载原图）。 */
+function hotRowHTML(it, rank) {
+  const full = it.cover || '';
+  return `<a class="hot2-row" href="${it.url || '#'}" target="_blank" rel="noopener noreferrer" title="${esc(it.title || '')}">
+    <span class="hot2-num${rank <= 3 ? ' top' : ''}">${rank}</span>
+    <div class="hot2-cover hot2-open">
+      ${full ? `<img src="${esc(full)}" alt="${esc(it.title || '')} 封面" referrerpolicy="no-referrer" loading="lazy">
+        <span class="hover-pop" aria-hidden="true" title="点击查看大图"><img src="${esc(full)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></span>` : ''}
+    </div>
+    <div class="hot2-info">
+      <div class="hot2-title">${esc(it.title || '')}</div>
+      <div class="hot2-meta">
+        <span class="hot2-author">${esc(it.author || '未知作者')}</span>
+        ${it.category ? `<span class="hot2-tag">${esc(it.category)}</span>` : ''}
+        ${it.duration ? `<span class="hot2-tag">${esc(it.duration)}</span>` : ''}
+      </div>
+      <div class="hot2-stat">播放 ${hotNum(it.play)} · 弹幕 ${hotNum(it.danmaku)}${it.bvid ? ` · ${esc(it.bvid)}` : ''}</div>
+    </div>
+  </a>`;
+}
+
+/** 播放数缩写：12345 → 1.2万 */
+function hotNum(n) {
+  const v = Number(n) || 0;
+  if (v >= 100000000) return (v / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
+  if (v >= 10000) return (v / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  return String(v);
+}
+
+/** 详细页：#/hot/fresh、#/hot/hot —— 展示该榜全部热搜视频。
+ *  展示方式与「同人视频」页一致：.video-grid + .video-card，但**一次 6 行**（data-lm-rows=6），
+ *  点「展开更多」每次再追加 6 行（复用全局 initPagedLists / pageList 机制）。 */
+async function renderHotDetail(board) {
+  const meta = HOT_BOARDS.find(b => b.key === board);
+  if (!meta) { $app.innerHTML = '<p class="empty-state">404 — 未知榜单</p>'; return; }
+
+  // 返回 / 首页 已整合进顶栏（.brand 里的 backBtn + home-link），本页不再重复放一份
+  $app.innerHTML = `
+    <h2>${esc(meta.title)}</h2>
+    <p class="hot2-sub">${esc(meta.sub)}</p>
+    <input id="hotDetailSearch" class="field" aria-label="在本榜单内筛选"
+           placeholder="在《${esc(meta.title)}》内筛选：标题 / 作者 / 分类 / BV号…">
+    <div id="hotDetailNoResult" class="search-empty" role="status" aria-live="polite" hidden></div>
+    <div class="video-grid" id="hotDetailGrid" data-lm-rows="6"><p class="empty-state">加载中…</p></div>
+    <p class="hot-more-link">
+      <a href="https://www.bilibili.com/" target="_blank" rel="noopener noreferrer">更多请前往 bilibili 查看</a>
+    </p>`;
+
+  const grid = document.getElementById('hotDetailGrid');
+  try {
+    const items = await fetchHotBoard(board, 100);
+    grid.innerHTML = items.length
+      ? items.map((it, i) => hotVideoCardHTML(it, i + 1)).join('')
+      : `<p class="empty-state">本榜暂无数据</p>`;
+
+    // 本页内筛选（只筛本国榜单数据；顶栏搜索是搜整个热搜库，两者不冲突）
+    const f = document.getElementById('hotDetailSearch');
+    if (f) {
+      f.addEventListener('input', () => {
+        const q = f.value.trim().toLowerCase();
+        let visible = 0;
+        grid.querySelectorAll('.video-card').forEach(c => {
+          const ok = !q || (c.dataset.search || '').includes(q);
+          c.style.display = ok ? '' : 'none';
+          if (ok) visible++;
+        });
+        const nr = document.getElementById('hotDetailNoResult');
+        if (nr) {
+          if (visible === 0) { nr.textContent = '本榜单内没有匹配「' + f.value.trim() + '」的条目'; nr.hidden = false; }
+          else nr.hidden = true;
+        }
+        resetPagedList(grid);   // 筛选变化 → 回到「只显示三行」
+      });
+    }
+    // 卡片是异步填进 grid 的，路由末尾那次 initPagedLists 已经跑过，这里补一次分页
+    initPagedLists($app);
+  } catch (e) {
+    grid.innerHTML = `<p class="empty-state">加载失败：${esc(e && e.message || e)}</p>`;
+  }
+}
+
+/** 热搜条目 → 「同人视频」同款卡片（.video-card，可被 pageList 分页）。
+ *  点封面本体 → 跳 B 站；点 hover 小窗 → 开大图（可下载原图）。 */
+function hotVideoCardHTML(it, rank) {
+  const search = [it.title, it.author, it.category, it.bvid, it.description].join(' ').toLowerCase();
+  const full = it.cover || '';
+  return `<div class="video-card" data-search="${esc(search)}" data-bvid="${esc(it.bvid || '')}">
+    <a class="video-thumb ${full ? 'hot2-open' : ''}" href="${it.url || '#'}" target="_blank" rel="noopener noreferrer" aria-label="在B站观看 ${esc(it.title || '')}">
+      <img src="${esc(full)}" alt="${esc(it.title || '')} 封面" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+      <span class="video-type">${it.category ? esc(it.category) : 'B站'}</span>
+      ${full ? `<span class="hover-pop" aria-hidden="true" title="点击查看大图"><img src="${esc(full)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></span>` : ''}
+    </a>
+    <div class="video-body">
+      <h3><a href="${it.url || '#'}" target="_blank" rel="noopener noreferrer">${esc(it.title || '')}</a></h3>
+      <div class="work-meta">
+        <span>UP主: ${esc(it.author || '未知')}</span>
+        <span>${it.duration ? esc(it.duration) : ''}</span>
+        <span class="popularity" title="排名第 ${rank}">#${rank}</span>
+      </div>
+      <div class="work-meta">播放: ${hotNum(it.play)} · 弹幕: ${hotNum(it.danmaku)} · 收藏: ${hotNum(it.favorites)}</div>
+      ${it.bvid ? `<div class="work-meta">${esc(it.bvid)}</div>` : ''}
+      ${it.description ? `<div class="work-meta clamp-3">${esc(it.description)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+
+// ===== 热搜库搜索（顶栏搜索框在 #/hot 系路由时的搜索范围） =====
+// 匹配字段：标题 / 作者 / 分类 / BV号 / 简介，覆盖热搜库全部内容。
+function searchHotLib(q) {
+  const ql = String(q).toLowerCase();
+  const all = [].concat(
+    (hotCache && hotCache.fresh) || [],
+    (hotCache && hotCache.hot) || []
+  );
+  return all.filter(it => [
+    it.title, it.author, it.category, it.bvid, it.description
+  ].join(' ').toLowerCase().includes(ql));
+}
+
+/** 热搜库搜索结果页：#/hotsearch/<词>。 */
+async function renderHotSearch(q) {
+  const gs = document.getElementById('globalSearch');
+  if (gs && (gs.value || '') !== q) gs.value = q;
+  $app.innerHTML = `
+    <h2>热搜库搜索：${esc(q)}</h2>
+    <div id="hot2-search"><p class="empty-state">加载中…</p></div>`;
+
+  const box = document.getElementById('hot2-search');
+  try {
+    // 搜索结果必须覆盖整库，先把两榜都拉全到 100 条
+    if (!hotCache || !hotCache.fresh || !hotCache.hot) {
+      await Promise.all([fetchHotBoard('fresh', 100), fetchHotBoard('hot', 100)]);
+    }
+    const hits = searchHotLib(q);
+    if (!hits.length) {
+      $app.innerHTML = `<h2>热搜库搜索：${esc(q)}</h2>
+        <div class="search-empty">
+          <p class="search-empty-title">热搜库里没有找到与「${esc(q)}」相关的内容</p>
+          <div class="search-empty-actions">
+            <button id="hotBackBtn" class="btn" type="button">回到B站必看</button>
+            <button id="hotOtherSearchBtn" class="btn" type="button">在全站作品中搜索</button>
+          </div>
+        </div>`;
+      const a = document.getElementById('hotBackBtn');
+      if (a) a.addEventListener('click', () => { location.hash = '#/hot'; });
+      const b2 = document.getElementById('hotOtherSearchBtn');
+      if (b2) b2.addEventListener('click', () => { location.hash = '#/search/' + encodeURIComponent(q); });
+      return;
+    }
+    $app.innerHTML = `<h2>热搜库搜索：${esc(q)}（${hits.length} 条）</h2>
+      <div class="video-grid" id="hotSearchGrid" data-lm-rows="6">${hits.map((it, i) => hotVideoCardHTML(it, i + 1)).join('')}</div>
+      <div class="home-back">${homeFabHTML()}</div>`;
+    initPagedLists($app);   // 与热搜详细页一致：一次 6 行 + 每次追加 6 行
+  } catch (e) {
+    box.innerHTML = `<p class="empty-state">加载失败：${esc(e && e.message || e)}</p>`;
+  }
+}
+
 
 // ===== 路由 =====
 // 跳转前统一显示「少女祈祷中」加载页：所有界面（含真实加载失败时的 baka 冻结页）
@@ -1875,7 +2256,7 @@ async function routeInner() {
   wasOnFav = onFav;
   // 离开搜索页时清空顶栏搜索框（renderSearch 内部负责同步成搜索词）
   const gs = document.getElementById('globalSearch');
-  if (gs && p[0] !== 'search') gs.value = '';
+  if (gs && p[0] !== 'search' && p[0] !== 'hotsearch') gs.value = '';
   // 每次路由先清掉原作详情页背景，由 renderOriginalGame 决定要不要重新挂上
   clearPageBg();
   if (!p.length) renderHome();
@@ -1885,6 +2266,13 @@ async function routeInner() {
   }
   else if (p[0] === 'add') renderAddChooser();
   else if (p[0] === 'fav') renderFavs();
+  else if (p[0] === 'hot') {
+    // #/hot          → 主界面（左右两框）
+    // #/hot/fresh    → 「今日B站热搜」详细页（待定）
+    // #/hot/hot      → 「历史B站热门」详细页（待定）
+    if (p[1]) renderHotDetail(p[1]); else renderHot();
+  }
+  else if (p[0] === 'hotsearch') renderHotSearch(decodeURIComponent(p.slice(1).join('/')).trim());
   else if (['music','doujin','game','video','art'].includes(p[0])) {
     if (p[1] === 'add') renderAddForm(p[0]);
     else p[1] ? renderDetail(p[0], p[1]) : renderList(p[0]);
@@ -1928,16 +2316,27 @@ async function route() {
   }
 }
 
-// 顶栏全站搜索：输入防抖 300ms 跳转结果页；清空回首页
+// 顶栏全站搜索：输入防抖 300ms 跳转结果页；清空回首页。
+// Day 21：停在「热搜」相关页面时，搜索范围改为**热搜库**（#/hotsearch/…），
+//         离开热搜页后自动恢复为搜作品库（#/search/…）。
+function inHotSection() {
+  const h = (location.hash.slice(1) || '/').split('?')[0];
+  const p = h.split('/').filter(Boolean);
+  return p[0] === 'hot' || p[0] === 'hotsearch';
+}
 let searchTimer;
 document.getElementById('globalSearch').addEventListener('input', e => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     const q = e.target.value.trim();
-    const target = q ? `#/search/${encodeURIComponent(q)}` : '#/';
+    const home = inHotSection() ? '#/hot' : '#/';
+    const prefix = inHotSection() ? '#/hotsearch/' : '#/search/';
+    const target = q ? prefix + encodeURIComponent(q) : home;
     if (location.hash !== target) location.hash = target;
   }, 300);
 });
+
+// 搜索结果页会预填搜索框：离开搜索页时清空（原逻辑只认 #/search，这里补上 #/hotsearch）
 
 // 返回顶端按钮：点击平滑滚动到页面顶部（全局固定，所有页面生效）
 const backTopBtn = document.getElementById('backTop');

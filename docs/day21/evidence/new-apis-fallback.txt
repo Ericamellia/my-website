@@ -1,0 +1,17 @@
+已临时移走: C:\Users\25394\WorkBuddy\2026-09-18-00-29-07\deploy\.env
+已临时移走: C:\Users\25394\WorkBuddy\2026-09-18-00-29-07\.env
+
+========================================================================
+快照降级通道验证（.env 已移走 → 服务应降级到 snapshot）
+========================================================================
+健康检查 dataSource = snapshot   <- 期望 snapshot
+
+/api/works?category=music      HTTP 200  source=snapshot  count=6    ✓
+/api/circles                   HTTP 200  source=snapshot  count=26   ✓
+/api/original-games            HTTP 200  source=snapshot  count=39   ✓
+/api/characters                HTTP 200  source=snapshot  count=112  ✓
+/api/originals                 HTTP 200  source=snapshot  count=6    ✓
+已恢复: C:\Users\25394\WorkBuddy\2026-09-18-00-29-07\deploy\.env
+已恢复: C:\Users\25394\WorkBuddy\2026-09-18-00-29-07\.env
+
+（降级服务已关闭，.env 已还原）

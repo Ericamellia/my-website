@@ -1,0 +1,121 @@
+==== 采集时间：2026-10-10 15:04:25 ====
+==== 站点：https://touhou-mock.app.workbuddy.host ====
+
+===== [1] 公网首页可访问 =====
+GET /  ->  HTTP 200  (0.433578s)
+
+===== [2] 云函数公网入口（无需凭证）=====
+{
+  "ok": true,
+  "service": "touhou-search",
+  "env": "ericamellia24-d2gk0ftukc71292c5",
+  "version": "1.0.0",
+  "time": "2026-10-10T07:04:27.674Z",
+  "uptimeSec": 144,
+  "node": "v18.15.0",
+  "path": "/api/health",
+  "checks": {
+    "http": "ok",
+    "static": "n/a"
+  }
+}
+-> HTTP 200
+
+===== [3] 真实读：收藏 + 热搜 =====
+GET /api/favorites?limit=20  ->  HTTP 200
+GET /api/hot?board=fresh&limit=12  ->  HTTP 200
+--- /api/favorites 内容 ---
+  source = rest  count = 7
+--- /api/hot 内容 ---
+  source = rest  counts = {'fresh': 12, 'hot': 0, 'total': 12, 'limit': 12}  本条返回条数 = 12
+
+===== [4] 真实写：POST /api/favorites (art-2) =====
+--- 4.0 先试重复提交（应被闸门挡下）---
+{
+  "ok": false,
+  "error": "already_favorited",
+  "message": "你已经收藏过 music-1 了，不用重复提交",
+  "data": {
+    "id": 1,
+    "userId": "local",
+    "workId": "music-1",
+    "note": "东方同人音乐入门必听，循环一整周",
+    "createdAt": "2026-10-10T02:38:23.014Z",
+    "name": "(作品已下架)",
+    "tags": [],
+    "characters": []
+  }
+}
+POST(重复 music-1)  ->  HTTP 409
+
+--- 4.1 写入未收藏的 art-2 ---
+{
+  "ok": true,
+  "endpoint": "/api/favorites",
+  "action": "created",
+  "source": "rest",
+  "message": "收藏成功",
+  "data": {
+    "id": 27,
+    "userId": "local",
+    "workId": "art-2",
+    "note": "Day21周验收-真实写入验证",
+    "createdAt": "2026-10-10T07:04:33.137Z",
+    "category": "art",
+    "name": "やくも ゆかり",
+    "circle": "wukloo",
+    "creator": "wukloo",
+    "year": 2016,
+    "cover": "assets/art/art2.jpg",
+    "tags": [
+      "东方Project"
+    ],
+    "characters": [
+      "八云紫"
+    ],
+    "description": "wukloo 绘制的八云紫同人插画。",
+    "sourceUrl": "https://www.pixiv.net/artworks/59572603"
+  }
+}
+POST(新 art-2)  ->  HTTP 201
+
+--- 4.2 写后读回（count 应为 8）---
+写后 count = 8  source = rest
+  #27 art-2 <== 本次新增
+  #7 video-2
+  #6 video-1
+  #5 art-1
+  #4 game-1
+  #3 doujin-1
+  #2 music-2
+  #1 music-1
+  (本次新增行 id = 27)
+
+===== [5] 清理测试数据（直连 PostgREST 删除 id=27）=====
+  说明：应用层无 DELETE 接口，实测返回 501（见下方 5.0），故走 service_role 直连。
+--- 5.0 应用层删除接口现状 ---
+DELETE /api/favorites/27  ->  HTTP 501  (应用层未实现，符合预期)
+--- 5.1 直连 PostgREST 删除 ---
+env_id  = ericamellia24-d2gk0ftukc71292c5
+api_key = 已读取（930 字符，不回显）
+
+[删前] GET id=27 -> HTTP 200
+        [{"id":27,"work_id":"art-2","note":"Day21周验收-真实写入验证"}]
+
+[删除] DELETE id=27 -> HTTP 200
+        [{"id":27,"user_id":"local","work_id":"art-2","note":"Day21周验收-真实写入验证","created_at":"2026-10-10T15:04:33.137701+08:00"}]
+
+[删后] GET favorites -> HTTP 200
+       剩余条数 = 7  ids = [1, 2, 3, 4, 5, 6, 7]
+
+===== [6] 清理后复核（应恢复 7 条基线）=====
+写后 count = 7  source = rest
+  #7 video-2
+  #6 video-1
+  #5 art-1
+  #4 game-1
+  #3 doujin-1
+  #2 music-2
+  #1 music-1
+
+==== 采集结束：2026-10-10 15:04:40 ====
