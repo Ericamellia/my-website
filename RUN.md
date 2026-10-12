@@ -160,7 +160,11 @@ CLOUDBASE_API_KEY=eyJhbGciOi...
 > 严禁写进前端代码、严禁提交到仓库。
 
 - 启动日志会打印当前数据源，一眼可见
-- 共 4 个接口：`GET /api/health`、`GET /api/hot`、`GET /api/favorites`、`POST /api/favorites`
+- 收藏相关共 4 个动作（Day 17 / 18 / 22 累计）：`GET /api/favorites`（查）、
+  `POST /api/favorites`（增）、`PATCH /api/favorites/:id`（改备注）、
+  `DELETE /api/favorites/:id`（取消收藏）—— **增查改删闭环**
+- 另有：`GET /api/health`、`GET /api/hot`、`GET /api/works`、`GET /api/circles`、
+  `GET /api/original-games`、`GET /api/characters`、`GET /api/originals`
 
 ## 6. 未来部署（GitHub Pages）
 

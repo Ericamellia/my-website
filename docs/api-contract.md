@@ -1,15 +1,16 @@
-# api-contract.md｜东方同人搜索 接口契约（Day 21）
+# api-contract.md｜东方同人搜索 接口契约（Day 22）
 
 > 本文件是前后端之间的**唯一接口约定**。已落地：`GET /api/health`（Day 15）、
-> `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）。
+> `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）、
+> `PATCH /api/favorites/:id` 与 `DELETE /api/favorites/:id`（Day 22）。
 > Day 19 打通 **HTTP API 真库数据源**（写入持久化）；Day 21 把数据访问层拆分重构 + 修通云函数网关，
-> 两次改动**接口形状均未变**。
-> 其余接口在本文件里先占位（写明现状与返回），真实实现排在 Day 22+。
+> 两次改动**接口形状均未变**；Day 22 补齐「改 / 删」，**四类操作（增查改删）闭环完整**。
+> 其余接口在本文件里先占位（写明现状与返回）。
 
 | 项 | 值 |
 |---|---|
-| 契约版本 | `1.1.0` |
-| 更新日期 | 2026-10-10 |
+| 契约版本 | `1.2.0` |
+| 更新日期 | 2026-10-11 |
 | 公网地址（mock 版） | `https://touhou-mock.app.workbuddy.host` |
 | 本地地址 | `http://127.0.0.1:3000`（`PORT` 可覆盖） |
 | 数据格式 | JSON，`Content-Type: application/json; charset=utf-8` |
@@ -341,7 +342,157 @@ Content-Type: application/json
 
 ---
 
-## 5. 尚未实现的接口（Day 19–20，占位）
+## 5. `PATCH /api/favorites/:id` — 改收藏备注（已实现 ✅ Day 22）
+
+> 只开放改一个字段：`note`。想改 `workId`（即「这条收藏改成收藏另一件作品」）
+> 走 `DELETE` + `POST`，不在这里支持 —— 那是「删了再建」，语义完全不同。
+
+### 请求
+
+```http
+PATCH /api/favorites/3
+Content-Type: application/json
+
+{ "note": "Bad Apple 影绘，永不过时" }
+```
+
+| 参数 | 位置 | 必填 | 说明 |
+|---|---|---|---|
+| `id` | 路径 | ✅ | 收藏记录主键，**正整数**（如 `3`） |
+| `note` | body | ✅ | 新备注。字符串（≤255 字）；传 `null` 或 `""` 表示**清空备注** |
+
+> ⚠️ body 里**不能出现 `note` 以外的字段**（包括 `workId`、`userId`、`id`），
+> 出现即 `400 unknown_field`。之所以不静默忽略，是因为调用方传了没生效的字段
+> 却收到 200，会误以为自己改成功了。
+
+### 响应 200（改成功）
+
+```json
+{
+  "ok": true,
+  "endpoint": "/api/favorites/3",
+  "action": "updated",
+  "source": "rest",
+  "message": "备注已更新",
+  "data": {
+    "id": 3,
+    "userId": "local",
+    "workId": "video-1",
+    "note": "Bad Apple 影绘，永不过时",
+    "createdAt": "2026-10-10T02:38:23.014Z",
+    "category": "video",
+    "name": "Bad Apple!! feat. nomico（影绘PV）",
+    "circle": "Alstroemeria Records",
+    "year": 2009,
+    "cover": "https://i1.hdslb.com/...",
+    "tags": ["幻想乡"],
+    "characters": ["博丽灵梦", "雾雨魔理沙"],
+    "description": "…",
+    "sourceUrl": "https://thwiki.cc/Bad_Apple!!"
+  }
+}
+```
+
+`data` 的形状与 `GET /api/favorites` 的数组元素**完全一致**，前端可以让这一条直接替换列表里的旧条目，不用重拉整张列表。
+
+### 错误码
+
+| 状态 | error | 何时 |
+|---|---|---|
+| 400 | `invalid_id` | 路径里的 id 不是正整数（`abc` / `0` / `-3`） |
+| 400 | `invalid_json` | body 不是合法 JSON |
+| 400 | `empty_patch` | body 是 `{}`，一个字段都没给 |
+| 400 | `unknown_field` | 给了 `note` 之外的字段 |
+| 400 | `invalid_note` | `note` 不是字符串，或超过 255 字 |
+| 404 | `favorite_not_found` | 该 id 在库里不存在（`UPDATE` 影响 0 行） |
+| 405 | `method_not_allowed` | 用了 PATCH/DELETE 之外的方法，`allow: ["PATCH","DELETE"]` |
+
+### 为什么 `createdAt` 不会变
+
+`PATCH` 是**局部更新**，只写 body 里给出的列。`created_at` 不在其中，
+自然保持原值 —— 这也正是 `/api/favorites/3` 这种「按主键定位单条」的写法
+比 `PATCH /api/favorites?note=...`（按条件批量改）安全的地方：
+**影响范围由路径里的 id 唯一确定，不可能误伤别的行。**
+
+---
+
+## 6. `DELETE /api/favorites/:id` — 取消收藏（已实现 ✅ Day 22）
+
+### 请求
+
+```http
+DELETE /api/favorites/3
+```
+
+无请求体。唯一输入就是路径里的 id。
+
+| 参数 | 位置 | 必填 | 说明 |
+|---|---|---|---|
+| `id` | 路径 | ✅ | 收藏记录主键，正整数 |
+
+### 响应 200（删除成功）
+
+```json
+{
+  "ok": true,
+  "endpoint": "/api/favorites/3",
+  "action": "deleted",
+  "source": "rest",
+  "message": "已取消收藏",
+  "data": {
+    "id": 3,
+    "userId": "local",
+    "workId": "video-1",
+    "note": "Bad Apple 影绘，永不过时",
+    "createdAt": "2026-10-10T02:38:23.014Z",
+    "name": "Bad Apple!! feat. nomico（影绘PV）",
+    "circle": "Alstroemeria Records",
+    "...": "（被删那一条的完整内容）"
+  }
+}
+```
+
+**为什么要回传被删的那条**：真删不可逆，删掉之后这条数据就再也查不到了。
+在响应里原样带回，一来前端能显示「已取消收藏《XXX》」，
+二来万一误删，调用方还留着这份内容作为**唯一凭证**（可以据此重新 `POST` 回来）。
+
+### 错误码
+
+| 状态 | error | 何时 |
+|---|---|---|
+| 400 | `invalid_id` | 路径里的 id 不是正整数 |
+| 404 | `favorite_not_found` | 该 id 不存在（**或已经被删过了**） |
+| 405 | `method_not_allowed` | 用了 PATCH/DELETE 之外的方法 |
+
+### ★ 为什么「不存在」必须回 404，而不是假装成功
+
+删除最容易出的事故是**误以为删掉了**。id 写错（把 `7` 打成 `77`）
+如果也回 200，调用方会以为「已取消」，那条收藏还好好躺在库里。
+这种「静默失败」比直接报错危险得多 —— 回 404 是逼调用方面对
+「你删的东西根本不在」。
+
+### 幂等性
+
+同一个 id 连删两次：第一次 `200`，第二次 `404 favorite_not_found`。
+**不会报 500，也不会假装成功**。所以重复调用是安全的
+（这点与 `POST` 相反：`POST` 重复会多插一行，靠唯一约束挡成 409）。
+
+### 实现上是「先查后删」
+
+```
+① SELECT 出这一条（带 JOIN 作品详情）→ 既是存在性判断，也是「删的是哪一条」的凭证
+② DELETE by id
+```
+
+反过来「先删再看影响几行」也能判 404，但**拿不到被删的内容**，
+就没法在响应里告诉用户删掉的是哪一条。
+
+> **软删除说明**：当前是**真删**。`is_deleted` 软删除标记属于独立改动
+> （要动表结构 + 现有查询都要加过滤），排在 Day 22 余力加练。
+
+---
+
+## 7. 尚未实现的接口（占位）
 
 > 现阶段调用下面任意路径，服务端统一返回 **501**：
 > ```json
@@ -356,14 +507,16 @@ Content-Type: application/json
 | GET | `/api/search` | 关键词搜索（作品名 / 作者 / 角色 / 标签） | Day 19 |
 | GET | `/api/circles` | 社团 / 作者列表 | Day 20 |
 | GET | `/api/originals` | ZUN 原曲列表 | Day 20 |
-| PATCH | `/api/favorites/:id` | 改收藏备注 | 第 4 周 |
-| DELETE | `/api/favorites/:id` | 取消收藏 | 第 4 周 |
 
 这部分接口一旦开工，字段定义直接追加到本文件，并同步升 `契约版本`。
 
+> 说明：`/api/works`、`/api/circles`、`/api/original-games`、`/api/characters`、
+> `/api/originals` 已在 Day 21 落地（见 `docs/day21/data-layer-refactor.md`），
+> 本文档的对应章节待补。
+
 ---
 
-## 6. Mock 版说明（当前线上是什么）
+## 8. Mock 版说明（当前线上是什么）
 
 - 线上 `https://touhou-mock.app.workbuddy.host` 跑的是 `deploy/` 下的 Node 服务：
   - `/api/health` → **真实接口**，返回如上 JSON；
@@ -375,7 +528,7 @@ Content-Type: application/json
 
 ---
 
-## 7. CloudBase 云函数版（同一份契约）
+## 9. CloudBase 云函数版（同一份契约）
 
 目录 `cloudbase/functions/api-health/index.js` 是上面契约的云函数实现，
 返回体与 §1 **完全一致**，只是换成 CloudBase 的响应结构：
@@ -394,7 +547,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 
 ---
 
-## 8. 变更记录
+## 10. 变更记录
 
 | 日期 | 变更 |
 |---|---|
@@ -405,16 +558,17 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | 2026-10-10（Day 18） | 新增 §4 `POST /api/favorites`（第一个写接口）。明确两道闸门（入参校验 + 唯一约束）、错误码全表、校验顺序；状态码表补 `201` / `409` / `413` 及 409 与 400 的语义区别 |
 | 2026-10-10（Day 19） | **接口形状未变**，只扩展数据源：`source` 字段增补 `rest`（HTTP API 真库，写入持久）。Day 15 起悬而未决的 `INVALID_ENV` 定位为**环境 ID 少写一个 `t`**，修正 `cloudbaserc.json` / README / 本文档等 12 处；§7 部署与数据源说明改写为三态优先级 |
 | 2026-10-10（Day 21） | **接口形状未变**，只重构内部结构：数据访问层从单文件 `db.js`（737 行）拆为 `db/` 目录 6 个文件（详见 `docs/day21/data-layer-refactor.md`）。同时修通 **云函数网关**：Day 15 起 404 `INVALID_ENV` → 443（函数类型与代码不匹配 + 缺 `scf_bootstrap`）→ `200 OK`。9 项全接口回归通过 |
+| 2026-10-11（Day 22） | 新增 §5 `PATCH /api/favorites/:id`（改备注）与 §6 `DELETE /api/favorites/:id`（取消收藏），**四类操作（增查改删）闭环完整**。契约版本升 `1.2.0`。要点：`PATCH` 只收 `note`（改 `workId` 请 DELETE + POST）；「该条不存在」一律回 `404` 而非假装成功；`DELETE` 响应里回传被删那条作为凭证；两接口均幂等（`DELETE` 二次为 404，不报 500）。原「尚未实现」表中的 PATCH/DELETE 两行移除，章节顺延为 §7–§11 |
 
 ---
 
-## 9. 数据库表结构（Day 16 起）
+## 11. 数据库表结构（Day 16 起）
 
 目标库：**CloudBase PostgreSQL**。建表脚本 `db/schema.sql`，种子数据 `db/seed.sql`。
 
 详细设计说明（含类型选择理由、索引设计、验证结果）见 `docs/day16/data-model.md`。
 
-### 6.1 两张核心表
+### 11.1 两张核心表
 
 | 表 | 存什么 | 主键 | 条数 |
 |---|---|---|---|
@@ -423,7 +577,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 
 **关联**：`works.circle_name` → `circles.name`（外键，`ON UPDATE CASCADE ON DELETE SET NULL`）
 
-### 6.2 `circles` 字段
+### 11.2 `circles` 字段
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -437,7 +591,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | `platform_url` | VARCHAR(512) | 平台主页 URL |
 | `created_at` | TIMESTAMPTZ | 入库时间 |
 
-### 6.3 `works` 字段
+### 11.3 `works` 字段
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -466,7 +620,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 > `video_type` / `video_platform` / `video_url` —— 因为它们是 video 板块专属，
 > 加前缀后语义更清晰，也避开了通用词做列名。
 
-### 9.4 各接口的字段来源
+### 11.4 各接口的字段来源
 
 | 接口 | 主要读哪张表 | 状态 |
 |---|---|---|
@@ -480,7 +634,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | `GET /api/circles` | `circles` | Day 20 |
 | `GET /api/originals` | 原曲表（待建） | Day 20 |
 
-### 9.5 `favorites` 表为什么能防重复（Day 18 的依赖）
+### 11.5 `favorites` 表为什么能防重复（Day 18 的依赖）
 
 Day 18 的 `POST /api/favorites` 之所以能做到「重复提交被拒」，靠的是 Day 17 建表时就埋好的这条约束：
 

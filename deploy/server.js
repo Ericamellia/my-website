@@ -7,7 +7,9 @@
  *   2) GET  /api/hot        → 热搜榜（当日新发布 / 历史热门）  ← Day 17
  *   3) GET  /api/favorites  → 收藏列表                        ← Day 17
  *   4) POST /api/favorites  → 新增一条收藏（防重复 + 防错输）  ← Day 18
- *   5) 其它路径             → 托管 public/ 下的静态页面
+ *   5) PATCH /api/favorites/:id → 改收藏备注                    ← Day 22
+ *   6) DELETE /api/favorites/:id → 取消收藏                     ← Day 22
+ *   7) 其它路径             → 托管 public/ 下的静态页面
  *
  * 刻意不使用任何第三方依赖（不装 express），只用 Node 内置 http/fs/path。
  * 数据源优先级（详见 deploy/db.js）：
@@ -365,9 +367,324 @@ async function handleFavoritesPost(req, res) {
   }
 }
 
-/** ⑧ 静态文件服务：把 URL 路径映射到 public/ 下的真实文件。 */
+/* ============================================================
+ * Day 21 新增：my-app 作品站的 5 个只读数据接口
+ * ------------------------------------------------------------
+ * 这 5 个接口的作用：把 my-app 原本读「打包在仓库里的本地 JSON」
+ * 换成读真库 —— 数据改了不用重新打包前端。
+ *
+ * 统一响应格式（和 /api/hot、/api/favorites 保持一致）：
+ *   { ok, endpoint, source, ...业务字段, data }
+ *   source 会如实告诉你数据来自哪条通道（rest / database / snapshot）。
+ *
+ * 5 个接口的「业务字段」各不相同，是因为 my-app 前端的读法不同：
+ *   /api/works          → data[]          前端按板块取数组
+ *   /api/circles        → data[]          前端当数组用
+ *   /api/original-games → categories[], games[]   前端读 og.games / og.categories
+ *   /api/characters     → characters[]    前端读 .characters
+ *   /api/originals      → data[]          前端当数组用
+ * ============================================================ */
+
+/** ⑧·补 GET /api/works?category=music&limit=200 —— 按板块读作品。 */
+async function handleWorks(req, res, urlPath) {
+  if (!guardMethod(req, res)) return;
+  const q = parseQuery(urlPath);
+  try {
+    const d = await db.getWorks({ category: q.category, limit: q.limit });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/works',
+      source: d.source,
+      category: d.category,
+      count: d.count,
+      data: d.items
+    });
+  } catch (err) {
+    // 分类传错 → 400，并如实告诉调用方有哪些合法值（不要把锅甩给「查询失败」）
+    if (err.code === 'INVALID_CATEGORY') {
+      return sendJson(res, 400, {
+        ok: false,
+        error: 'invalid_category',
+        message: 'category 只能是：' + (db.WORK_CATEGORIES || []).join(' / '),
+        valid: db.WORK_CATEGORIES || []
+      });
+    }
+    sendJson(res, 500, {
+      ok: false,
+      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
+      message: String(err.message || err)
+    });
+  }
+}
+
+/** ⑧·补 GET /api/circles —— 社团列表。 */
+async function handleCircles(req, res, urlPath) {
+  if (!guardMethod(req, res)) return;
+  const q = parseQuery(urlPath);
+  try {
+    const d = await db.getCircles({ limit: q.limit });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/circles',
+      source: d.source,
+      count: d.count,
+      data: d.items
+    });
+  } catch (err) {
+    sendJson(res, 500, {
+      ok: false,
+      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
+      message: String(err.message || err)
+    });
+  }
+}
+
+/** ⑧·补 GET /api/original-games —— 原作作品 + 分类（两个数组一起给）。 */
+async function handleOriginalGames(req, res) {
+  if (!guardMethod(req, res)) return;
+  try {
+    const d = await db.getOriginalGames({});
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/original-games',
+      source: d.source,
+      count: d.count,
+      categories: d.categories,     // 前端读 og.categories
+      games: d.games                // 前端读 og.games
+    });
+  } catch (err) {
+    sendJson(res, 500, {
+      ok: false,
+      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
+      message: String(err.message || err)
+    });
+  }
+}
+
+/** ⑧·补 GET /api/characters —— 角色列表。 */
+async function handleCharacters(req, res, urlPath) {
+  if (!guardMethod(req, res)) return;
+  const q = parseQuery(urlPath);
+  try {
+    const d = await db.getCharacters({ limit: q.limit });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/characters',
+      source: d.source,
+      count: d.count,
+      characters: d.characters     // 前端读 .characters
+    });
+  } catch (err) {
+    sendJson(res, 500, {
+      ok: false,
+      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
+      message: String(err.message || err)
+    });
+  }
+}
+
+/** ⑧·补 GET /api/originals —— 原曲列表。 */
+async function handleOriginals(req, res, urlPath) {
+  if (!guardMethod(req, res)) return;
+  const q = parseQuery(urlPath);
+  try {
+    const d = await db.getOriginals({ limit: q.limit });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/originals',
+      source: d.source,
+      count: d.count,
+      data: d.items
+    });
+  } catch (err) {
+    sendJson(res, 500, {
+      ok: false,
+      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
+      message: String(err.message || err)
+    });
+  }
+}
+
+/* ============================================================
+ * Day 22 新增：PATCH / DELETE /api/favorites/:id
+ * ------------------------------------------------------------
+ * 路径带参数，所以要先把 /api/favorites/3 里的 "3" 抠出来。
+ * 这一层只做「切路径」，不做校验 —— 校验交给数据层（三条通道共用一套），
+ * 免得三条通道各写一遍、改一处漏两处。
+ * ============================================================ */
+
+/**
+ * 从 /api/favorites/:id 里取出 id 段。
+ * 返回 null 表示路径形状不对（不是 /api/favorites/<一段>）。
+ */
+function matchFavoritesId(route) {
+  // 要求精确两段：favorites / <id>
+  const m = /^\/api\/favorites\/([^/]+)$/.exec(route);
+  return m ? m[1] : null;
+}
+
+/**
+ * ⑪ PATCH /api/favorites/:id —— 改收藏备注。
+ *
+ * 处理顺序（和 POST 一样，把便宜检查放前面）：
+ *   1. 方法对不对           → 405
+ *   2. id 是不是正整数       → 400 invalid_id
+ *   3. body 解析             → 400 invalid_json
+ *   4. 字段校验（只能给 note，且至少给一个）→ 400
+ *   5. 改库；改到 0 行说明该条不存在 → 404
+ *
+ * ★ 删除为什么没有「防重复」问题、而 PATCH 也没有：
+ *   两者都是**幂等**的 —— PATCH 改两次同一备注，结果一样；
+ *   DELETE 删两次，第二次回 404 而不是报错。真正需要防重复的是 POST（会多一行）。
+ */
+async function handleFavoritesPatch(req, res, rawId) {
+  if (req.method !== 'PATCH') {
+    return sendJson(res, 405, { ok: false, error: 'method_not_allowed', allow: ['PATCH'] });
+  }
+
+  // 第 2 步：id 校验
+  const idCheck = db.validateFavoriteId(rawId);
+  if (!idCheck.ok) {
+    logWrite(req, 'reject', { status: 400, reason: idCheck.error });
+    return sendJson(res, 400, { ok: false, error: idCheck.error, message: idCheck.message });
+  }
+  const id = idCheck.value;
+
+  // 第 3 步：解析 body
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (err) {
+    if (err.code === 'BODY_TOO_LARGE') {
+      logWrite(req, 'reject', { status: 413, reason: 'body_too_large' });
+      return sendJson(res, 413, { ok: false, error: 'body_too_large', message: '请求体过大，不能超过 64KB' });
+    }
+    logWrite(req, 'reject', { status: 400, reason: 'invalid_json' });
+    return sendJson(res, 400, {
+      ok: false, error: 'invalid_json', message: '请求体不是合法的 JSON，请检查格式（引号、逗号、括号）'
+    });
+  }
+
+  // 第 4 步：字段校验
+  const check = db.validateFavoriteUpdate(body);
+  if (!check.ok) {
+    logWrite(req, 'reject', { status: 400, reason: check.error });
+    return sendJson(res, 400, { ok: false, error: check.error, message: check.message });
+  }
+
+  try {
+    // 第 5 步：改库
+    const r = await db.updateFavorite(id, check.value);
+
+    // 改到 0 行 = 这条收藏不存在 → 404（不是 200，也不是 500）
+    if (r.notFound) {
+      logWrite(req, 'reject', { status: 404, reason: 'favorite_not_found:id=' + id });
+      return sendJson(res, 404, {
+        ok: false,
+        error: 'favorite_not_found',
+        message: `没有找到 id=${id} 的收藏，可能已经被取消了`
+      });
+    }
+
+    logWrite(req, 'updated', { status: 200, source: r.source });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/favorites/' + id,
+      action: 'updated',
+      source: r.source,
+      message: '备注已更新',
+      data: r.item
+    });
+  } catch (err) {
+    logWrite(req, 'error', { status: 500, reason: String(err.message || err) });
+    sendJson(res, 500, {
+      ok: false,
+      error: 'update_failed',
+      message: '修改失败：' + String(err.message || err)
+    });
+  }
+}
+
+/**
+ * ⑫ DELETE /api/favorites/:id —— 取消收藏。
+ *
+ * 处理顺序：
+ *   1. 方法对不对        → 405
+ *   2. id 是不是正整数    → 400
+ *   3. 删；该条不存在     → 404（不是假装成功）
+ *
+ * ★ 为什么「不存在」要回 404 而不是 200：
+ *   删除最容易出的事故就是**误以为删掉了**。
+ *   如果 id 写错（比如把 7 打成 77）也回 200，调用方会以为「已取消」，
+ *   结果那条收藏还好好躺在库里 —— 这种「静默失败」比直接报错危险得多。
+ *   回 404 是逼调用方面对「你删的东西根本不在」。
+ *
+ * ★ DELETE 没有 body，所以不需要 readBody；也不需要字段校验。
+ *   唯一的输入就是 URL 里的那个 id。
+ */
+async function handleFavoritesDelete(req, res, rawId) {
+  if (req.method !== 'DELETE') {
+    return sendJson(res, 405, { ok: false, error: 'method_not_allowed', allow: ['DELETE'] });
+  }
+
+  // 第 2 步：id 校验（和 PATCH 共用同一套，非法 id 绝不能拼进 SQL）
+  const idCheck = db.validateFavoriteId(rawId);
+  if (!idCheck.ok) {
+    logWrite(req, 'reject', { status: 400, reason: idCheck.error });
+    return sendJson(res, 400, { ok: false, error: idCheck.error, message: idCheck.message });
+  }
+  const id = idCheck.value;
+
+  try {
+    // 第 3 步：删（数据层内部是「先查 → 再删」，被删的那条会原样带回）
+    const r = await db.deleteFavorite(id);
+
+    // 没找到 = 这 id 不存在（或已经被删过了）→ 404
+    if (r.notFound) {
+      logWrite(req, 'reject', { status: 404, reason: 'favorite_not_found:id=' + id });
+      return sendJson(res, 404, {
+        ok: false,
+        error: 'favorite_not_found',
+        message: `没有找到 id=${id} 的收藏，可能已经被取消了`
+      });
+    }
+
+    logWrite(req, 'deleted', { status: 200, source: r.source });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/api/favorites/' + id,
+      action: 'deleted',
+      source: r.source,
+      message: '已取消收藏',
+      // 把被删的那条原样回传：前端可以显示「已取消收藏《XXX》」，
+      // 也是误删后唯一的凭证（真删不可逆，只能靠这个知道删了什么）。
+      data: r.item
+    });
+  } catch (err) {
+    logWrite(req, 'error', { status: 500, reason: String(err.message || err) });
+    sendJson(res, 500, {
+      ok: false,
+      error: 'delete_failed',
+      message: '删除失败：' + String(err.message || err)
+    });
+  }
+}
+
+/**
+ * ⑫ 静态文件服务：把 URL 路径映射到 public/ 下的真实文件。
+ *
+ * Day 21 补：支持三种情况
+ *   ① 路径是文件          → 直接返回
+ *   ② 路径是目录（无尾斜杠）→ 301 跳到带斜杠的目录形式（浏览器才会正确处理相对路径）
+ *   ③ 路径是目录（有尾斜杠）→ 返回该目录下的 index.html
+ * 例：/            → public/index.html（作品站）
+ *     /verify/     → public/verify/index.html（验证页）
+ *     /verify      → 301 → /verify/
+ *
+ * 兜底逻辑也随之调整：只在**同一目录**下找 index.html，找不到才回全局 index.html。
+ * 这样 /verify/xxx 这种不存在的子路径不会错误地渲染成作品站。
+ */
 function serveStatic(req, res, urlPath) {
-  // 去掉查询串，并把 / 结尾补成 /index.html
   let rel = decodeURIComponent(urlPath.split('?')[0]);
   if (rel === '/' || rel === '') rel = '/index.html';
 
@@ -378,21 +695,57 @@ function serveStatic(req, res, urlPath) {
     return res.end('403 Forbidden');
   }
 
+  // 目录处理：无尾斜杠 → 301 补斜杠；有尾斜杠 → 指向 index.html
+  let stat = null;
+  try { stat = fs.statSync(filePath); } catch (e) { stat = null; }
+
+  if (stat && stat.isDirectory()) {
+    if (!urlPath.endsWith('/')) {
+      res.writeHead(301, { Location: urlPath.split('?')[0] + '/' + (urlPath.indexOf('?') > -1 ? urlPath.slice(urlPath.indexOf('?')) : '') });
+      return res.end();
+    }
+    return sendFile(res, path.join(filePath, 'index.html'), rel + 'index.html');
+  }
+
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      // 文件不存在：SPA 兜底回 index.html（hash 路由刷新时不会白屏）
-      const fallback = path.join(ROOT, 'index.html');
-      fs.readFile(fallback, (e2, fb) => {
-        if (e2) {
+      // 文件不存在：兜底回**同目录**的 index.html（找不到再回根 index.html）
+      const dirOfRel = rel.replace(/[^/]*$/, '');      // 如 /verify/xxx → /verify/
+      const local = path.join(ROOT, dirOfRel, 'index.html');
+      const candidates = [];
+      if (dirOfRel !== '/') candidates.push(local);
+      candidates.push(path.join(ROOT, 'index.html'));
+
+      let i = 0;
+      const tryNext = () => {
+        if (i >= candidates.length) {
           res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
           return res.end('404 Not Found: ' + rel);
         }
-        res.writeHead(200, { 'Content-Type': MIME['.html'] });
-        res.end(fb);
-      });
+        const cand = candidates[i++];
+        fs.readFile(cand, (e2, fb) => {
+          if (e2) return tryNext();
+          res.writeHead(200, { 'Content-Type': MIME['.html'] });
+          res.end(fb);
+        });
+      };
+      tryNext();
       return;
     }
     const type = MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
+    res.end(data);
+  });
+}
+
+/** 读一个确定的文件并返回（目录索引用）。 */
+function sendFile(res, absPath, relForLog) {
+  fs.readFile(absPath, (err, data) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('404 Not Found: ' + relForLog);
+    }
+    const type = MIME[path.extname(absPath).toLowerCase()] || 'application/octet-stream';
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
     res.end(data);
   });
@@ -412,6 +765,24 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST') return handleFavoritesPost(req, res);
     return handleFavoritesGet(req, res, urlPath);
   }
+
+  // Day 22 新增：/api/favorites/:id —— PATCH 改备注 / DELETE 取消收藏
+  const favId = matchFavoritesId(route);
+  if (favId !== null) {
+    if (req.method === 'PATCH') return handleFavoritesPatch(req, res, favId);
+    if (req.method === 'DELETE') return handleFavoritesDelete(req, res, favId);
+    // 这条路径支持 PATCH + DELETE，方法不对要如实列出（而不是掉进 501）
+    return sendJson(res, 405, {
+      ok: false, error: 'method_not_allowed', allow: ['PATCH', 'DELETE'], path: route
+    });
+  }
+
+  // ---- Day 21 新增：my-app 作品站的 5 个只读数据接口 ----
+  if (route === '/api/works') return handleWorks(req, res, urlPath);
+  if (route === '/api/circles') return handleCircles(req, res, urlPath);
+  if (route === '/api/original-games') return handleOriginalGames(req, res);
+  if (route === '/api/characters') return handleCharacters(req, res, urlPath);
+  if (route === '/api/originals') return handleOriginals(req, res, urlPath);
 
   if (urlPath.startsWith('/api/')) {
     // 其余 /api/* 还没实现，明确返回 501 而不是假装成功
@@ -433,5 +804,14 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('[server] hot:       /api/hot?board=fresh|hot|all&limit=20');
   console.log('[server] favorites: /api/favorites?userId=local&limit=50   (GET)');
   console.log('[server] favorites: /api/favorites  {workId,note?}          (POST，Day 18)');
+  console.log('[server] favorites: /api/favorites/3  {note}                (PATCH 改备注，Day 22)');
+  console.log('[server] favorites: /api/favorites/3                      (DELETE 取消收藏，Day 22)');
+  console.log('[server] works:     /api/works?category=music|doujin|game|video|art   (Day 21)');
+  console.log('[server] circles:   /api/circles                                (Day 21)');
+  console.log('[server] og:        /api/original-games                         (Day 21)');
+  console.log('[server] characters:/api/characters                             (Day 21)');
+  console.log('[server] originals: /api/originals                              (Day 21)');
+  console.log('[server] 作品站:     /                （my-app 完整作品站，数据走真库）');
+  console.log('[server] 验证页:     /verify/          （Day 17-20 的 health/写接口/收藏/热搜）');
   console.log('[server] static:    ' + ROOT);
 });
