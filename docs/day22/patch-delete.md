@@ -294,6 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user_active
 | `is_deleted` 列 | ✅ 已存在，7 条老数据全部自动为 `false` |
 | 部分唯一索引 | ✅ **行为实验验证生效** —— 软删一条后重新插同 `(user, work)` 返回 201（若未生效会撞 409 的 `uq_favorites_active`） |
 | 数据层逻辑 | ✅ `docs/day22/evidence/verify_soft_delete_db.js` **16 项断言全通过** |
+| HTTP 端到端 | ✅ `docs/day22/evidence/verify_soft_delete.py` **19 项断言全通过** |
 | 软删除生效 | ✅ DELETE 后 GET 列表里该条消失，总数回到原值 |
 | 二次删 → 404 | ✅ 软删行视同不存在，幂等语义保持 |
 | PATCH 已软删行 → 404 | ✅ 已删的行不该还能改 |
@@ -311,8 +312,17 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user_active
 > 1. **`addFavorite` 收的是对象不是三个位置参数** —— 写成 `db.addFavorite('local','art-6','x')`
 >    会得到 `DATABASE_23502: null value in column "work_id"`，因为 `input.userId` 是 `undefined`。
 >    正确写法：`db.addFavorite({ userId, workId, note })`。
-> 2. **本机代理会劫持本地请求** —— Node 的 `fetch` 会把 `127.0.0.1:3000`
+> 2. **HTTP 响应里数据在 `data` 下，不是 `item`** —— 且 `GET` 的 `data` 是**数组**，
+>    `POST`/`PATCH`/`DELETE` 的 `data` 是**单个对象**。
+>    按内部函数（返回 `item`）的形状去解析 HTTP 响应会全部读成 `None`。
+> 3. **本机代理会劫持本地请求** —— Node 的 `fetch` 会把 `127.0.0.1:3000`
 >    也塞进 `HTTP_PROXY`，直接报 `fetch failed`；跑脚本前清掉代理变量。
 >    HTTP 那个脚本用 Python `urllib` 就是为绕开这个。
-> 3. **服务是会话级的** —— AI 会话里起的 `node server.js` 活不过一次工具调用，
->    所以 HTTP 版本的脚本要由**人**在自己的终端里先把服务起起来。
+> 4. **服务是会话级的** —— AI 会话里起的 `node server.js` 活不过一次工具调用，
+>    所以 HTTP 版本的脚本要由**人**在自己的终端里先把服务起起来
+>    （或把「起服务 + 跑脚本」放进同一条命令，让服务活到脚本结束）。
+> 5. **测试要用随手变化的 `userId` 做隔离** —— 软删除下测试行会以
+>    `is_deleted=TRUE` 留在表里；若下次还用同一个 `userId`，
+>    `POST` 会撞 `uq_favorites_active`（同一 user+work 只能有一条活行），
+>    脚本第一步就 409、后面全部错位。脚本已改为 `sd-test-<时间戳>`。
+>    （残留行由「运维」物理清除：`DELETE FROM favorites WHERE user_id LIKE 'sd-test-%';`）

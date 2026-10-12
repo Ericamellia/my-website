@@ -36,8 +36,13 @@ import urllib.request
 
 BASE = 'http://127.0.0.1:3000/'
 KEEP = '--keep' in sys.argv
-USER = 'local'          # 与线上服务默认一致
-WORK = 'art-5'          # 专用测试作品，避开真实数据
+# ★ 用一个随时变化的 userId 做隔离。
+#   为什么不用 'local'：软删除下测试行会以 is_deleted=TRUE 留在表里，
+#   下次再跑若用同一个 userId，POST 会撞 uq_favorites_active（同一 user+work
+#   只能有一条活行），脚本第一步就 409，后面的断言全部错位。
+#   换 userId 就完全隔离 —— 唯一约束是 (user_id, work_id)，换掉任一半即可。
+USER = 'sd-test-' + str(int(__import__('time').time()))
+WORK = 'art-5'          # 真实存在的作品（不存在会被外键 23503 拦住）
 
 PASS = 0
 FAIL = 0
@@ -78,10 +83,14 @@ def req(method, path, body=None):
 
 
 def list_ids():
+    """GET /api/favorites 的响应里，条目在 data（**数组**）下。"""
     st, body = req('GET', '/api/favorites?userId=' + USER + '&limit=50')
     if st != 200 or not isinstance(body, dict):
         return None
-    return [x.get('id') for x in (body.get('items') or [])]
+    data = body.get('data')
+    if not isinstance(data, list):
+        return None
+    return [x.get('id') for x in data]
 
 
 def main():
@@ -104,7 +113,8 @@ def main():
         st, body = req('POST', '/api/favorites',
                        {'userId': USER, 'workId': WORK, 'note': '软删测试'})
         ck('新增返回 201', st == 201, 'status=%s body=%s' % (st, json.dumps(body, ensure_ascii=False)[:200]))
-        created_id = (body or {}).get('item', {}).get('id') if isinstance(body, dict) else None
+        # ★ 响应形状：POST 把新记录放在 data（**单个对象**）下，不是 item
+        created_id = (body or {}).get('data', {}).get('id') if isinstance(body, dict) else None
         ck('返回了新记录 id', created_id is not None, json.dumps(body, ensure_ascii=False)[:200])
         print('    → id = %s' % created_id)
 
@@ -119,7 +129,8 @@ def main():
         print('\n【3】DELETE 软删除（打 is_deleted 标记）')
         st, body = req('DELETE', '/api/favorites/%s' % created_id)
         ck('返回 200', st == 200, 'status=%s' % st)
-        item = (body or {}).get('item') if isinstance(body, dict) else None
+        # ★ 响应形状：DELETE 把被删记录放在 data（单个对象）下
+        item = (body or {}).get('data') if isinstance(body, dict) else None
         ck('响应回传被删数据（凭证）', bool(item and item.get('workId') == WORK),
            json.dumps(body, ensure_ascii=False)[:220])
 
@@ -138,32 +149,45 @@ def main():
            isinstance(body, dict) and body.get('error') == 'favorite_not_found',
            json.dumps(body, ensure_ascii=False)[:200])
 
-        # --- 6) ★★ 最关键：重新收藏同一作品，不能撞唯一约束 ---
-        print('\n【6】★★ 重新收藏同一作品（软删除最关键的坑）')
-        st, body = req('POST', '/api/favorites',
-                       {'userId': USER, 'workId': WORK, 'note': '复活测试'})
-        ck('重新收藏成功（没撞 409）', st == 201,
-           'status=%s body=%s' % (st, json.dumps(body, ensure_ascii=False)[:220]))
-        revived_id = (body or {}).get('item', {}).get('id') if isinstance(body, dict) else None
-        print('    → 新 id = %s（原 id = %s）' % (revived_id, created_id))
-
-        # --- 7) GET 又能看到 ---
-        print('\n【7】GET 列表应重新出现')
-        ids = list_ids()
-        ck('列表里又能看到', ids is not None and revived_id in ids, 'ids=%s' % ids)
-        ck('总数 = 起始 + 1', ids is not None and len(ids) == len(before) + 1,
-           '%s vs %s' % (len(ids) if ids else None, len(before) + 1))
-
-        # --- 8) PATCH 已软删的行 → 404 ---
-        print('\n【8】PATCH 已软删的旧行 → 应 404')
+        # --- 6) PATCH 已软删的行 → 404 ---
+        # ★ 必须放在「复活」之前：复活之后这条又活了，改它会成功。
+        print('\n【6】PATCH 已软删的行 → 应 404（已删的行不该还能改）')
         st, body = req('PATCH', '/api/favorites/%s' % created_id,
                        {'note': '试图改已删的'})
         ck('改已软删的行返回 404', st == 404,
            'status=%s body=%s' % (st, json.dumps(body, ensure_ascii=False)[:200]))
 
+        # --- 7) ★★ 最关键：重新收藏同一作品，不能撞唯一约束 ---
+        print('\n【7】★★ 重新收藏同一作品（软删除最关键的坑）')
+        st, body = req('POST', '/api/favorites',
+                       {'userId': USER, 'workId': WORK, 'note': '复活测试'})
+        ck('重新收藏成功（没撞 409）', st == 201,
+           'status=%s body=%s' % (st, json.dumps(body, ensure_ascii=False)[:220]))
+        revived_id = (body or {}).get('data', {}).get('id') if isinstance(body, dict) else None
+        print('    → 新 id = %s（原 id = %s）' % (revived_id, created_id))
+        ck('复活复用的是同一行（id 不变）', revived_id == created_id,
+           'revived=%s original=%s' % (revived_id, created_id))
+
+        # --- 8) GET 又能看到 ---
+        print('\n【8】GET 列表应重新出现')
+        ids = list_ids()
+        ck('列表里又能看到', ids is not None and revived_id in ids, 'ids=%s' % ids)
+        ck('总数 = 起始 + 1', ids is not None and len(ids) == len(before) + 1,
+           '%s vs %s' % (len(ids) if ids else None, len(before) + 1))
+
+        # --- 9) 复活后可正常改备注（证明复活的是活行） ---
+        print('\n【9】复活后可正常 PATCH（证明复活出来的确实是活行）')
+        st, body = req('PATCH', '/api/favorites/%s' % revived_id,
+                       {'note': '复活后改的'})
+        ck('复活后改备注成功', st == 200,
+           'status=%s body=%s' % (st, json.dumps(body, ensure_ascii=False)[:200]))
+        d = (body or {}).get('data') if isinstance(body, dict) else None
+        ck('备注确实变成新值', bool(d and d.get('note') == '复活后改的'),
+           json.dumps(d, ensure_ascii=False)[:160])
+
     finally:
-        # --- 9) 清理 ---
-        print('\n【9】清理测试数据')
+        # --- 10) 清理 ---
+        print('\n【10】清理测试数据')
         if revived_id is not None:
             req('DELETE', '/api/favorites/%s' % revived_id)
         elif created_id is not None:
@@ -175,6 +199,17 @@ def main():
             missing = [i for i in before if i not in after]
             ck('库里没多出记录', not extra, 'extra=%s' % extra)
             ck('库里没少记录', not missing, 'missing=%s' % missing)
+
+        # --- 11) 残留提示 ---
+        # 软删除下「清理」只是打标记，测试行仍以 is_deleted=TRUE 留在表里。
+        # 这是软删除的固有现象，不是 bug。这里只**报告**，不擅自物理删除
+        # （物理删除不走业务接口，属于运维动作，由人决定）。
+        print('\n【11】软删残留提示')
+        left = [i for i in (created_id, revived_id) if i is not None]
+        print('    本次测试用过的 id：%s' % left)
+        print('    它们已从 GET 列表消失，但仍以 is_deleted=TRUE 留在 favorites 表里。')
+        print('    想彻底清掉（运维动作，非接口能力）可在 SQL 编辑器执行：')
+        print("      DELETE FROM favorites WHERE user_id = '%s';" % USER)
 
     print('\n=== 结果：%d 通过 / %d 失败 ===' % (PASS, FAIL))
     sys.exit(0 if FAIL == 0 else 1)
