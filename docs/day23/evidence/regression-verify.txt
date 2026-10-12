@@ -1,0 +1,15 @@
+===== 正常路径回归（应为 200）=====
+  [PASS] GET /api/health                        HTTP 200 (期望 200) 
+  [PASS] GET /api/hot                           HTTP 200 (期望 200) 
+  [PASS] GET /api/favorites                     HTTP 200 (期望 200) 
+  [PASS] GET /api/works?category=music          HTTP 200 (期望 200) 
+  [PASS] GET /api/circles                       HTTP 200 (期望 200) 
+  [PASS] GET /api/original-games                HTTP 200 (期望 200) 
+  [PASS] GET /api/characters                    HTTP 200 (期望 200) 
+  [PASS] GET /api/originals                     HTTP 200 (期望 200) 
+
+===== 错误路径回归（应为 4xx）=====
+  [PASS] GET /api/works?category=nope           HTTP 400 (期望 400) 
+  [PASS] PATCH /api/favorites/99999             HTTP 405 (期望 405) 
+
+===== DONE =====

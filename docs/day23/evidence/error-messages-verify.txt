@@ -1,0 +1,132 @@
+############################################################
+# Day 23 三类错误提示 · 完整实测（同一台服务，一路跑完）
+# 时间: 2026-10-12 20:23:10
+############################################################
+
+### 第一类｜入参校验（400）
+
+============================================================
+## 1a POST /api/favorites 缺 workId
+$ -X POST http://127.0.0.1:3010/api/favorites -H Content-Type: application/json -d {"userId":"demo"}
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "missing_work_id",
+  "message": "缺少必填字段 workId（要收藏的作品编号，例如 music-1）"
+}
+[HTTP_STATUS]=400
+
+============================================================
+## 1b POST /api/favorites workId 格式错
+$ -X POST http://127.0.0.1:3010/api/favorites -H Content-Type: application/json -d {"userId":"demo","workId":"@@@"}
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "invalid_work_id_format",
+  "message": "workId 格式不对，应形如「板块-编号」，例如 music-1、video-2"
+}
+[HTTP_STATUS]=400
+
+============================================================
+## 1c PATCH 空 body（至少给一个字段）
+$ -X PATCH http://127.0.0.1:3010/api/favorites/1 -H Content-Type: application/json -d {}
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "empty_patch",
+  "message": "请求体是空的，至少要给出一个要修改的字段（目前支持：note）"
+}
+[HTTP_STATUS]=400
+
+============================================================
+## 1d POST 非法 JSON
+$ -X POST http://127.0.0.1:3010/api/favorites -H Content-Type: application/json -d {bad json
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "invalid_json",
+  "message": "请求体不是合法的 JSON，请检查格式（引号、逗号、括号）"
+}
+[HTTP_STATUS]=400
+
+============================================================
+## 1e works 分类传错
+$ http://127.0.0.1:3010/api/works?category=nope
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "invalid_category",
+  "message": "category 只能是：music / doujin / game / video / art",
+  "valid": [
+    "music",
+    "doujin",
+    "game",
+    "video",
+    "art"
+  ]
+}
+[HTTP_STATUS]=400
+
+### 第二类｜资源不存在（404）
+
+============================================================
+## 2a PATCH 不存在的 id
+$ -X PATCH http://127.0.0.1:3010/api/favorites/99999 -H Content-Type: application/json -d {"note":"x"}
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "favorite_not_found",
+  "message": "没有找到 id=99999 的收藏，可能已经被取消了"
+}
+[HTTP_STATUS]=404
+
+============================================================
+## 2b DELETE 不存在的 id
+$ -X DELETE http://127.0.0.1:3010/api/favorites/99999
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "favorite_not_found",
+  "message": "没有找到 id=99999 的收藏，可能已经被取消了"
+}
+[HTTP_STATUS]=404
+
+============================================================
+## 2c POST 作品不存在
+$ -X POST http://127.0.0.1:3010/api/favorites -H Content-Type: application/json -d {"userId":"demo","workId":"music-999999"}
+---- 响应体 ----
+{
+  "ok": false,
+  "error": "work_not_found",
+  "message": "作品 music-999999 不存在，请先确认 workId 是否正确"
+}
+[HTTP_STATUS]=404
+
+### 第三类｜服务端异常（5xx）
+（本类由快照缺失触发，见下一段单独实验）
+
+============================================================
+## 3a 正常接口对照 /api/health
+$ http://127.0.0.1:3010/api/health
+---- 响应体 ----
+{
+  "ok": true,
+  "service": "touhou-search",
+  "env": "mock",
+  "version": "1.0.0",
+  "time": "2026-10-12T12:23:17.890Z",
+  "uptimeSec": 6,
+  "node": "v22.22.2",
+  "checks": {
+    "http": "ok",
+    "static": "ok",
+    "dataSource": "snapshot"
+  }
+}
+[HTTP_STATUS]=200
+
+============================================================
+## 服务端日志 [error] 全量
+
+============================================================
+# DONE 20:23:19

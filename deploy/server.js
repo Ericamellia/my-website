@@ -122,6 +122,117 @@ function logWrite(req, action, extra) {
   console.log(parts.join(' '));
 }
 
+/* ============================================================
+ * Day 23：把「裸报错」翻译成人话
+ * ------------------------------------------------------------
+ * 改前的问题：十几个 catch 块都写 `message: String(err.message || err)`，
+ * 直接把内部错误的原文抛给调用方。实测会吐出三种东西：
+ *
+ *   · `rest_query_failed`                       ← 内部英文代号，用户看不懂
+ *   · `connect ECONNREFUSED 127.0.0.1:5432`     ← 泄漏内网地址/端口（不只是难看了）
+ *   · `[object Object]`                         ← 彻底没意义
+ *
+ * 改后的做法：**错误详情只进服务端日志，响应体只给人话**。
+ *   · toUserError() 把内部错误归类 → 决定 状态码 / error 码 / 中文 message
+ *   · 原文仍通过 logError() 打到控制台，排查不受影响
+ * ============================================================ */
+
+/** 内部错误码 → 人话。表驱动，加新码只改这里。 */
+const ERROR_DIALOGUE = {
+  DATA_MISSING: {
+    status: 503,
+    error: 'data_unavailable',
+    message: '数据暂时取不到，可能是后台正在维护。请稍后再试一次。'
+  },
+  REST_FAILED: {
+    status: 502,
+    error: 'upstream_failed',
+    message: '后端数据服务没有正常响应，请稍后再试。'
+  },
+  PG_FAILED: {
+    status: 502,
+    error: 'database_failed',
+    message: '数据库连接不上，请稍后再试。'
+  },
+  WRITE_FAILED: {
+    status: 500,
+    error: 'write_failed',
+    message: '写入没有成功，请稍后再试一次。'
+  }
+};
+
+/** 从内部错误里取「分类用的码」（各级错误对象字段名不统一，这里逐个试）。 */
+function errCodeOf(err) {
+  if (!err || typeof err !== 'object') return '';
+  return String(err.code || err.error || '');
+}
+
+/** 给服务端日志用：把内部错误的**全部细节**拼成一行（只在控制台，不进响应）。 */
+function errDetailOf(err) {
+  if (!err) return '(no error object)';
+  if (typeof err !== 'object') return String(err);
+  const bits = [];
+  if (err.code) bits.push('code=' + err.code);
+  if (err.message) bits.push('message=' + err.message);
+  // detail 里常带上游返回的原始结构（如 PostgREST 的 DATABASE_xxxxx），排查全靠它
+  if (err.detail) bits.push('detail=' + safeStringify(err.detail));
+  if (err.stack) bits.push('at=' + String(err.stack).split('\n')[1]);
+  return bits.length ? bits.join(' | ') : safeStringify(err);
+}
+
+function safeStringify(v) {
+  try {
+    return typeof v === 'string' ? v : JSON.stringify(v);
+  } catch (e) {
+    return '(无法序列化)';
+  }
+}
+
+/**
+ * 把内部错误翻译成**给用户看的**三件套。
+ *
+ * @returns {{status:number, error:string, message:string}}
+ */
+function toUserError(err) {
+  const code = errCodeOf(err);
+  const hit = ERROR_DIALOGUE[code];
+  if (hit) return Object.assign({}, hit);
+  // 表里没有的码：一律按「服务端出问题了」处理，
+  // **绝不**把 err.message 拼进去 —— 那正是「裸报错」的来源。
+  return {
+    status: 500,
+    error: 'internal_error',
+    message: '服务出了点问题，请稍后再试。我们已经记下这次异常。'
+  };
+}
+
+/**
+ * 统一的「出错出口」：打日志（含全部细节）+ 回人话（只回三件套）。
+ * 所有 catch 块都该用它，避免再出现裸报错。
+ *
+ * @param {object} req    用于日志
+ * @param {object} res    用于响应
+ * @param {string} where  出错位置标识，如 'GET /api/hot'
+ * @param {Error}  err    内部错误对象
+ * @param {object} [opts] { extra: {...} 附加日志字段, status/error/message 可覆盖 }
+ */
+function sendUserError(req, res, where, err, opts) {
+  const t = toUserError(err);
+  const status = (opts && opts.status) || t.status;
+  const errorCode = (opts && opts.error) || t.error;
+  const message = (opts && opts.message) || t.message;
+
+  // ① 服务端日志：全量原文，排查够用
+  console.error(
+    '[error] ' + new Date().toISOString() + ' ' + where + ' -> ' + status + ' ' + errorCode +
+    ' | ' + errDetailOf(err) +
+    (opts && opts.extra ? ' | extra=' + safeStringify(opts.extra) : '')
+  );
+
+  // ② 给调用方：只有人话，不含任何内部细节
+  sendJson(res, status, { ok: false, error: errorCode, message: message });
+}
+
 /**
  * ⑥·补 读取请求体并解析 JSON。
  * 带**大小上限**：防止有人塞一个 1GB 的 body 把服务打挂（写接口必须防这个）。
@@ -235,11 +346,7 @@ async function handleHot(req, res, urlPath) {
       data: data.items
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -260,11 +367,7 @@ async function handleFavoritesGet(req, res, urlPath) {
       data: data.items
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -358,11 +461,9 @@ async function handleFavoritesPost(req, res) {
       data: r.item
     });
   } catch (err) {
-    logWrite(req, 'error', { status: 500, reason: String(err.message || err) });
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'WRITE_FAILED' ? 'write_failed' : 'insert_failed',
-      message: '写入失败：' + String(err.message || err)
+    logWrite(req, 'error', { status: 500, reason: errCodeOf(err) || 'unknown' });
+    sendUserError(req, res, 'POST /api/favorites', err, {
+      extra: { userId: userId, workId: workId }
     });
   }
 }
@@ -409,11 +510,7 @@ async function handleWorks(req, res, urlPath) {
         valid: db.WORK_CATEGORIES || []
       });
     }
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -431,11 +528,7 @@ async function handleCircles(req, res, urlPath) {
       data: d.items
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -453,11 +546,9 @@ async function handleOriginalGames(req, res) {
       games: d.games                // 前端读 og.games
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    // 这个 handler 不接 urlPath（路径固定，没有查询串要解析），
+    // 所以 where 直接写死，别去 split 一个不存在的参数。
+    sendUserError(req, res, 'GET /api/original-games', err);
   }
 }
 
@@ -475,11 +566,7 @@ async function handleCharacters(req, res, urlPath) {
       characters: d.characters     // 前端读 .characters
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -497,11 +584,7 @@ async function handleOriginals(req, res, urlPath) {
       data: d.items
     });
   } catch (err) {
-    sendJson(res, 500, {
-      ok: false,
-      error: err.code === 'DATA_MISSING' ? 'data_unavailable' : 'query_failed',
-      message: String(err.message || err)
-    });
+    sendUserError(req, res, 'GET ' + urlPath.split('?')[0], err);
   }
 }
 
@@ -596,11 +679,9 @@ async function handleFavoritesPatch(req, res, rawId) {
       data: r.item
     });
   } catch (err) {
-    logWrite(req, 'error', { status: 500, reason: String(err.message || err) });
-    sendJson(res, 500, {
-      ok: false,
-      error: 'update_failed',
-      message: '修改失败：' + String(err.message || err)
+    logWrite(req, 'error', { status: 500, reason: errCodeOf(err) || 'unknown' });
+    sendUserError(req, res, 'PATCH /api/favorites/' + id, err, {
+      extra: { id: id }
     });
   }
 }
@@ -661,11 +742,9 @@ async function handleFavoritesDelete(req, res, rawId) {
       data: r.item
     });
   } catch (err) {
-    logWrite(req, 'error', { status: 500, reason: String(err.message || err) });
-    sendJson(res, 500, {
-      ok: false,
-      error: 'delete_failed',
-      message: '删除失败：' + String(err.message || err)
+    logWrite(req, 'error', { status: 500, reason: errCodeOf(err) || 'unknown' });
+    sendUserError(req, res, 'DELETE /api/favorites/' + id, err, {
+      extra: { id: id }
     });
   }
 }

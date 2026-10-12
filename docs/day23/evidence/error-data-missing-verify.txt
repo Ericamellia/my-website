@@ -1,0 +1,35 @@
+[step1] backup: OK
+[step2] pid=3100
+[step3] ready tries=0
+[step3] health.dataSource = 
+
+===== [A] GET /api/circles  (快照缺失 → 第三类) =====
+{
+  "ok": false,
+  "error": "data_unavailable",
+  "message": "数据暂时取不到，可能是后台正在维护。请稍后再试一次。"
+}
+[HTTP_STATUS]=503
+
+===== [B] 对照组 GET /api/health (未坏) =====
+{
+  "ok": true,
+  "service": "touhou-search",
+  "env": "mock",
+  "version": "1.0.0",
+  "time": "2026-10-12T12:22:52.431Z",
+  "uptimeSec": 3,
+  "node": "v22.22.2",
+  "checks": {
+    "http": "ok",
+    "static": "ok",
+    "dataSource": "snapshot"
+  }
+}
+[HTTP_STATUS]=200
+
+===== [C] 服务端日志 [error] 行（含内部详情）=====
+[error] 2026-10-12T12:22:51.852Z GET /api/circles -> 503 data_unavailable | code=DATA_MISSING | message=circles_data_unavailable | at=    at Object.dataMissing (C:\Users\25394\WorkBuddy\2026-09-18-00-29-07\deploy\db\snapshot.js:44:13)
+
+[step7] restore: 12420 bytes
+===== DONE =====

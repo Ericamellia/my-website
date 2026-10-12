@@ -1,16 +1,17 @@
-# api-contract.md｜东方同人搜索 接口契约（Day 22）
+# api-contract.md｜东方同人搜索 接口契约（Day 23）
 
 > 本文件是前后端之间的**唯一接口约定**。已落地：`GET /api/health`（Day 15）、
 > `GET /api/hot` 与 `GET /api/favorites`（Day 17）、`POST /api/favorites`（Day 18）、
 > `PATCH /api/favorites/:id` 与 `DELETE /api/favorites/:id`（Day 22）。
 > Day 19 打通 **HTTP API 真库数据源**（写入持久化）；Day 21 把数据访问层拆分重构 + 修通云函数网关，
 > 两次改动**接口形状均未变**；Day 22 补齐「改 / 删」，**四类操作（增查改删）闭环完整**。
+> **Day 23 统一全部错误提示**（§0 第 7 条）：`message` 一律中文人话，内部细节只进日志。
 > 其余接口在本文件里先占位（写明现状与返回）。
 
 | 项 | 值 |
 |---|---|
-| 契约版本 | `1.2.0` |
-| 更新日期 | 2026-10-11 |
+| 契约版本 | `1.3.0` |
+| 更新日期 | 2026-10-12 |
 | 公网地址（mock 版） | `https://touhou-mock.app.workbuddy.host` |
 | 本地地址 | `http://127.0.0.1:3000`（`PORT` 可覆盖） |
 | 数据格式 | JSON，`Content-Type: application/json; charset=utf-8` |
@@ -47,12 +48,44 @@
 | 405 | 方法不允许 | 例：对 health 发 POST；响应体会带 `allow` 列出该路径支持的方法 |
 | 409 | 冲突 | **重复提交**（同一用户重复收藏同一作品，Day 18 起） |
 | 413 | 请求体过大 | body 超过 64KB 上限（Day 18 起） |
+| 500 | 服务端错误 | 未捕获异常 / 写库失败 |
 | 501 | 尚未实现 | 契约已定义但后端还没写 |
-| 500 | 服务端错误 | 未捕获异常 |
+| 502 | 上游服务异常 | REST（PostgREST）通道请求失败（Day 23 起） |
+| 503 | 数据暂时不可用 | 快照文件缺失等「数据取不到」的情况（Day 23 起） |
 
 > **为什么 409 不复用 400**：400 的意思是「你这条请求本身写错了，改一改再来」；
 > 409 的意思是「请求没写错，但它和现有数据冲突了」。前端据此刻画不同提示 ——
 > 400 引导用户改输入，409 提示「已收藏过」并把已有记录展示出来。
+
+7. **★ 错误提示统一（Day 23）**：所有失败响应都走同一个「翻译层」，保证
+   `message` 一律是**中文人话**，内部实现细节只进服务端日志、**不进响应体**。
+
+   **三类错误（按「谁的问题」分）**：
+
+   | 类别 | 谁的锅 | 状态码 | 用户看到什么 | 典型 `error` 码 |
+   |---|---|---|---|---|
+   | ① 入参校验 | 调用方 | 400 | 哪一步写错了 + 怎么改（带示例） | `missing_work_id` / `invalid_work_id_format` / `empty_patch` / `invalid_json` / `invalid_category` |
+   | ② 资源不存在 | 调用方 | 404 | 什么东西没找到（带上 id/编号） | `favorite_not_found` / `work_not_found` |
+   | ③ 服务端异常 | 我们 | 5xx | 「请稍后再试」，不暴露内部 | `data_unavailable`(503) / `upstream_failed`(502) / `database_failed`(502) / `write_failed`(500) / `internal_error`(500) |
+
+   **约定细节**：
+   - `error` 是**机器读的**稳定英文代号（前端 `switch` 用），**不要**按 `message` 文案判断分支。
+   - `message` 是**给人看的**中文，会直接展示给用户；文案可以改，前端不该依赖它做逻辑。
+   - 响应体里**绝不出现**：堆栈、文件路径、SQL、内网地址/端口、驱动原始错误码（如 `ECONNREFUSED`、`DATABASE_23502`）。
+   - 这些细节会以 `[error] <时间> <位置> -> <状态码> <error码> | code=… | message=… | at=…` 的格式写进**服务端日志**，排查时看日志。
+
+   **示例（第三类，快照缺失）** —— 用户看到的：
+   ```json
+   { "ok": false, "error": "data_unavailable",
+     "message": "数据暂时取不到，可能是后台正在维护。请稍后再试一次。" }
+   ```
+   服务端日志里才有的：
+   ```
+   [error] 2026-10-12T12:22:51.852Z GET /api/circles -> 503 data_unavailable
+     | code=DATA_MISSING | message=circles_data_unavailable
+     | at=at Object.dataMissing (...\deploy\db\snapshot.js:44:13)
+   ```
+   实测记录见 `docs/day23/evidence/error-messages-verify.txt`。
 
 ---
 
@@ -572,6 +605,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | 2026-10-10（Day 21） | **接口形状未变**，只重构内部结构：数据访问层从单文件 `db.js`（737 行）拆为 `db/` 目录 6 个文件（详见 `docs/day21/data-layer-refactor.md`）。同时修通 **云函数网关**：Day 15 起 404 `INVALID_ENV` → 443（函数类型与代码不匹配 + 缺 `scf_bootstrap`）→ `200 OK`。9 项全接口回归通过 |
 | 2026-10-11（Day 22） | 新增 §5 `PATCH /api/favorites/:id`（改备注）与 §6 `DELETE /api/favorites/:id`（取消收藏），**四类操作（增查改删）闭环完整**。契约版本升 `1.2.0`。要点：`PATCH` 只收 `note`（改 `workId` 请 DELETE + POST）；「该条不存在」一律回 `404` 而非假装成功；`DELETE` 响应里回传被删那条作为凭证；两接口均幂等（`DELETE` 二次为 404，不报 500）。原「尚未实现」表中的 PATCH/DELETE 两行移除，章节顺延为 §7–§11 |
 | 2026-10-12（Day 22 余力） | **接口形状未变**，`DELETE` 语义从**真删**改为**软删除**（打 `is_deleted` 标记）。配套：`favorites` 加 `is_deleted` 列；`UNIQUE (user_id, work_id)` 换部分唯一索引 `WHERE is_deleted = FALSE`（见 `db/migration-soft-delete.sql`）；三条读路径加过滤；`POST` 遇同 `(user, work)` 优先**复活**已软删的旧行。对调用方可观测行为不变（已删的条目不出现） |
+| 2026-10-12（Day 23） | **接口形状未变**，统一全部错误提示：新增 §0 第 7 条「错误提示统一」。服务端加错误翻译层（`ERROR_DIALOGUE` + `toUserError` / `sendUserError`），把 10 处裸报错（英文内部代号、`ECONNREFUSED`+内网端口、`[object Object]`）全部换成中文人话。状态码表补 `502`（上游失败）/ `503`（数据不可用）。约定 `error` 只作机器代号、`message` 才是给人看的；堆栈/路径/SQL/内网地址只进服务端日志。实测三类错误（400/404/5xx）均返回中文，证据见 `docs/day23/evidence/error-messages-verify.txt` |
 
 ---
 
