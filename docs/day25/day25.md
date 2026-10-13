@@ -4,7 +4,8 @@
 >
 > **一句话答案**：
 > 我往**一个被 git 跟踪的文件**（`my-app/index.html`）里注入了一行**形如真 Key 的连续长串**
-> （`CLOUDBASE_API_KEY=eyJhbGciOiJIUzI1NiIsFakeButLooksReal000000000000`），
+> （`CLOUDBASE_API_KEY=<一段连续假长串>`，实际注入值由脚本运行时拼出，文档里不写全 —
+> 否则会被自己的扫描器命中，Day 26 就因此踩过一次），
 > 然后重跑检查 —— **检查项 ① 从 `[PASS]` 变成 `[FAIL]`，并把注入的那一行打印了出来**；
 > 移除后重跑恢复全绿。
 > **能把它逼红，才证明它真在检查；一个永远报「通过」的检查等于没有检查。**
@@ -161,12 +162,15 @@ count() { grep -c "$@" 2>/dev/null || true; }
 注入位置选 `my-app/index.html`（**被 git 跟踪**的文件 —— 检查只扫被跟踪文件，
 扫工作区里没跟踪的文件是查不出来的）。
 
-### 3.3 第 2 步的实测输出（原文）
+### 3.3 第 2 步的实测输出（原文摘录）
+
+> 为了让本文档自身不被扫描器命中（Day 26 才发现这个副作用），下面把注入值中部略去，
+> 以 `<假密钥>` 代替；原始完整输出见 `evidence/step2-injected.txt`。
 
 ```
 ---- ① 密钥泄漏：被跟踪文件里有没有密钥「值」特征 ----
   [FAIL] ① 密钥泄漏  命中 1 行 —— 明细如下：
-         my-app/index.html:<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=eyJhbGciOiJIUzI1NiIsFakeButLooksReal000000000000">
+         my-app/index.html:<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=<假密钥>">
 
 ...（其余项仍 PASS）...
 

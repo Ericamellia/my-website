@@ -19,8 +19,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 EVID = os.path.join(ROOT, 'docs', 'day25', 'evidence')
 # 注入点：一个「被 git 跟踪」的文件（改完会还原，不留痕）
 INJECT_FILE = os.path.join(ROOT, 'my-app', 'index.html')
-# 假密钥：连续字符、无 `...` / `[A-Za-z` 这类「自证特征」，保证会被真正命中
-FAKE_LINE = '<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=eyJhbGciOiJIUzI1NiIsFakeButLooksReal000000000000">'
+# 假密钥：连续字符、无 `...` / `[A-Za-z` 这类「自证特征」，保证会被真正命中。
+#
+# ⚠️ Day 26 修复：这里原本直接写成一整段形如真 Key 的连续长串，
+#    结果**被自己的发布前检查扫出来**（密钥特征命中 8 行，全是各文档里的这个示例）。
+#    教训（Day 25 就写过、Day 26 又踩一次）：**文档和源码里不要出现形似真密钥的完整串**。
+#    改法：运行时用片段拼出来 —— 源码里不出现连续的长串，
+#    但运行时拼出的值仍能触发检查（既不污染扫描，又不影响验证）。
+_FAKE_KEY = ('ey' + 'JhbGciOiJIUzI1NiIs' + 'FakeButLooksReal' + '0' * 18)
+FAKE_LINE = ('<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY='
+             + _FAKE_KEY + '">')
 
 
 def run(cmd, timeout=180):
@@ -31,9 +39,17 @@ def run(cmd, timeout=180):
 
 
 def save(name, text):
+    """写证据文件。
+    ⚠️ Day 26 修复：写盘前**必须脱敏**注入值 —— 否则证据文件本身会被发布前检查扫出来
+       （注入 → 输出里带特征串 → 写进证据 → 检查命中 → 永远不干净，死循环）。
+       脱敏只影响「那串假密钥怎么显示」，不影响任何判定结果。
+    """
     os.makedirs(EVID, exist_ok=True)
+    # 把 CLOUDBASE_API_KEY=eyJ... 的长串中部换成占位符
+    import re
+    text = re.sub(r'(CLOUDBASE_API_KEY=)eyJ[A-Za-z0-9_-]{20,}', r'\1<假密钥>', text)
     path = os.path.join(EVID, name)
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(path, 'w', encoding='utf-8', newline='') as f:
         f.write(text)
     return path
 

@@ -29,7 +29,11 @@ for k in ('HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY',
     env.pop(k, None)
 
 INJECT_FILE = os.path.join(ROOT, 'my-app', 'index.html')
-FAKE_LINE = '<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=eyJhbGciOiJIUzI1NiIsFakeButLooksReal000000000000">'
+# ⚠️ Day 26 修复：原来直接写成一整段形似真 Key 的连续串，会被自己的发布前检查扫出来。
+#    改成运行时拼接：源码里不出现连续长串，运行时拼出的值仍能触发检查。
+_FAKE_KEY = ('ey' + 'JhbGciOiJIUzI1NiIs' + 'FakeButLooksReal' + '0' * 18)
+FAKE_LINE = ('<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY='
+             + _FAKE_KEY + '">')
 
 
 def sh(cmd, timeout=180):

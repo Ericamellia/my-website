@@ -17,11 +17,11 @@ Skill 位置：`skills/preflight-check/SKILL.md`（项目内，随仓库提交�
 | 2 | 往 `my-app/index.html` 注入一行假密钥 | **① 密钥泄漏 转 [FAIL]，命中 1 行** ✅ | 1 |
 | 3 | 移除注入后重跑 | **恢复 通过 7 项，失败 0 项** ✅ | 0 |
 
-**第 2 步查出来的那一行（原文）**：
+**第 2 步查出来的那一行（原文摘录，注入值中部以 `<假密钥>` 代替，避免本文档自身被扫描器命中）**：
 
 ```
 [FAIL] ① 密钥泄漏  命中 1 行 —— 明细如下：
-       my-app/index.html:<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=eyJhbGciOiJIUzI1NiIsFakeButLooksReal000000000000">
+       my-app/index.html:<meta name="x-preflight-probe" content="CLOUDBASE_API_KEY=<假密钥>">
 ```
 
 → 证明 `preflight-check` **不是永远报通过**：故障能把它逼红，而且它指出了**哪一行**。
