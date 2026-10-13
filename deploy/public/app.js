@@ -2221,6 +2221,31 @@ function goExternal(url, newTab) {
 let firstLoad = true; // 首次进入站点时，保证「少女祈祷中」加载页至少显示一段最短时间，让用户确实看到
 let appFirstRoute = true; // 首屏由根加载页（index.html）负责祈祷与等待；进入 my-app 后第一次路由不再重复祈祷
 let bakaReturnHash = '#/'; // 点「教训baka」按钮进入冻结页前的原页面，揍完返回用
+// Day 28b：顶栏导航高亮。按当前路由的第一个路径段映射到对应 .nav-item 的 href。
+// #/music 与 #/music/1 都算「同人音乐」板块；搜索/反查等页面无对应导航则不亮。
+const NAV_FOR_SEG = {
+  music: '#/music', doujin: '#/doujin', game: '#/game',
+  video: '#/video', art: '#/art', original: '#/original',
+  hot: '#/hot', fav: '#/fav',
+};
+function syncNavActive(p) {
+  const seg = (p && p[0]) || '';
+  const target = NAV_FOR_SEG[seg] || null;
+  document.querySelectorAll('header nav .nav-item').forEach(a => {
+    const href = a.getAttribute('href');
+    a.classList.toggle('is-active', !!target && href === target);
+  });
+  // 当前项若被滑出视野，把它带回可见范围（只滚 nav 容器本身，绝不动页面滚动位置）
+  const nav = document.querySelector('header nav');
+  const active = document.querySelector('header nav .nav-item.is-active');
+  if (nav && active && nav.scrollWidth > nav.clientWidth) {
+    const aL = active.offsetLeft, aR = aL + active.offsetWidth;
+    const vL = nav.scrollLeft, vR = vL + nav.clientWidth;
+    if (aL < vL) nav.scrollLeft = aL - 8;
+    else if (aR > vR) nav.scrollLeft = aR - nav.clientWidth + 8;
+  }
+}
+
 async function routeInner() {
   const isFirst = appFirstRoute;
   appFirstRoute = false;
@@ -2287,6 +2312,10 @@ async function routeInner() {
   }
   else { $app.innerHTML = '<p class="empty-state">404 — 未识别路径</p>'; }
 
+  // Day 28b：顶栏导航高亮当前板块（B 站移动端 Tab 风格的下划线指示条）。
+  // 只在手机端可见（桌面端 .nav-item.is-active::after 不显示，仅配色变化）。
+  syncNavActive(p);
+
   // 介绍文字（作品简介 / 角色简介 / 社团简介）：超过三行折叠，点「展开」看剩下文字。
   // 等一帧让布局稳定后再测量行数，避免拿到旧布局导致误判。
   // 作品列表同样在此时分页：一次只展示三行，点「展开更多」再加载三行。
@@ -2352,6 +2381,84 @@ if (bakaBtn && bakaBtn.addEventListener) {
     location.hash = '#/baka';
   });
 }
+
+// ===== Day 28：手机端顶栏压缩 + 搜索框下移 =====
+// 顶栏在手机端压成一行（导航横向滑动），顶栏放不下搜索框，
+// 所以把「同一个」#globalSearch 节点在移动端搬进 #contentSearchBar。
+// 用节点搬移而非复制：全站所有取 id 的逻辑（6 处）完全不受影响。
+const MOBILE_MQ = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+
+function placeGlobalSearch() {
+  const wrap = document.querySelector('header .header-search-wrap');
+  const bar = document.getElementById('contentSearchBar');
+  if (!wrap || !bar) return;
+  const isMobile = MOBILE_MQ ? MOBILE_MQ.matches : false;
+  if (isMobile) {
+    if (wrap.parentElement !== bar) bar.appendChild(wrap);
+    bar.hidden = false;
+  } else {
+    const headerContainer = document.querySelector('header .container');
+    if (headerContainer && wrap.parentElement !== headerContainer) {
+      // 桌面端：放回顶栏，位置在 brand 之后、nav 之前（与原始 DOM 顺序一致）
+      const nav = headerContainer.querySelector('nav');
+      headerContainer.insertBefore(wrap, nav);
+    }
+    bar.hidden = true;
+  }
+}
+
+if (MOBILE_MQ && MOBILE_MQ.addEventListener) {
+  MOBILE_MQ.addEventListener('change', placeGlobalSearch);
+}
+// 屏幕旋转 / 窗口缩放兜底
+window.addEventListener('resize', placeGlobalSearch);
+placeGlobalSearch();
+
+// ===== Day 28：手机端左右滑动切板块 =====
+// 只在「5 个作品板块的列表页」生效：#/music #/doujin #/game #/video #/art
+// 左滑 → 下一个板块；右滑 → 上一个板块。首尾循环不绕（到头再滑无动作）。
+const SWIPE_MODULES = ['music', 'doujin', 'game', 'video', 'art'];
+
+function currentSwipeModule() {
+  const h = (location.hash.slice(1) || '/').split('?')[0];
+  const p = h.split('/').filter(Boolean);
+  // 只在列表页生效（详情页 p[1] 存在、上传页 add 都排除）
+  if (p.length === 1 && SWIPE_MODULES.includes(p[0])) return p[0];
+  return null;
+}
+
+(function bindSwipe() {
+  let sx = 0, sy = 0, tracking = false;
+  const MIN_X = 60;    // 横向最小位移
+  const MAX_Y = 40;    // 纵向容差：超过则判定为滚动，不切板块
+
+  document.addEventListener('touchstart', e => {
+    if (!MOBILE_MQ || !MOBILE_MQ.matches) return;
+    if (!currentSwipeModule()) return;
+    if (e.touches.length !== 1) return;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches && e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    // 纵向位移过大 → 用户是在滚动页面，不切板块
+    if (Math.abs(dy) > MAX_Y) return;
+    if (Math.abs(dx) < MIN_X) return;
+    const cur = currentSwipeModule();
+    if (!cur) return;
+    const i = SWIPE_MODULES.indexOf(cur);
+    const next = dx < 0 ? i + 1 : i - 1;   // 左滑(dx<0) → 下一个
+    if (next < 0 || next >= SWIPE_MODULES.length) return;
+    location.hash = '#/' + SWIPE_MODULES[next];
+  }, { passive: true });
+})();
 
 window.addEventListener('hashchange', route);
 route();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>东方Project同人作品查询｜Day 7 MVP</title>
-  <link rel="stylesheet" href="style.css?v=109">
+  <link rel="stylesheet" href="style.css?v=114">
   <script>
     // 页面出错时直接把原因显示出来，便于定位（正常情况下不显示任何东西）
     function showLoadError(msg) {
@@ -80,6 +80,11 @@
       </nav>
     </div>
   </header>
+  <!-- Day 28：内容区顶部搜索条（仅手机端显示）。
+       桌面端顶栏自带搜索框，这里隐藏；手机端顶栏压缩成一行后，搜索框挪到此处。
+       注意：这里是 #globalSearch 的「备用容器」，由 app.js 在移动端把顶栏搜索框节点移进来，
+       保证全站只有唯一一个 #globalSearch（所有取 id 的逻辑不受影响）。 -->
+  <div class="content-search container" id="contentSearchBar" hidden></div>
   <main id="app" class="container">
     <div class="loading-state">
       <div class="praying-text">少女祈祷中</div>
@@ -130,6 +135,6 @@
     <span class="baka-face" aria-hidden="true">ᗜ‿ᗜ</span>
     <span class="fab-tip">教训baka</span>
   </button>
-  <script src="app.js?v=97" defer></script>
+  <script src="app.js?v=99" defer></script>
 </body>
 </html>

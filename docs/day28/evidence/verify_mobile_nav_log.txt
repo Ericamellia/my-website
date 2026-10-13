@@ -1,0 +1,19 @@
+PAGE: http://127.0.0.1:3000/
+
+=== A. 顶栏高度 + 搜索框尺寸 ===
+[A] {"headerH":48,"searchW":272,"searchH":34,"searchRadius":"0px","searchFont":"13px","searchBg":"rgba(0, 0, 0, 0)","searchInContentBar":true}
+
+=== B. 导航高亮（进入音乐板块）===
+[B] {"activeHref":"#/music","activeColor":"rgb(236, 143, 165)","totalActive":1,"hasUnderline":"18px"}
+SAVED day28b-1-音乐-顶栏回调.png 3329437 bytes
+
+=== C. 切板块后高亮跟随 ===
+[C] {"hash":"#/video","active":"#/video"}
+SAVED day28b-2-视频-高亮跟随.png 1397751 bytes
+
+=== D. 滑动切板块仍正常 ===
+[D] 左滑后: {"hash":"#/doujin","h2":"同人漫画","active":"#/doujin"}
+
+=== E. 桌面宽度回归 ===
+[E] {"searchInHeader":true,"contentBarHidden":true,"headerH":100,"navActiveCount":1}
+SAVED day28b-4-桌面回归.png 457392 bytes
