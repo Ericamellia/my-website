@@ -606,6 +606,7 @@ HTTP 触发路径配置为 `/api/health`，见 `cloudbase/cloudbaserc.json`（`e
 | 2026-10-11（Day 22） | 新增 §5 `PATCH /api/favorites/:id`（改备注）与 §6 `DELETE /api/favorites/:id`（取消收藏），**四类操作（增查改删）闭环完整**。契约版本升 `1.2.0`。要点：`PATCH` 只收 `note`（改 `workId` 请 DELETE + POST）；「该条不存在」一律回 `404` 而非假装成功；`DELETE` 响应里回传被删那条作为凭证；两接口均幂等（`DELETE` 二次为 404，不报 500）。原「尚未实现」表中的 PATCH/DELETE 两行移除，章节顺延为 §7–§11 |
 | 2026-10-12（Day 22 余力） | **接口形状未变**，`DELETE` 语义从**真删**改为**软删除**（打 `is_deleted` 标记）。配套：`favorites` 加 `is_deleted` 列；`UNIQUE (user_id, work_id)` 换部分唯一索引 `WHERE is_deleted = FALSE`（见 `db/migration-soft-delete.sql`）；三条读路径加过滤；`POST` 遇同 `(user, work)` 优先**复活**已软删的旧行。对调用方可观测行为不变（已删的条目不出现） |
 | 2026-10-12（Day 23） | **接口形状未变**，统一全部错误提示：新增 §0 第 7 条「错误提示统一」。服务端加错误翻译层（`ERROR_DIALOGUE` + `toUserError` / `sendUserError`），把 10 处裸报错（英文内部代号、`ECONNREFUSED`+内网端口、`[object Object]`）全部换成中文人话。状态码表补 `502`（上游失败）/ `503`（数据不可用）。约定 `error` 只作机器代号、`message` 才是给人看的；堆栈/路径/SQL/内网地址只进服务端日志。实测三类错误（400/404/5xx）均返回中文，证据见 `docs/day23/evidence/error-messages-verify.txt` |
+| 2026-10-12（Day 23 余力） | **接口形状未变**。① 加请求日志：每个请求输出一行 `[req] <时间> <方法> <路径> -> <状态码> <耗时>`（覆盖 `/api/*` 与静态资源），实现方式是在主循环包一层 `res.writeHead` 并用 `finish` 事件收尾。② 回补**降级（快照）通道**的写操作验证：POST/PATCH/DELETE/幂等/落盘/复活 **16/16 PASS**（`docs/day23/evidence/snapshot-write-verify.txt`），确认 Day 21 遗留的「无应用层删除能力」（F1/F3）在降级场景下也已补齐 |
 
 ---
 

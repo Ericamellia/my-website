@@ -344,21 +344,107 @@ env -u HTTP_PROXY -u HTTPS_PROXY \
 
 ---
 
-## 6. 今日完成标准自检
+## 6. 余力加练
+
+### 6.1 请求日志（时间 / 路径 / 结果）
+
+**要解决的问题**：出错时只有 `[error]` 那一行，看不到「前后发生了什么」。
+比如用户说「我点了没反应」，翻日志只能看到一条报错，不知道当时有没有打到接口、
+打了哪个路径、耗时多久。
+
+**做法**：在服务器主循环入口**包一层 `res.writeHead`**。
+
+难点在于：handler 各自调 `sendJson`，主循环并不知道最终状态码。所以不去改每个
+handler（那样要改十几处、还容易漏），而是拦在 `writeHead` 上：
+
+```js
+const t0 = Date.now();
+const origWriteHead = res.writeHead;
+res.writeHead = function () {
+  res.__status = arguments[0];        // 把状态码记下来
+  return origWriteHead.apply(res, arguments);
+};
+res.on('finish', function () {        // 响应真正结束时才打日志
+  const ms = Date.now() - t0;
+  console.log('[req] ' + new Date().toISOString() +
+    ' ' + req.method + ' ' + (req.url || '/') +
+    ' -> ' + (res.__status || res.statusCode) + ' ' + ms + 'ms');
+});
+```
+
+**为什么用 `res.on('finish')` 而不是直接打**：`writeHead` 只是写响应头，
+这时数据可能还没发出去。`finish` 事件才代表「响应彻底结束」，耗时才算得准。
+
+**实测结果**（`evidence/request-log-verify.txt`）：
+
+```
+[req] 2026-10-12T15:16:03.435Z GET /api/health -> 200 1ms
+[req] 2026-10-12T15:16:04.403Z GET /api/hot?board=fresh&limit=3 -> 200 547ms
+[req] 2026-10-12T15:16:05.483Z GET /api/works?category=nope -> 400 1ms
+[req] 2026-10-12T15:16:06.657Z GET /api/not-implemented -> 501 0ms
+[req] 2026-10-12T15:16:07.148Z GET /api/favorites/3 -> 405 1ms
+[req] 2026-10-12T15:16:07.656Z GET /index.html -> 200 5ms
+```
+
+覆盖了**正常（200）/ 错误（400、405、501）/ 静态资源**，`/api/*` 与静态一视同仁。
+
+> 顺带得到一个有用的副产品：**耗时**。上面那行 `/api/hot` 547ms 是查真库的真实耗时，
+> 静态资源只有 5ms —— 一眼就能看出瓶颈在哪。
+
+### 6.2 回补：降级（快照）通道下的 PATCH / DELETE
+
+**为什么要补这个**：Day 21 验收记了 F1/F3「应用层无删除能力」，Day 22 补上了 DELETE
+并在 REST 通道跑了 19/19。但**快照降级通道当时没单独验**。
+
+一旦线上 API Key 失效或被撤，服务会**自动降级到快照通道**。如果降级后 DELETE 不能用，
+用户会遇到「收藏按钮点了没反应」—— 而且是**只在故障期间才出现**的那种 bug。
+
+更关键的是：三条通道的写路径是**各写各的三份代码**
+（`addFavoriteToSnapshot` / `deleteFavoriteFromSnapshot` / `updateFavoriteFromSnapshot`），
+REST 验过不代表快照也验过。
+
+**做法**：`evidence/verify_snapshot_write.py` —— 强制降级到快照通道，
+把 POST / GET / PATCH / DELETE / 幂等 / 落盘 / 复活 全跑一遍。
+
+**结果：16/16 PASS**（`evidence/snapshot-write-verify.txt`）
+
+```
+[环境确认] /api/health HTTP 200, dataSource=snapshot
+---- ① POST：新增一条 ----      [PASS] ×3
+---- ③ PATCH：改备注 ----       [PASS] ×2
+---- ④ DELETE：软删除 ----      [PASS] ×2
+---- ⑤ GET：删除后已消失 ----   [PASS] ×2
+---- ⑥ 幂等：二次 DELETE 应 404 ----  [PASS]
+---- ⑦ 落盘：isDeleted=true ----      [PASS] ×2
+---- ⑧ 复活：复用旧行（id 不变）----  [PASS] ×2
+>>> ✅ 降级通道的 PATCH / DELETE / 复活 全部可用
+```
+
+**结论**：Day 21 遗留的 F1/F3，在**降级场景下也确认补齐了**。
+
+> ⚠️ 快照通道的写会**真的落到 `deploy/data/favorites.json`**（不像 REST 写远程库）。
+> 所以脚本必须自己备份、自己还原 —— 用 `try/finally` 保证「即使中途失败也还原」，
+> 并配专用 `userId`（`snap-test-<时间戳>`）隔离，不碰任何真实收藏。
+
+---
+
+## 7. 今日完成标准自检
 
 | 标准 | 结果 | 证据 |
 |---|---|---|
 | 全仓库搜不到密钥特征词 | ✅ 密钥值命中 **0** 条 | `evidence/secret-scan-result.txt` |
 | `.env` 不在仓库且被忽略 | ✅ 跟踪 0 个 / 4 种 `.env.*` 全被忽略 / 历史无 | 同上 §4–§7 |
 | 三类错误都返回中文提示 | ✅ 400 / 404 / 503 全部实测通过 | `evidence/error-messages-verify.txt` |
+| **余力：请求日志** | ✅ 10 条实测，覆盖 200/400/405/501 + 静态 | `evidence/request-log-verify.txt` |
+| **余力：降级通道写操作** | ✅ **16/16 PASS** | `evidence/snapshot-write-verify.txt` |
 
 ---
 
-## 7. 改动文件清单
+## 8. 改动文件清单
 
 | 文件 | 改动 | 属于哪天的任务 |
 |---|---|---|
-| `deploy/server.js` | 加错误翻译层（6 个函数）+ 替换 10 处裸报错 + 修 `handleOriginalGames` 的 `urlPath` bug | **Day 23** |
+| `deploy/server.js` | ① 加错误翻译层（6 个函数）+ 替换 10 处裸报错 + 修 `handleOriginalGames` 的 `urlPath` bug ② 加请求日志（包 `res.writeHead` + `finish` 事件） | **Day 23** |
 | `.env.example` | **新建**。配置模板，值全空，只列键名与说明 | **Day 23** |
 | `.gitignore` | 加 `!.env.example` 例外（否则模板被 `.env.*` 误伤） | **Day 23** |
 | `RUN.md` | 把文档里的 `CLOUDBASE_API_KEY=eyJhbGciOi...` 占位示例改为不含 Key 特征的开头 | **Day 23** |
@@ -368,25 +454,34 @@ env -u HTTP_PROXY -u HTTPS_PROXY \
 | `docs/day23/evidence/secret-scan-result.txt` | **新建**。扫描结果存档 | **Day 23** |
 | `docs/day23/evidence/error-messages-verify.txt` | **新建**。三类错误实测存档 | **Day 23** |
 | `docs/day23/evidence/error-data-missing-verify.txt` | **新建**。第三类错误单独实验存档 | **Day 23** |
+| `docs/day23/evidence/regression-verify.txt` | **新建**。全接口回归 10/10 | **Day 23** |
+| `docs/day23/evidence/request-log-verify.txt` | **新建**。请求日志实测存档 | **Day 23（余力）** |
+| `docs/day23/evidence/verify_snapshot_write.py` | **新建**。降级通道写操作验证脚本 | **Day 23（余力）** |
+| `docs/day23/evidence/snapshot-write-verify.txt` | **新建**。降级通道 16/16 存档 | **Day 23（余力）** |
+| `docs/day23/evidence/shot_day23.py` | **新建**。截图脚本 | **Day 23** |
+| `docs/day23/evidence/secret-scan-0条.png` | **新建**。截图① | **Day 23** |
+| `docs/day23/evidence/三类错误中文提示.png` | **新建**。截图② | **Day 23** |
 
 > 注：`.gitignore` 里的 `__pycache__/`、`*.pyc` 两条属 **Day 22 余力**（上一条提交
 > `c6d4353` 已提交）；今天这次对 `.gitignore` 的改动只有 `!.env.example` 一条。
 
 ---
 
-## 8. 遗留 / 未做
+## 9. 遗留 / 未做
 
 | 项 | 说明 | 归属 |
 |---|---|---|
 | `rest.isUniqueViolation` 判断过宽 | 现在用 `status === 409` 一刀切，会把**外键违规** `23503` 误判成**唯一冲突** `23505`。今天发现了但**没改**（超范围、且要动业务判断） | 待排期 |
-| 余力加练：请求日志 | 加一条「时间 / 路径 / 结果」的简单请求日志 | Day 23 余力（见下） |
-| 余力加练（可选）：回补 Day 22 降级未完成的 DELETE | 应用层 DELETE 已上线；但 day21 记录的「无自助删除能力」问题在降级通道下仍未覆盖 | Day 23 余力 |
+
+> Day 23 的两项余力加练（请求日志、降级通道写操作回补）**均已完成**，见 §6。
 
 ---
 
-## 9. 今天要交的截图（两张）
+## 10. 今天要交的截图（两张）
 
-1. **全仓库搜密钥特征词 = 0 条** —— 跑 `bash docs/day23/evidence/secret-scan.sh`，
-   把「命中行数 = 0」「.env 被跟踪数 = 0」「✅ 两项全 0，通过」那一段截下来。
-2. **三类错误的中文提示** —— 跑完三类实测，把
-   `docs/day23/evidence/error-messages-verify.txt` 里 400 / 404 / 503 各一段截下来。
+1. **全仓库搜密钥特征词 = 0 条** —— `evidence/secret-scan-0条.png`
+2. **三类错误的中文提示** —— `evidence/三类错误中文提示.png`
+
+> 复现命令：`bash docs/day23/evidence/secret-scan.sh`；
+> 截图脚本：`python docs/day23/evidence/shot_day23.py`（需服务在 3010 端口、快照通道）。
+

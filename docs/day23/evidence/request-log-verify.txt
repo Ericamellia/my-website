@@ -1,0 +1,14 @@
+===== 服务端 [req] 日志 =====
+[req] 2026-10-12T15:16:02.829Z GET /api/health -> 200 9ms
+[req] 2026-10-12T15:16:03.435Z GET /api/health -> 200 1ms
+[req] 2026-10-12T15:16:04.403Z GET /api/hot?board=fresh&limit=3 -> 200 547ms
+[req] 2026-10-12T15:16:05.049Z GET /api/favorites -> 200 204ms
+[req] 2026-10-12T15:16:05.483Z GET /api/works?category=nope -> 400 1ms
+[req] 2026-10-12T15:16:06.114Z GET /api/works?category=music -> 200 95ms
+[req] 2026-10-12T15:16:06.657Z GET /api/not-implemented -> 501 0ms
+[req] 2026-10-12T15:16:07.148Z GET /api/favorites/3 -> 405 1ms
+[req] 2026-10-12T15:16:07.656Z GET /index.html -> 200 5ms
+[req] 2026-10-12T15:16:08.130Z GET /verify/ -> 200 5ms
+
+===== 统计 =====
+日志行数 = 10

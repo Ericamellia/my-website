@@ -836,6 +836,28 @@ const server = http.createServer((req, res) => {
   // 归一化：去掉结尾斜杠，让 /api/hot 和 /api/hot/ 等价
   const route = (urlPath.split('?')[0] || '/').replace(/\/+$/, '') || '/';
 
+  // ---- Day 23 余力加练：一行请求日志（时间 / 路径 / 结果）----
+  // 怎么拿到「结果」：handler 各自 sendJson，主循环看不到最终状态码，
+  // 所以这里**包一层 res.writeHead** 把 status 记下来，等响应结束时统一打日志。
+  // 挂在最前面，保证无论走 /api/* 还是静态、无论成功还是报错都会记上。
+  const t0 = Date.now();
+  const origWriteHead = res.writeHead;
+  let logged = false;
+  res.writeHead = function () {
+    res.__status = arguments[0];
+    return origWriteHead.apply(res, arguments);
+  };
+  res.on('finish', function () {
+    if (logged) return;
+    logged = true;
+    const ms = Date.now() - t0;
+    const status = res.__status || res.statusCode || 0;
+    // 一条日志三段：时间 / 路径（含查询串） / 结果（状态码 + 耗时）
+    console.log('[req] ' + new Date().toISOString() +
+      ' ' + req.method + ' ' + (req.url || '/') +
+      ' -> ' + status + ' ' + ms + 'ms');
+  });
+
   if (route === '/api/health') return handleHealth(req, res);
   if (route === '/api/hot') return handleHot(req, res, urlPath);
 
