@@ -254,6 +254,33 @@ $ curl -s .../ | grep -c rollback-drill
 
 **教训**：**当一个手段反复失败时，不要在同一手段上加参数试 —— 要换手段**。我在这张截图上花了很久在调窗口尺寸，最后是靠「改内容适配窗口 + 拆成抓 BMP/转 PNG 两步」解决的。
 
+### 6.2 收尾时的一个误判（值得记）
+
+最终验收发现线上首页 **9145 字节**，而 `git show v1.0:deploy/public/index.html` 是 **9010 字节**，差 135 —— 我一度判定为「CRLF 污染」（Day 25 踩过的坑），还差点重新发布。
+
+**真相**：这**不是污染，是正常行为**。
+
+| 项 | 值 |
+|---|---|
+| 本机 PortableGit 系统级 `etc/gitconfig` | `core.autocrlf = true` |
+| 项目 `.gitattributes` | `* text=auto` |
+| 结果 | 仓库内存 **LF（9010 字节）** → 工作区自动转 **CRLF（9145 字节）** |
+| 差值 | 135 行 × 1 字节（`\r`）= 135 |
+
+`git status` 是**干净的** —— git 认为这是它期望的工作区形态。我先前用「二进制写 LF」反而制造了虚假的 `M` 状态，已 `git checkout` 还原。
+
+**可复用的验证方法**（归一化后比较）：
+
+```python
+a = live.replace(b'\r\n', b'\n')
+b = repo.replace(b'\r\n', b'\n')
+assert a == b      # True = 内容真正一致，差异只在行尾
+```
+
+**最终结论**：线上与仓库 v1.0 **归一化后完全一致（`True`）**，坏标记 `0`。**线上就是干净的 v1.0。**
+
+**教训**：`git diff` 为空但字节数不同时，**先查 `core.autocrlf` 和 `.gitattributes`，不要急着「修」**。另注意 `grep -c $'\r'` 在 Git Bash 下不可靠（会返 0），要用 Python 数 `d.count(b'\r')`。
+
 ---
 
 ## 七、回滚手册（`docs/rollback.md`）
