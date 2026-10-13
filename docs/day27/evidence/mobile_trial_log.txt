@@ -1,0 +1,23 @@
+PAGE: https://touhou-mock.app.workbuddy.host/
+设备模拟已设置: 390x844 dpr=3 mobile=True
+[1] 首页视口: {"w":390,"h":844,"title":"东方Project同人作品查询｜Day 7 MVP","nav":8,"loading":false}
+SAVED mobile-1-首页.png 5778153 bytes
+[2] 点击同人音乐导航: clicked:同人音乐
+[2] 板块内容: {"hash":"#/music","cards":12,"firstCard":"","bodyHead":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\n同人音乐\n排序：按热度（由高到低）\n▾\n由高到低\n由低到高\n \n原曲筛选: \n全部\n博麗神社境内\nほおづき ～ Flower Land\n魔法少女達の儀仗舞\nラクトガール ～ 少女密室\n桜花之"}
+SAVED mobile-2-同人音乐.png 3196363 bytes
+[3a] 进入详情页: goto:#/music/1
+[3a] 详情页内容: {"hash":"#/music/1","favBtns":1,"head":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\nハルトマンの妖怪少女\n\n点击配图查看大图\n\n点击查看\n下载原图\n作者: COOL&CREATE · 2007 · ★★★★★ · 热度: 16800\n创作者: 有泉\n网易云试听: music.163.com ↗\n角色: 西行寺幽幽子, 魂魄妖梦\n原作: 妖妖梦\n\nCOO"}
+SAVED mobile-3-详情页.png 1317616 bytes
+[3b] 点击详情页收藏: clicked-detail-fav; now=detail-cta detail-cta-fav is-faved
+[3b] localStorage 收藏数: favs=1 [{"module":"music","id":1,"ts":1791891388266}]
+SAVED mobile-4-已收藏.png 1316319 bytes
+[4] 点击收藏导航: clicked:我的收藏
+[4] 收藏列表内容: {"hash":"#/fav","cards":2,"stars":2,"bodyHead":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\n我的收藏 (1)\n排序：按收藏时间（由近到远）\n▾\n由近到远\n由远到近\n全部 (1)\n同人音乐 (1)\n同人漫画 (0)\n同人游戏 (0)\n同人视频 (0)\n同人图 (0)\nハルトマンの妖怪少女\n作者: COOL&CREATE 2007 ★★★★★\n创作者: 有泉\n角色: 西行寺幽幽子, 魂魄妖梦\n原作: 妖妖梦\n最后收藏时间：2026/10/13"}
+SAVED mobile-5-收藏列表.png 1258443 bytes
+
+=== 手机宽度核心流程小结（390x844）===
+- 首页 => {"w":390,"h":844,"title":"东方Project同人作品查询｜Day 7 MVP","nav":8,"loading":false}
+- 同人音乐板块 => {"hash":"#/music","cards":12,"firstCard":"","bodyHead":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\n同人音乐\n排序：按热度（由高到低）\n▾\n由高到低\n由低到高\n \n原曲筛选: \n全部\n博麗神社境内\nほおづき ～ Flower Land\n魔法少女達の儀仗舞\nラクトガール ～ 少女密室\n桜花之"}
+- 作品详情页 => {"hash":"#/music/1","favBtns":1,"head":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\nハルトマンの妖怪少女\n\n点击配图查看大图\n\n点击查看\n下载原图\n作者: COOL&CREATE · 2007 · ★★★★★ · 热度: 16800\n创作者: 有泉\n网易云试听: music.163.com ↗\n角色: 西行寺幽幽子, 魂魄妖梦\n原作: 妖妖梦\n\nCOO"}
+- 点击收藏后 => favs=1 [{"module":"music","id":1,"ts":1791891388266}]
+- 收藏列表 => {"hash":"#/fav","cards":2,"stars":2,"bodyHead":"返回上一页\n返回首页\n歡迎來到人與妖怪的世界！\n同人音乐\n同人漫画\n同人游戏\n同人视频\n同人图\n⩌ˬ⩌\n原作\nB站必看\n我的收藏\n我的收藏 (1)\n排序：按收藏时间（由近到远）\n▾\n由近到远\n由远到近\n全部 (1)\n同人音乐 (1)\n同人漫画 (0)\n同人游戏 (0)\n同人视频 (0)\n同人图 (0)\nハルトマンの妖怪少女\n作者: COOL&CREATE 2007 ★★★★★\n创作者: 有泉\n角色: 西行寺幽幽子, 魂魄妖梦\n原作: 妖妖梦\n最后收藏时间：2026/10/13"}

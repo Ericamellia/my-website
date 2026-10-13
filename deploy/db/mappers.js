@@ -175,12 +175,20 @@ function workIdToLocalId(workId) {
  * 其余板块这几列在库里是 NULL，返回 null 不影响前端（前端本来也没有这几个 key）。
  */
 function toWorkItem(r) {
+  // ★ Day 27 修复：真库 works 表的列名是 circle（不是 circle_name），
+  //   而 pg / rest 两条通道的 select 都写的是 circle_name，
+  //   导致 r.circle_name 恒为 undefined，接口返回里根本没有 circle 字段，
+  //   前端渲染「社团」时全空（实测 5 个板块 30/30 全中）。
+  //   这里两种列名都读，三条通道（rest / pg / snapshot）都不会坏。
+  const circle = (r.circle_name !== undefined && r.circle_name !== null)
+    ? r.circle_name
+    : r.circle;
   return {
     id: workIdToLocalId(r.work_id),   // 前端用：板块内数字
     workId: r.work_id,                // 保留原串：收藏接口要的是 music-1
     category: r.category,
     name: r.name,
-    circle: r.circle_name,
+    circle: circle,
     creator: r.creator,
     year: r.year,
     characters: asArray(r.characters),

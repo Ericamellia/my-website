@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Day 27 · 第三方试用记录</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1100px; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #fff; color: #333; padding: 28px 32px;
+  }
+  .card { border: 2px solid #f7c6d9; border-radius: 14px; padding: 20px 24px; background: #fffafc; }
+  h1 { font-size: 22px; color: #c2185b; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .banner {
+    background: #fce4ec; border-left: 5px solid #ec407a; padding: 10px 14px;
+    border-radius: 6px; font-size: 13px; color: #880e4f; margin-bottom: 18px; line-height: 1.7;
+  }
+  h2 { font-size: 16px; color: #ad1457; margin: 18px 0 10px; border-bottom: 1px dashed #f8bbd0; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid #f3d3e0; padding: 8px 10px; text-align: left; }
+  th { background: #fce4ec; color: #880e4f; font-weight: 600; }
+  tr:nth-child(even) td { background: #fffafc; }
+  .ok { color: #2e7d32; font-weight: 600; }
+  .warn { color: #e65100; font-weight: 600; }
+  .bad { color: #c62828; font-weight: 600; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 6px; }
+  .step {
+    background: #fff; border: 2px solid #f8bbd0; border-radius: 20px;
+    padding: 7px 15px; font-size: 13px; color: #ad1457; font-weight: 600;
+  }
+  .step.done { background: #ec407a; color: #fff; border-color: #ec407a; }
+  .arrow { color: #f48fb1; font-weight: 700; }
+  .note { font-size: 12px; color: #777; margin-top: 8px; line-height: 1.6; }
+  .found { background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; padding: 12px 14px; margin-top: 14px; font-size: 13px; line-height: 1.8; }
+  .found b { color: #e65100; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Day 27 · 第三方试用记录</h1>
+  <div class="sub">时间：2026-10-13 19:16 ｜ 试用起点：https://touhou-mock.app.workbuddy.host</div>
+
+  <div class="banner">
+    <b>降级方案说明</b>：今日任务原定「邀请一位没参与项目的真人试用」。经确认，本轮改由 AI
+    以「只知道网址、不知道实现」的用户身份代跑一遍核心流程，<b>如实标注为降级方案</b>。
+    截图中的页面为真实公网地址在真实浏览器中的渲染结果。
+  </div>
+
+  <h2>一、核心流程走查（5 步，全部通过）</h2>
+  <div class="flow">
+    <span class="step done">① 打开首页</span><span class="arrow">→</span>
+    <span class="step done">② 切「同人音乐」</span><span class="arrow">→</span>
+    <span class="step done">③ 进作品详情</span><span class="arrow">→</span>
+    <span class="step done">④ 点收藏</span><span class="arrow">→</span>
+    <span class="step done">⑤ 看收藏列表</span>
+  </div>
+
+  <table>
+    <tr><th style="width:34%">步骤</th><th style="width:26%">看到什么</th><th>结论</th></tr>
+    <tr><td>① 打开首页</td><td>HTTP 200 · 0.61s</td><td class="ok">通过</td></tr>
+    <tr><td>② 切到「同人音乐」</td><td>6 件作品，封面有</td><td class="ok">通过（修复后社团名有值）</td></tr>
+    <tr><td>③ 进作品详情页</td><td>#/music/1，作者 COOL&amp;CREATE</td><td class="ok">通过</td></tr>
+    <tr><td>④ 点收藏</td><td>星标变实心，localStorage favs=1</td><td class="ok">通过</td></tr>
+    <tr><td>⑤ 看收藏列表</td><td>「我的收藏 (1)」+ 卡片</td><td class="ok">通过</td></tr>
+  </table>
+
+  <h2>二、试用中发现的问题（按影响面排序）</h2>
+  <table>
+    <tr><th style="width:12%">编号</th><th style="width:44%">问题</th><th style="width:14%">影响面</th><th>处置</th></tr>
+    <tr>
+      <td>P1</td>
+      <td><b>5 个板块 30 件作品，社团名全部为空</b></td>
+      <td class="bad">30 / 30</td>
+      <td class="ok">今日已修（最高优先级）</td>
+    </tr>
+    <tr>
+      <td>P2</td>
+      <td>首屏内容全靠 JS 渲染，不跑 JS 看不到任何内容</td>
+      <td class="warn">全部用户</td>
+      <td>记录，非今日范围</td>
+    </tr>
+    <tr>
+      <td>P3</td>
+      <td>移动端（390px）左下/右下悬浮图标压住正文与页脚文字</td>
+      <td class="warn">手机用户</td>
+      <td>记录，今日不做大改</td>
+    </tr>
+    <tr>
+      <td>P4</td>
+      <td>收藏按钮只在详情页，列表页卡片无收藏入口（浏览路径偏长）</td>
+      <td class="warn">体验</td>
+      <td>记录，非今日范围</td>
+    </tr>
+  </table>
+
+  <div class="found">
+    <b>真实用户会卡在哪（今日主题答案）</b><br>
+    ① 新用户进「我的收藏」只看到一句引导语，<b>没有「去哪收藏」的提示</b>——收藏按钮藏在详情页，
+    新用户很容易以为「这个站没有收藏功能」。<br>
+    ② 手机宽度下<b>悬浮图标遮挡正文</b>，这是桌面浏览完全发现不了的布局问题。<br>
+    ③ 社团名全空虽然最刺眼，但它是"看得见就能说出哪里不对"的问题；上面两条才是
+    「用户不会主动告诉你、但会默默关掉页面」的问题。
+  </div>
+</div>
+</body>
+</html>

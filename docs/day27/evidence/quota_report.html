@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Day 27 · 资源额度检查</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1100px; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #fff; color: #333; padding: 28px 32px; }
+  .card { border: 2px solid #f7c6d9; border-radius: 14px; padding: 20px 24px; background: #fffafc; }
+  h1 { font-size: 22px; color: #c2185b; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #888; margin-bottom: 16px; }
+  h2 { font-size: 16px; color: #ad1457; margin: 20px 0 10px; border-bottom: 1px dashed #f8bbd0; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid #f3d3e0; padding: 8px 10px; text-align: left; }
+  th { background: #fce4ec; color: #880e4f; font-weight: 600; }
+  tr:nth-child(even) td { background: #fffafc; }
+  .kv { display: flex; flex-wrap: wrap; gap: 10px; }
+  .box { flex: 1 1 240px; border: 1px solid #f8bbd0; border-radius: 10px; padding: 12px 14px; background: #fff; }
+  .box .t { font-size: 12px; color: #999; margin-bottom: 6px; }
+  .box .v { font-size: 19px; font-weight: 700; color: #ad1457; }
+  .box .v small { font-size: 12px; font-weight: 400; color: #888; }
+  .manual { background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
+  .manual h3 { font-size: 14px; color: #ef6c00; margin-bottom: 8px; }
+  .manual ol { margin-left: 20px; font-size: 13px; line-height: 1.9; color: #555; }
+  .manual code { background: #fff3e0; padding: 1px 5px; border-radius: 3px; font-size: 12px; color: #bf360c; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #ec407a; color: #fff; margin-left: 6px; vertical-align: middle; }
+  .tag.gray { background: #9e9e9e; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Day 27 · 资源额度检查</h1>
+  <div class="sub">采集时间：2026-10-13 19:27 ｜ 站点：https://touhou-mock.app.workbuddy.host</div>
+
+  <h2>一、服务健康 <span class="tag">运行时可观测</span></h2>
+  <div class="kv">
+    <div class="box"><div class="t">服务 / 环境 / 版本</div><div class="v" style="font-size:15px">touhou-search · mock · v1.0.0</div></div>
+    <div class="box"><div class="t">运行时</div><div class="v" style="font-size:15px">Node v22.13.1</div></div>
+    <div class="box"><div class="t">已运行 uptime</div><div class="v">372 <small>秒（约 0.10 小时）</small></div></div>
+    <div class="box"><div class="t">数据通道</div><div class="v" style="font-size:15px">rest（CloudBase PostgREST）</div></div>
+  </div>
+
+  <h2>二、数据用量 <span class="tag">运行时可观测</span></h2>
+  <table>
+    <tr><th style="width:40%">数据表</th><th style="width:20%">行数</th><th>说明</th></tr>
+    <tr><td>works 作品</td><td>30</td><td>5 个板块合计</td></tr>
+    <tr><td>circles 社团</td><td>26</td><td></td></tr>
+    <tr><td>originals 原曲</td><td>6</td><td></td></tr>
+    <tr><td>hot 热搜</td><td>40</td><td>B站必看</td></tr>
+    <tr><td>favorites 收藏</td><td>7</td><td>示例用户</td></tr>
+    <tr><td>characters / original_games</td><td>0</td><td>暂未导入</td></tr>
+    <tr><td><b>合计</b></td><td><b>109</b></td><td></td></tr>
+  </table>
+
+  <h2>三、静态资源体积 <span class="tag">部署包实测</span></h2>
+  <div class="kv">
+    <div class="box"><div class="t">文件数（不含 node_modules）</div><div class="v">240 <small>个</small></div></div>
+    <div class="box"><div class="t">总体积</div><div class="v">16.2 <small>MB</small></div></div>
+  </div>
+
+  <h2>四、接口响应耗时 <span class="tag">各 3 次取平均</span></h2>
+  <table>
+    <tr><th style="width:40%">接口</th><th style="width:20%">平均耗时</th><th>评价</th></tr>
+    <tr><td>/api/health</td><td>423 ms</td><td>正常</td></tr>
+    <tr><td>/api/works?category=music</td><td>443 ms</td><td>正常</td></tr>
+    <tr><td>/api/hot</td><td>522 ms</td><td>偏慢（40 条 + 关联查询）</td></tr>
+    <tr><td>/api/favorites</td><td>506 ms</td><td>偏慢</td></tr>
+  </table>
+
+  <h2>五、需人工在控制台核对（脚本无法获取真实额度）</h2>
+  <div class="manual">
+    <h3>以下三项「配额上限 / 已用量 / 到期日」必须登录控制台查看，脚本拿不到</h3>
+    <ol>
+      <li><b>CloudBase 环境配额</b>：配额上限 / 已用量 / 到期日<br>
+        → <code>https://console.cloud.tencent.com/tcb</code> 选对应环境 → 「用量/资源」</li>
+      <li><b>WorkBuddy 发布额度</b>：已发布应用数量与限制<br>
+        → <code>设置 → 数据管理 → 应用</code></li>
+      <li><b>域名证书有效期</b>（HTTPS）<br>
+        → 发布平台自动管理，控制台可见</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>
