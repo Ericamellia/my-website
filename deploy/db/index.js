@@ -299,9 +299,17 @@ async function addFavoriteToRest(userId, workId, note) {
   if (rest.isUniqueViolation(res.status, res.data)) {
     // 撞唯一约束：把已有那条读回来，告诉调用方「已收藏过」而不是报错
     // ★ 必须限定 is_deleted=eq.false —— 未删除的那条才是「已收藏过」的那个
+    //
+    // ★ Day 24 修复：这里的 select 漏了 works(...) JOIN。
+    //   只取 favorites 的 5 个基础字段时，toFavItem() 读不到 r.name / r.tags，
+    //   就会兜底成 name="(作品已下架)"、tags=[]。
+    //   后果：同一个作品，第一次收藏返回真实作品名，
+    //   再点一次（走到这个分支）名字却变成「(作品已下架)」——名字凭空消失。
+    //   修法与 fetchFavFullFromRest() 保持一致：把 works(...) 一起 select 出来。
     const exist = await rest.restRequest('GET', 'favorites', {
       query: {
-        select: 'id,user_id,work_id,note,created_at',
+        select: 'id,user_id,work_id,note,created_at,' +
+                'works(category,name,circle_name,creator,year,cover,tags,characters,description,source_url)',
         user_id: 'eq.' + userId,
         work_id: 'eq.' + workId,
         is_deleted: 'eq.false',
@@ -309,7 +317,19 @@ async function addFavoriteToRest(userId, workId, note) {
       }
     });
     const row = (exist.data && exist.data[0]) || {};
-    return { source: 'rest', created: false, duplicate: true, item: mappers.toFavItem(row) };
+    // PostgREST 把 JOIN 结果放在 row.works 下，压平后再交给 toFavItem（与 fetchFavFullFromRest 同款）
+    const w = row.works || {};
+    return {
+      source: 'rest', created: false, duplicate: true,
+      item: mappers.toFavItem({
+        id: row.id, user_id: row.user_id, work_id: row.work_id,
+        note: row.note, created_at: row.created_at,
+        category: w.category, name: w.name, circle_name: w.circle_name,
+        creator: w.creator, year: w.year, cover: w.cover,
+        tags: w.tags, characters: w.characters,
+        description: w.description, source_url: w.source_url
+      })
+    };
   }
 
   if (res.status !== 201) throw rest.restFailed('rest_insert_failed', res.data);

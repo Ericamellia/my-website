@@ -74,10 +74,28 @@ async function restRequest(method, table, opt) {
  * CloudBase 的实现不认 resolution=ignore-duplicates，而是直接回 409 +
  * DATABASE_23505（PostgreSQL 的 unique_violation 错误码）。
  * 所以我们按这个错误码来认定「重复提交」，比看 content-range 可靠。
+ *
+ * ★ Day 24 余力修复：原来第一行是 `if (status === 409) return true;`，
+ *   把**任何** 409 都当成唯一冲突。但 PostgREST 对外键违规（23503）也回 409：
+ *       {"code":"DATABASE_23503",
+ *        "message":"...violates foreign key constraint \"fk_favorites_work\""}
+ *   后果：凡是「关联的作品不存在」这种错，都会被误判成「已收藏过」，
+ *   用户拿到一句完全搭不上边的提示。
+ *
+ *   实测证据：docs/day24/evidence/repro_fk_409-output.txt
+ *     - 唯一冲突   → 409 + DATABASE_23505
+ *     - 外键违规   → 409 + DATABASE_23503   ← 都被老逻辑判成 true
+ *
+ *   正确判据：409 只是「客户端语义错误」这个大类，**必须再看错误码**。
+ *   只有 23505 才算唯一冲突；其余（含 23503）一律不算，交给上层当真正的失败处理。
  */
 function isUniqueViolation(status, data) {
-  if (status === 409) return true;
-  if (data && typeof data === 'object' && String(data.code || '').indexOf('23505') !== -1) return true;
+  // 唯一冲突一定是 409（PostgREST 把 PG 的 unique_violation 映射成 409）
+  if (status !== 409) return false;
+  // 是 409 还不够 —— 必须确认错误码是 23505，否则 23503（外键）等会被误伤
+  const code = (data && typeof data === 'object') ? String(data.code || '') : '';
+  if (code) return code.indexOf('23505') !== -1;
+  // 409 但没带错误码：宁可当「不是唯一冲突」，让上层如实报错，也不要误报「已收藏」
   return false;
 }
 

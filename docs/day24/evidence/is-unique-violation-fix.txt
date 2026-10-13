@@ -1,0 +1,12 @@
+场景          status  错误码                 修复前      修复后      期望      结果
+------------------------------------------------------------------------------
+唯一冲突        409     DATABASE_23505      true     true     true    OK
+外键违规        409     DATABASE_23503      true     false    false   OK
+409 无码      409     -                   true     false    false   OK
+400 无码      400     -                   false    false    false   OK
+201 成功      201     -                   false    false    false   OK
+其它码         422     DATABASE_23503      false    false    false   OK
+------------------------------------------------------------------------------
+修复后：6 PASS / 0 FAIL
+
+对照点：第 2 行「外键违规」—— 修复前 true（误判），修复后 false（正确）。

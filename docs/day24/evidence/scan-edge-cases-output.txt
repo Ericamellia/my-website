@@ -1,0 +1,10 @@
+Day 24 补充扫描结果
+user_id = day24scan-1791852410
+
+PATCH 不存在的软删行                                  HTTP 200  []
+note=300 字（应被后端挡）                              HTTP 400  {"code": "DATABASE_22001", "message": "value too long for type character varying(255)", "requestId": "8771384a-9e05-4613-a40f-3f88a9a2a382"}
+workId=""                                      HTTP 409  {"code": "DATABASE_23503", "message": "insert or update on table \"favorites\" violates foreign key constraint \"fk_favorites_work\"", "requestId": "676228ae-b494-4c33-b2b2-6d749df78cd7"}
+建一条基准                                          HTTP 201  [{"id": 75}]
+连点第 1 发                                        HTTP 409  {"code": "DATABASE_23505", "message": "duplicate key value violates unique constraint \"uq_favorites_active\"", "requestId": "3e2850f0-77dd-40cb-8a38-d64677618ec3"}
+连点第 2 发                                        HTTP 409  {"code": "DATABASE_23505", "message": "duplicate key value violates unique constraint \"uq_favorites_active\"", "requestId": "5cc16df2-124f-4c1b-a5bb-72dbbdde4e7f"}
+连点第 3 发                                        HTTP 409  {"code": "DATABASE_23505", "message": "duplicate key value violates unique constraint \"uq_favorites_active\"", "requestId": "3745b340-e6c2-411a-9179-c0ba8a47c1aa"}
