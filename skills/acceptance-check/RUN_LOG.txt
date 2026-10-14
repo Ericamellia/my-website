@@ -1,0 +1,53 @@
+============================================================
+结营验收体检 · acceptance-check
+时间：2026-10-14 15:16:32
+站点：https://touhou-mock.app.workbuddy.host
+============================================================
+
+---- A 类 · 公网可访问 ----
+  [[32mPASS[0m] A1 首页可打开（HTTP 200）
+  [[32mPASS[0m] A2 style.css 可加载（HTTP 200）
+  [[32mPASS[0m] A2 app.js 可加载（HTTP 200）
+  [[32mPASS[0m] A3 /api/health ok:true（"dataSource": "rest"）
+  [[32mPASS[0m] A4 数据源为 rest 真库
+  [[32mPASS[0m] A5 /api/hot?board=fresh&limit=1（HTTP 200）
+  [[32mPASS[0m] A5 /api/favorites?limit=1（HTTP 200）
+  [[32mPASS[0m] A5 /api/works?category=music&limit=1（HTTP 200）
+  [[32mPASS[0m] A5 /api/circles（HTTP 200）
+  [[32mPASS[0m] A5 /api/originals（HTTP 200）
+
+---- B 类 · 真实读写 + 持久化 ----
+  [[32mPASS[0m] B1 读收藏列表（count=7，source=rest）
+  [[32mPASS[0m] B2 写入收藏（HTTP 201，新行 id=87）
+  [[32mPASS[0m] B3 写后计数 +1（7 → 8）
+  [[32mPASS[0m] B4 持久化复核（4 秒后 count 仍为 8）
+  [[32mPASS[0m] B6 防重复闸门（HTTP 409）
+  [[32mPASS[0m] B7 清理恢复基线（DELETE 200，count 回到 7）
+
+---- C 类 · 接口契约与错误处理 ----
+  [[32mPASS[0m] C1 方法不匹配 → 405
+  [[32mPASS[0m] C2 不存在路径 → 501
+  [[32mPASS[0m] C3 缺必填字段 → 400
+  [[32mPASS[0m] C4 格式非法 → 400
+  [[32mPASS[0m] C5 错误响应不漏内部细节（命中 0）
+  [[32mPASS[0m] C6 DELETE 幂等（不存在的 id → 404）
+  [[33mWARN[0m] C7 405 未带 Allow 响应头（allow 在 JSON body 里；RFC 7231 要求响应头）
+
+---- D 类 · 本地交付物与 Skill ----
+  [[32mPASS[0m] D 交付物存在：README.md
+  [[32mPASS[0m] D 交付物存在：PRD.md
+  [[32mPASS[0m] D 交付物存在：TECH_DESIGN.md
+  [[32mPASS[0m] D 交付物存在：RUN.md
+  [[32mPASS[0m] D 交付物存在：AGENTS.md
+  [[32mPASS[0m] D 交付物存在：docs/api-contract.md
+  [[32mPASS[0m] D 交付物存在：docs/rollback.md
+  [[32mPASS[0m] D 交付物存在：skills/preflight-check/SKILL.md
+  [[32mPASS[0m] D 交付物存在：skills/preflight-check/check.sh
+  [[32mPASS[0m] D 交付物存在：skills/filter-interaction-check/SKILL.md
+  [[33mWARN[0m] D 线上版本落后：本地 v99 vs 线上 v97（未部署）
+
+============================================================
+汇总：[32m通过 32[0m   [31m失败 0[0m   [33m提醒 2[0m
+============================================================
+>>> [32m全部通过[0m
+  [清理] 已删除测试数据 id:  87

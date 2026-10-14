@@ -1,0 +1,28 @@
+======================================================================
+诊断：收藏按钮点击前后的真实状态
+======================================================================
+浏览器：C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+
+【起点】公网收藏 count=7
+  含 music-1 吗？是
+
+【详情页状态】当前在 #/music/1
+  按钮存在：True
+  按钮 class：detail-cta detail-cta-fav
+  按钮文案：
+
+【第 1 次点击收藏按钮】
+  点击结果：clicked
+  点击后 → 公网 count=7（含 music-1？是）
+  按钮 class：detail-cta detail-cta-fav is-faved
+  按钮文案：
+
+【第 2 次点击同一个按钮】
+  点击结果：clicked
+  点击后 → 公网 count=7（含 music-1？是）
+  按钮 class：detail-cta detail-cta-fav
+  按钮文案：
+
+【结论】
+  起点 count=7 → 第1次点后 7 → 第2次点后 7
+  → count 未按预期变化，需细看

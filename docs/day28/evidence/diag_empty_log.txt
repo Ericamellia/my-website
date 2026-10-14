@@ -1,0 +1,19 @@
+================================================================================
+诊断三：搜索无结果时的提示，用户看得见吗？
+================================================================================
+
+【场景 A】列表页（#/music）用筛选功能搜无结果
+  hash=#/search/zzzzzz
+  #no-result  : null
+  .empty-state: null
+
+【场景 B】重置后，从首页搜索框搜无结果
+  reload 后 hash=#/search/zzzzzz
+  hash=#/search/zzzzzz
+  #no-result  : null
+  .empty-state: null
+  #app 开头  : "\n      <div class=\"search-empty\" style=\"animation: auto ease 0s 1 normal none running none;\">\n        <p class=\"search-empty-title\">你想要的知识或许在幻想乡境界之外哦</p>\n        <div class=\"search-empty-actions\">\n   "
+
+【对比结论】
+  场景A(列表页筛选无结果)  —— #no-result: 不存在/不可见
+  场景B(全站搜索无结果)    —— #no-result: 不存在/不可见 / .empty-state: 不存在/不可见

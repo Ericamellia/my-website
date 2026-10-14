@@ -1,0 +1,29 @@
+================================================================================
+诊断二：核心流程每一步的真实状态
+================================================================================
+
+--- A. 初始（首页）---
+  [首页                    ] {"hash": "#/", "title": "按分类查询", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+
+--- B. 搜索三态（应在列表页做）---
+  [切到 music              ] {"hash": "#/music", "title": "同人音乐", "workItem": 6, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "hidden=true", "lsFavs": 0}
+  [搜'灵梦'                 ] {"hash": "#/search/%E7%81%B5%E6%A2%A6", "title": "全站搜索：灵梦（7 条）", "workItem": 7, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [搜'zzzzzz'             ] {"hash": "#/search/zzzzzz", "title": "", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [清空搜索                  ] {"hash": "#/", "title": "按分类查询", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+
+--- C. 收藏流程：从干净的列表页开始 ---
+  [回首页                   ] {"hash": "#/", "title": "按分类查询", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [详情页 music/1           ] {"hash": "#/music/1", "title": "ハルトマンの妖怪少女", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  点收藏按钮……
+  [点收藏后(仍详情页)            ] {"hash": "#/music/1", "title": "ハルトマンの妖怪少女", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 1}
+  [收藏页（第1次）              ] {"hash": "#/fav", "title": "我的收藏 (1)", "workItem": 2, "videoCard": 0, "favPanel": 6, "favCardStar": 2, "searchBox": true, "noResult": "none", "lsFavs": 1}
+
+--- D. 完全重来一次（模拟第 2 遍）---
+  [回首页(第2遍)              ] {"hash": "#/", "title": "按分类查询", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [详情页 music/1(第2遍)      ] {"hash": "#/music/1", "title": "ハルトマンの妖怪少女", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [点收藏后(第2遍)             ] {"hash": "#/music/1", "title": "ハルトマンの妖怪少女", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+  [收藏页（第2次）              ] {"hash": "#/fav", "title": "我的收藏 (0)", "workItem": 0, "videoCard": 0, "favPanel": 0, "favCardStar": 0, "searchBox": true, "noResult": "none", "lsFavs": 0}
+
+--- E. 关键追问：localStorage 到底存了什么 ---
+  touhou_favs = []
+  解析后 = []

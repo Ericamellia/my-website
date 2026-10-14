@@ -1,0 +1,55 @@
+====================================================================
+Day 28 结营验收 · B 类 真实读写 + 持久化
+站点：https://touhou-mock.app.workbuddy.host
+时间：2026-10-14 14:44:08
+====================================================================
+
+【B1】读收藏列表（基线）
+  HTTP 200  source=rest  count=7
+  现有 id：[7, 6, 5, 4, 3, 2, 1]
+  → PASS
+
+【B2】写入一条收藏 POST /api/favorites {workId:'art-2'}
+  HTTP 201
+  响应：{"ok": true, "endpoint": "/api/favorites", "action": "created", "source": "rest", "message": "收藏成功", "data": {"id": 87, "userId": "local", "workId": "art-2", "note": "Day28验收探针（验完即删）", "createdAt": "2026-10-14T06:44:10.167Z", "category": "art", "name": "やくも ゆかり", "circle": "wukloo", "creator": "wukl
+  → PASS  （新行 id=87）
+
+【B3】写后立即读回，验证计数 +1
+  HTTP 200  count=8（基线 7）
+  id 列表：[87, 7, 6, 5, 4, 3, 2, 1]
+  → PASS
+
+【B4】持久化复核：间隔 6 秒后再次独立读取
+  HTTP 200  count=8
+  新行仍在？是
+  新行内容：workId=art-2  note=Day28验收探针（验完即删）  createdAt=2026-10-14T06:44:10.167Z
+  → PASS
+
+【B5】数据源核对：source 必须是 rest（不是 snapshot 兜底）
+  /api/favorites?limit=1                     source=rest
+  /api/hot?board=fresh&limit=1               source=rest
+  /api/works?category=music&limit=1          source=rest
+  /api/circles                               source=rest
+  → PASS
+
+【B6】防重复：对刚才写入的同一条再 POST 一次，应回 409
+  HTTP 409
+  响应：{"ok": false, "error": "already_favorited", "message": "你已经收藏过 art-2 了，不用重复提交", "data": {"id": 87, "userId": "local", "workId": "art-2", "note": "Day28验收探针（验完即删）", "createdAt": "2026-10-14T06:44:10.16
+  → PASS
+
+【B7】清理测试数据 DELETE /api/favorites/87，恢复基线
+  HTTP 200  {"ok": true, "endpoint": "/api/favorites/87", "action": "deleted", "source": "rest", "message": "已取消收藏", "data": {"id": 87, "userId": "local", "workId": "art-2", "note": "Day28验收探针（验完即删）", "createdAt"
+  清理后 count=7（基线 7）
+  清理后 id：[7, 6, 5, 4, 3, 2, 1]
+  → PASS
+
+====================================================================
+  B1 读收藏列表(基线)           PASS
+  B2 写入收藏                PASS
+  B3 写后计数+1              PASS
+  B4 持久化复核               PASS
+  B5 source=rest         PASS
+  B6 防重复 409             PASS
+  B7 清理恢复基线              PASS
+  小计：7/7 PASS
+====================================================================

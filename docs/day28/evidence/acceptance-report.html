@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Day 28 验收清单 · 逐项打勾</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 36px;
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    background: #f5f6f8; color: #18191c; width: 1180px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #18191c; }
+  .meta { font-size: 12.5px; color: #61666d; margin-bottom: 18px; line-height: 1.7; }
+  .meta code { background: #e8e9eb; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  .sec-title {
+    font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: #18191c;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-title .badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9px;
+    background: #e7f6ec; color: #1a7f43;
+  }
+  .sec-title .badge.warn { background: #fff4e0; color: #a35f00; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+  th { background: #eef0f3; font-size: 12px; color: #444; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { font-size: 12.5px; padding: 8px 10px; border-top: 1px solid #f0f1f3; vertical-align: top; }
+  td.c, th.c { text-align: center; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .id { color: #61666d; font-weight: 600; font-size: 12px; }
+  .box {
+    display: inline-block; width: 15px; height: 15px; border-radius: 3px;
+    line-height: 15px; text-align: center; font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .ok   { background: #1a7f43; }
+  .part { background: #d18700; }
+  .no   { background: #d03a3a; }
+  .evi { color: #61666d; font-size: 11.5px; }
+  .evi code { background: #f1f2f3; padding: 1px 4px; border-radius: 3px; color: #3a3f45; font-size: 11px; }
+  .summary { margin-top: 20px; background: #fff; border-radius: 8px; padding: 14px 18px;
+             box-shadow: 0 1px 3px rgba(0,0,0,.07); font-size: 13px; line-height: 1.9; }
+  .summary b { color: #18191c; }
+  .big { font-size: 15px; font-weight: 700; color: #1a7f43; }
+  .legend { font-size: 11.5px; color: #61666d; margin-top: 10px; }
+  .legend span { margin-right: 14px; }
+</style>
+</head>
+<body>
+
+<h1>Day 28 结营验收清单 · 逐项打勾</h1>
+<div class="meta">
+  验收日：<b>2026-10-14</b>（Day 28） &nbsp;|&nbsp; 范围：<b>全部按公网验收</b><br>
+  公网地址：<code>https://touhou-mock.app.workbuddy.host/</code><br>
+  说明：「附录 J」经全仓库检索<b>不存在</b>，本清单为按项目现状拟定的<b>等效清单</b>（详见 <code>docs/day28/acceptance.md</code>）
+</div>
+
+<div class="sec-title">A 类 · 公网可访问（地基项） <span class="badge">5 / 5 PASS</span></div>
+<table>
+  <tr><th style="width:52px" class="c">#</th><th style="width:300px">验收项</th><th style="width:74px" class="c">状态</th><th>证据</th></tr>
+  <tr><td class="c id">A1</td><td>公网首页可打开（https）</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>GET /</code> → HTTP 200，9145 字节</td></tr>
+  <tr><td class="c id">A2</td><td>静态资源全部可加载</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>/style.css</code> 200（57186B）、<code>/app.js</code> 200（127325B）</td></tr>
+  <tr><td class="c id">A3</td><td>健康接口存活</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>/api/health</code> → <code>ok:true</code>，uptimeSec 递增</td></tr>
+  <tr><td class="c id">A4</td><td>数据源通道正确</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">health 返回 <code>checks.dataSource: "rest"</code>（真库通道）</td></tr>
+  <tr><td class="c id">A5</td><td>六个业务接口全部可达</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">health / hot / favorites / works / circles / originals 均 200</td></tr>
+</table>
+
+<div class="sec-title">B 类 · 真实读写 + 持久化（地基项） <span class="badge">8 / 8 PASS</span></div>
+<table>
+  <tr><th style="width:52px" class="c">#</th><th style="width:300px">验收项</th><th style="width:74px" class="c">状态</th><th>证据</th></tr>
+  <tr><td class="c id">B1</td><td>真实读：收藏列表</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">200，<code>source:"rest"</code>，<code>count:7</code></td></tr>
+  <tr><td class="c id">B2</td><td>真实写：新增收藏</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>POST</code> → <b>HTTP 201</b>，新行 <code>id:87</code> + 真实 <code>createdAt</code></td></tr>
+  <tr><td class="c id">B3</td><td>写入真的落库（计数 +1）</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">写后读回 <code>count 7 → 8</code>，新行出现在列表首位</td></tr>
+  <tr><td class="c id">B4</td><td><b>刷新后持久化</b>（跨请求跨时间）</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">间隔 6 秒独立读取，<code>count</code> 仍为 8，行内容一致</td></tr>
+  <tr><td class="c id">B5</td><td>数据源确为 rest 真库</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">4 个接口 <code>source</code> 全部为 <code>"rest"</code>，无兜底</td></tr>
+  <tr><td class="c id">B6</td><td>防重复提交闸门</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">重复 POST → <b>HTTP 409</b>「你已经收藏过 art-2 了」</td></tr>
+  <tr><td class="c id">B7</td><td>测试数据清理、恢复基线</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>DELETE</code> → 200，复核 <code>count=7</code> 与基线完全一致</td></tr>
+  <tr><td class="c id">B8</td><td>Day 27 修复项在公网生效</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>/api/works</code> 中 <code>"circle":"COOL&amp;CREATE"</code> 有值</td></tr>
+</table>
+
+<div class="sec-title">C 类 · 接口契约与错误处理 <span class="badge">6 PASS</span> <span class="badge warn">1 PARTIAL</span></div>
+<table>
+  <tr><th style="width:52px" class="c">#</th><th style="width:300px">验收项</th><th style="width:74px" class="c">状态</th><th>证据</th></tr>
+  <tr><td class="c id">C1</td><td>方法不匹配 → 405</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>PATCH /api/favorites</code> → 405，body 含 <code>allow</code></td></tr>
+  <tr><td class="c id">C2</td><td>不存在的路径 → 501</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>/api/nonexistent</code> → 501 <code>not_implemented</code></td></tr>
+  <tr><td class="c id">C3</td><td>缺必填字段 → 400 + 中文提示</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi"><code>POST {}</code> → 400「缺少必填字段 workId…」</td></tr>
+  <tr><td class="c id">C4</td><td>格式非法 → 400 + 中文提示</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">400 <code>invalid_work_id_format</code> + 正确格式提示</td></tr>
+  <tr><td class="c id">C5</td><td>错误响应不漏内部细节</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">3 条错误路径扫描堆栈 / 连接串 → 命中 <b>0</b></td></tr>
+  <tr><td class="c id">C6</td><td>DELETE 幂等（删不存在的 id）</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">→ 404，不抛异常</td></tr>
+  <tr><td class="c id">C7</td><td>405 响应带 <code>Allow</code> 头</td><td class="c"><span class="box part">~</span></td><td class="evi">allow 在 <b>JSON body</b> 中，未写入响应头（RFC 7231 要求）。<b>不影响功能</b>，属规范细节瑕疵</td></tr>
+</table>
+
+<div class="sec-title">D 类 · Skill 可用性 <span class="badge">4 / 4 PASS</span></div>
+<table>
+  <tr><th style="width:52px" class="c">#</th><th style="width:300px">验收项</th><th style="width:74px" class="c">状态</th><th>证据</th></tr>
+  <tr><td class="c id">D1</td><td><code>preflight-check</code> 能跑出结果</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">独立执行 → <b>7 项全过、退出码 0</b></td></tr>
+  <tr><td class="c id">D2</td><td>它不是「永远通过」的摆设</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">Day 25 验证：注入假密钥 → 报 FAIL；移除后恢复全绿</td></tr>
+  <tr><td class="c id">D3</td><td><code>filter-interaction-check</code> 三态可用</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">有结果 7 / 无结果 0 且有提示 / 清空后回 <code>#/</code></td></tr>
+  <tr><td class="c id">D4</td><td>两个 Skill 用法已写进 README</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">含用法、退出码、检查项表、「为什么值得跑」</td></tr>
+</table>
+
+<div class="sec-title">E 类 · 核心流程（重复检测，跑两遍对比） <span class="badge">13 / 13 观测点一致</span></div>
+<table>
+  <tr><th style="width:52px" class="c">#</th><th style="width:300px">验收项</th><th style="width:74px" class="c">状态</th><th>证据</th></tr>
+  <tr><td class="c id">E1</td><td>流程：首页→切板块→详情→收藏→收藏页</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">13 个观测点<b>两遍完全一致</b> → 幂等</td></tr>
+  <tr><td class="c id">E2</td><td>搜索结果可见性</td><td class="c"><span class="box ok">&#10003;</span></td><td class="evi">无结果时显示主题文案「你想要的知识或许在幻想乡境界之外哦」</td></tr>
+</table>
+
+<div class="summary">
+  <b>验收结果汇总</b><br>
+  <span class="big">有证据项：24 PASS · 1 PARTIAL · 0 FAIL</span><br>
+  <b>地基项（A 公网可访问 + B 真实读写持久化）全部 PASS</b>，证据可复现、数据验完即清理、写入刷新后持久。<br>
+  <b>F 类缺项如实标记：9 项 FAIL</b> —— 其中最重要的是
+  <b>F1「前端收藏 UI 与云端真库是两套数据」</b>（网络抓包铁证：点收藏期间请求数 <b>0</b>，对照组 fetch 抓到 <b>1</b>），
+  这是本次验收挖出的架构层不一致。<br>
+  其余：Day 11/13/14 无提交记录、移动端 M1/M2 遗留、暗色模式未做、
+  数据扩容未做、真人试用未做、<b>Day 28 改动待发布</b>。
+  <div class="legend">
+    <span><span class="box ok">&#10003;</span> PASS</span>
+    <span><span class="box part">~</span> PARTIAL（部分达成）</span>
+    <span><span class="box no">&#10007;</span> FAIL（未达成）</span>
+    &nbsp;·&nbsp;原则：未做即标 FAIL，不以「基本完成」模糊
+  </div>
+</div>
+
+</body>
+</html>

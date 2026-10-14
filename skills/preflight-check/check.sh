@@ -59,6 +59,23 @@ count() {
   grep -c "$@" 2>/dev/null || true
 }
 
+# 带重试的 HTTP 状态码探测。
+# ★ 为什么加重试（Day 28 踩到）：单次探测遇到瞬时抖动（连接池打满、服务冷启动）
+#   会返回 000，直接判 FAIL → **假失败**。实测连续 3 次都是 200。
+#   所以「网络类检查」必须重试，只有**连续失败**才算真失败。
+#   不加重试的检查 = 会误报的检查 = 迟早被忽略。
+http_code_retry() {
+  url="$1"; tries="${2:-3}"; code=""
+  i=1
+  while [ "$i" -le "$tries" ]; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "$url" 2>/dev/null || echo "000")
+    [ "$code" = "200" ] && { printf '%s' "$code"; return; }
+    i=$((i + 1))
+    [ "$i" -le "$tries" ] && sleep 2
+  done
+  printf '%s' "$code"
+}
+
 echo "============================================================"
 echo "发布前检查 · preflight-check"
 echo "时间：$(date '+%Y-%m-%d %H:%M:%S')    项目：$(pwd)"
@@ -108,12 +125,13 @@ fi
 if [ "$OFFLINE" -eq 0 ]; then
   echo ""
   echo "---- ④ 公网接口可达（$SITE）----"
+  echo "# 每个接口最多试 3 次：网络抖动不该被当成故障（Day 28 踩过假失败）"
   for p in /api/health /api/hot /api/favorites; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "$SITE$p" 2>/dev/null || echo "000")
+    code=$(http_code_retry "$SITE$p" 3)
     if [ "$code" = "200" ]; then
       report OK "④ 公网 $p" "HTTP 200"
     else
-      report NG "④ 公网 $p" "HTTP $code（期望 200）"
+      report NG "④ 公网 $p" "HTTP $code（重试 3 次仍非 200）"
     fi
   done
 
@@ -137,14 +155,27 @@ fi
 if [ "$CHECK_VERSION" -eq 1 ]; then
   echo ""
   echo "---- ⑥ 前端版本号是否已升（对比 HEAD 与上一提交）----"
-  cur=$(grep -oE 'app\.js\?v=[0-9]+' my-app/index.html | head -1 | grep -oE '[0-9]+')
-  prev=$(git show HEAD:my-app/index.html 2>/dev/null | grep -oE 'app\.js\?v=[0-9]+' | head -1 | grep -oE '[0-9]+')
-  if [ -z "$prev" ]; then
-    report OK "⑥ 版本号" "无上一版本可比，当前 v=$cur"
-  elif [ "$cur" -gt "$prev" ]; then
-    report OK "⑥ 版本号" "已升：v$prev → v$cur"
+  # ★ 修正（Day 28）：原来读 my-app/index.html，但本项目前端实际在 deploy/public/index.html。
+  #   路径写错 → 这个检查一直取不到值，等于瞎的。现在按优先级找真实文件。
+  IDX=""
+  for cand in deploy/public/index.html my-app/index.html index.html; do
+    [ -f "$cand" ] && { IDX="$cand"; break; }
+  done
+  if [ -z "$IDX" ]; then
+    report NG "⑥ 版本号" "找不到前端 index.html（试过 deploy/public/、my-app/、根目录）"
   else
-    report NG "⑥ 版本号" "未升（当前 v$cur，上一提交 v$prev）—— 改了 JS 必须升，否则用户吃缓存"
+    echo "# 检查文件：$IDX"
+    cur=$(grep -oE 'app\.js\?v=[0-9]+' "$IDX" | head -1 | grep -oE '[0-9]+')
+    prev=$(git show "HEAD:$IDX" 2>/dev/null | grep -oE 'app\.js\?v=[0-9]+' | head -1 | grep -oE '[0-9]+')
+    if [ -z "$cur" ]; then
+      report NG "⑥ 版本号" "$IDX 里找不到 app.js?v=N"
+    elif [ -z "$prev" ]; then
+      report OK "⑥ 版本号" "无上一版本可比，当前 v=$cur"
+    elif [ "$cur" -gt "$prev" ]; then
+      report OK "⑥ 版本号" "已升：v$prev → v$cur"
+    else
+      report NG "⑥ 版本号" "未升（当前 v$cur，上一提交 v$prev）—— 改了 JS 必须升，否则用户吃缓存"
+    fi
   fi
 fi
 

@@ -87,3 +87,25 @@ PREFLIGHT_SITE=https://你的域名 bash skills/preflight-check/check.sh
 顺带体检可访问性（label 关联、空状态读屏、键盘可达）。
 
 详见 `skills/filter-interaction-check/SKILL.md`。
+
+### acceptance-check —— 结营 / 发布后整体验收体检
+
+**什么时候用**：发布上线**之后**复验；改过后端接口做回归；结营或交接时确认交付物齐全；
+怀疑「代码推了但线上没部署」。
+
+一条命令跑完五类：公网可访问 → **真实读写 + 持久化** → 接口契约与错误处理 →
+本地交付物完整 → 版本号一致性。
+
+```bash
+bash skills/acceptance-check/check.sh              # 完整（含写库测试）
+bash skills/acceptance-check/check.sh --skip-write # 只读，不动生产数据
+bash skills/acceptance-check/check.sh --offline    # 纯离线
+```
+
+**退出码**：`0` = 全过；`1` = 有 FAIL。
+
+和 `preflight-check` 的分工：**前者管「推之前别带脏东西」，后者管「推之后整体是不是好的」。**
+它会真的写一条测试数据验持久化，但**注册了 trap 兜底清理**（任何退出路径都会删掉）。
+
+详见 `skills/acceptance-check/SKILL.md`。
+
